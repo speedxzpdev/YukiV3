@@ -14,7 +14,7 @@ const { users } = require("./database/models/users");
 const { donos } = require("./database/models/donos");
 const { rankativos } = require("./database/models/rankativos");
 const { grupos } = require("./database/models/grupos");
-
+require("dotenv").config();
 
 
 
@@ -48,7 +48,7 @@ async function yukibot() {
   
   if(!state.creds.registered) {
     setTimeout(async () => {
-      const code = await sock.requestPairingCode("558791403576");
+      const code = await sock.requestPairingCode(process.env.NUMBER);
     console.log("Codigo: ", code);
     }, 2000);
   }
