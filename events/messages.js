@@ -77,10 +77,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   
   
   let userFind = await users.findOne({userLid: msg.key.participant});
+
   
-  const prefixozin = groupDBInfo?.configs?.prefixo || "/";
-  
-  if (body.startsWith(prefixozin)) {
+  if (body.startsWith(prefixo)) {
     const args = body.slice(prefixo.length).trim().split(/ +/);
     
     const commandName = args.shift().toLowerCase();

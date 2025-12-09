@@ -1,4 +1,6 @@
-const prefixo = "/"
+require("dotenv").config();
+
+const prefixo = process.env.PREFIXO
 
 const botName = "Yuki"
 
