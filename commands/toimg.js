@@ -1,16 +1,26 @@
 // commands/toimg.js
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
-const { exec, execSync } = require("child_process");
+const { exec } = require("child_process");
 const util = require("util");
 const execP = util.promisify(exec);
 const fs = require("fs");
 const path = require("path");
 
-const FFMPEG_DIR = "C:/ffmpeg/bin"; // <--- ajuste aqui se precisar
-const FFMPEG_BIN = `"${path.join(FFMPEG_DIR, "ffmpeg.exe")}"`;
-const FFPROBE_BIN = `"${path.join(FFMPEG_DIR, "ffprobe.exe")}"`;
+const OUT_FPS = 10;
+const MIN_MP4_BYTES = 2000; // tamanho mínimo razoável para considerar mp4 válido
 
-const OUT_FPS = 10; // <<-- taxa de frames de saída (corrige speed-up)
+function safeUnlink(p) {
+  try { if (p && fs.existsSync(p)) fs.unlinkSync(p); } catch (e) {}
+}
+
+async function run(cmd, opts = {}) {
+  try {
+    const { stdout, stderr } = await execP(cmd, { maxBuffer: 1024 * 1024 * 64, ...opts });
+    return { ok: true, stdout: stdout?.toString() || "", stderr: stderr?.toString() || "" };
+  } catch (e) {
+    return { ok: false, stdout: e.stdout?.toString() || "", stderr: e.stderr?.toString() || (e.message || ""), error: e };
+  }
+}
 
 async function which(bin) {
   try {
@@ -26,27 +36,14 @@ async function which(bin) {
   }
 }
 
-function safeUnlink(p) {
-  try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch (e) { /* ignore */ }
-}
-
-async function run(cmd, opts = {}) {
-  try {
-    const { stdout, stderr } = await execP(cmd, { maxBuffer: 1024 * 1024 * 64, ...opts });
-    return { ok: true, stdout: stdout?.toString() || "", stderr: stderr?.toString() || "" };
-  } catch (e) {
-    return { ok: false, stdout: e.stdout?.toString() || "", stderr: e.stderr?.toString() || (e.message || ""), error: e };
-  }
-}
-
 module.exports = {
   name: "toimg",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos = "Erro interno", espera_pronta = "Processando...") {
     const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const sticker = quotedMsg?.stickerMessage;
 
     if (!sticker) {
-      await sock.sendMessage(from, { text: "Responde um sticker, porra." }, { quoted: msg });
+      await sock.sendMessage(from, { text: "Responde um sticker (estático ou animado)." }, { quoted: msg });
       return;
     }
 
@@ -60,66 +57,89 @@ module.exports = {
     const inputWebp = `${base}.webp`;
     const pngOut = `${base}.png`;
     const mp4Out = `${base}.mp4`;
-    const framePrefix = path.join(tempDir, `frames_${ts}_`);
     const webmTry = `${base}.webm`;
+    const framePatternBase = path.join(tempDir, `frame_${ts}_%03d.webp`);
+    const frameGlobPrefix = path.join(tempDir, `frame_${ts}_`);
+
+    // tenta encontrar ffmpeg e webpmux no sistema
+    const ffmpegPathFound = (await which("ffmpeg")) || (process.platform === "win32" ? "C:/ffmpeg/bin/ffmpeg.exe" : null);
+    const webpmuxPathFound = (await which("webpmux")) || (process.platform === "win32" ? "C:/ffmpeg/bin/webpmux.exe" : null);
+
+    if (!ffmpegPathFound) {
+      await sock.sendMessage(from, { text: "FFmpeg não encontrado. Instale ou adicione ao PATH." }, { quoted: msg });
+      return;
+    }
+    const FFMPEG_BIN = process.platform === "win32" ? `"${ffmpegPathFound}"` : ffmpegPathFound;
+    const WEBPMUX_BIN = webpmuxPathFound ? (process.platform === "win32" ? `"${webpmuxPathFound}"` : webpmuxPathFound) : null;
 
     try {
-      // download
       const buffer = await downloadMediaMessage({ message: quotedMsg }, "buffer", {}, { reuploadRequest: sock.updateMediaMessage });
       fs.writeFileSync(inputWebp, buffer);
 
-      // quick try: ffmpeg direct (large probe) — força fps de saída
+      // detecta animado por tags ANIM / ANMF (método simples e eficaz)
+      const isAnimated = Buffer.isBuffer(buffer) && (buffer.includes(Buffer.from("ANMF")) || buffer.includes(Buffer.from("ANIM")));
+
+      // Se não for animado: extrai 1 frame PNG e manda
+      if (!isAnimated) {
+        const cmdStill = `${FFMPEG_BIN} -y -i "${inputWebp}" -frames:v 1 "${pngOut}"`;
+        const r = await run(cmdStill);
+        if (r.ok && fs.existsSync(pngOut) && fs.statSync(pngOut).size > 500) {
+          const img = fs.readFileSync(pngOut);
+          await sock.sendMessage(from, { image: img, caption: "" }, { quoted: msg });
+        } else {
+          console.log("toimg - still conversion failed:", r.stderr || r.error);
+          await sock.sendMessage(from, { text: "Falha ao converter sticker estático." }, { quoted: msg });
+        }
+        return;
+      }
+
+      // sticker animado: tentativas em cascata
+      // tentativa A: ffmpeg normal (com probe/analyze aumentado e fps forçado)
       const tryA = `${FFMPEG_BIN} -y -analyzeduration 200M -probesize 200M -i "${inputWebp}" -filter:v fps=${OUT_FPS} -vcodec libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -movflags +faststart "${mp4Out}"`;
       let res = await run(tryA);
-      if (res.ok && fs.existsSync(mp4Out)) {
+      if (res.ok && fs.existsSync(mp4Out) && fs.statSync(mp4Out).size > MIN_MP4_BYTES) {
         const vid = fs.readFileSync(mp4Out);
         await sock.sendMessage(from, { video: vid, caption: "" }, { quoted: msg });
         return;
-      } else {
-        console.log("Anim attempt A failed:", res.stderr || res.error);
       }
+      console.log("Anim attempt A failed:", res.stderr || res.error);
 
-      // try forcing demuxer: -f webp (ainda força fps de saída)
+      // tentativa B: forçar demuxer webp
       const tryB = `${FFMPEG_BIN} -y -analyzeduration 200M -probesize 200M -f webp -i "${inputWebp}" -filter:v fps=${OUT_FPS} -vcodec libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -movflags +faststart "${mp4Out}"`;
       res = await run(tryB);
-      if (res.ok && fs.existsSync(mp4Out)) {
+      if (res.ok && fs.existsSync(mp4Out) && fs.statSync(mp4Out).size > MIN_MP4_BYTES) {
         const vid = fs.readFileSync(mp4Out);
         await sock.sendMessage(from, { video: vid, caption: "" }, { quoted: msg });
         return;
-      } else {
-        console.log("Anim attempt B failed:", res.stderr || res.error);
       }
+      console.log("Anim attempt B failed:", res.stderr || res.error);
 
-      // try writing as .webm and converting (algumas cargas são webm)
+      // tentativa C: tentar salvar como webm e converter
       try {
         fs.writeFileSync(webmTry, buffer);
         const tryC = `${FFMPEG_BIN} -y -analyzeduration 200M -probesize 200M -i "${webmTry}" -filter:v fps=${OUT_FPS} -vcodec libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -movflags +faststart "${mp4Out}"`;
         res = await run(tryC);
-        if (res.ok && fs.existsSync(mp4Out)) {
+        if (res.ok && fs.existsSync(mp4Out) && fs.statSync(mp4Out).size > MIN_MP4_BYTES) {
           const vid = fs.readFileSync(mp4Out);
           await sock.sendMessage(from, { video: vid, caption: "" }, { quoted: msg });
           return;
-        } else {
-          console.log("Anim attempt C (as webm) failed:", res.stderr || res.error);
         }
+        console.log("Anim attempt C (webm) failed:", res.stderr || res.error);
       } catch (e) {
-        console.log("failed to write webmTry:", e);
+        console.log("Anim attempt C error:", e);
+      } finally {
+        safeUnlink(webmTry);
       }
 
-      // If ffmpeg direct failed, try webpmux extraction (if available)
-      let webpmuxPath = null;
-      const candidate = path.join(FFMPEG_DIR, process.platform === "win32" ? "webpmux.exe" : "webpmux");
-      if (fs.existsSync(candidate)) webpmuxPath = candidate;
-      if (!webpmuxPath) webpmuxPath = await which("webpmux");
-
-      if (webpmuxPath) {
-        console.log("webpmux found at", webpmuxPath, "— extracting frames...");
+      // tentativa D: se webpmux disponível, extrai frames e monta vídeo com ffmpeg
+      if (WEBPMUX_BIN) {
+        console.log("Tentando extrair frames com webpmux em:", WEBPMUX_BIN);
         const frames = [];
-        for (let i = 1; i <= 300; i++) { // limit to 300 frames
-          const outFrame = `${framePrefix}${String(i).padStart(3, "0")}.webp`;
-          const cmd = `"${webpmuxPath}" -get frame ${i} "${inputWebp}" -o "${outFrame}"`;
-          const r = await run(cmd);
-          if (r.ok && fs.existsSync(outFrame) && fs.statSync(outFrame).size > 0) {
+        for (let i = 1; i <= 500; i++) { // limite razoável
+          const outFrame = frameGlobPrefix + String(i).padStart(3, "0") + ".webp";
+          const cmd = `${WEBPMUX_BIN} -get frame ${i} "${inputWebp}" -o "${outFrame}"`;
+          const rframe = await run(cmd);
+          if (rframe.ok && fs.existsSync(outFrame) && fs.statSync(outFrame).size > 0) {
             frames.push(outFrame);
             continue;
           } else {
@@ -128,80 +148,64 @@ module.exports = {
           }
         }
 
-        if (frames.length === 0) {
-          console.log("webpmux não extraiu frames (0).");
-        } else {
-          // rename to pattern frame_%03d.webp
-          const patternDir = path.dirname(frames[0]);
-          const patternBase = path.join(patternDir, `frame_${ts}_%03d.webp`);
-          for (let i = 0; i < frames.length; i++) {
-            const newName = patternBase.replace("%03d", String(i + 1).padStart(3, "0"));
-            fs.renameSync(frames[i], newName);
-          }
-          const patternName = patternBase; // contains %03d
-          // aqui usamos framerate de entrada alto e forçamos filtro de saída OUT_FPS
-          const ffCmd = `${FFMPEG_BIN} -y -framerate 25 -i "${patternName}" -filter:v fps=${OUT_FPS} -vcodec libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -movflags +faststart "${mp4Out}"`;
-          const r2 = await run(ffCmd);
-
-          // cleanup frames list
-          let created = [];
-          for (let i = 1; i <= frames.length; i++) {
-            const f = patternBase.replace("%03d", String(i).padStart(3, "0"));
-            if (fs.existsSync(f)) created.push(f);
-          }
-          if (r2.ok && fs.existsSync(mp4Out)) {
+        if (frames.length > 0) {
+          // converte sequence para mp4
+          // renomeamos para frame_%03d.webp se necessário (já estão no padrão frame_ts_001.webp etc)
+          // Vamos usar pattern frame_${ts}_%03d.webp que criamos acima:
+          const pattern = framePatternBase;
+          // ffmpeg command to stitch sequence
+          const ffCmd = `${FFMPEG_BIN} -y -framerate 25 -i "${pattern}" -filter:v fps=${OUT_FPS} -vcodec libx264 -pix_fmt yuv420p -crf 23 -preset veryfast -movflags +faststart "${mp4Out}"`;
+          const rseq = await run(ffCmd);
+          // cleanup frames
+          for (const f of frames) safeUnlink(f);
+          if (rseq.ok && fs.existsSync(mp4Out) && fs.statSync(mp4Out).size > MIN_MP4_BYTES) {
             const vid = fs.readFileSync(mp4Out);
             await sock.sendMessage(from, { video: vid, caption: "" }, { quoted: msg });
-            // cleanup
-            safeUnlink(inputWebp);
-            safeUnlink(webmTry);
-            safeUnlink(mp4Out);
-            for (const f of created) safeUnlink(f);
             return;
           } else {
-            console.log("ffmpeg after webpmux frames failed:", r2.stderr || r2.error);
-            for (const f of created) safeUnlink(f);
+            console.log("ffmpeg after webpmux frames failed:", rseq.stderr || rseq.error);
           }
+        } else {
+          console.log("webpmux não extraiu frames.");
         }
       } else {
-        console.log("webpmux não encontrado.");
+        console.log("webpmux não encontrado; pulando etapa de extração por frames.");
       }
 
-      // LAST FALLBACK: extract single frame PNG (force one frame)
-      console.log("Tentando fallback: extrair 1 frame (png)");
+      // último recurso: extrair 1 frame PNG como fallback
+      console.log("Tentando fallback: extrair 1 frame PNG");
       const tryPng = `${FFMPEG_BIN} -y -analyzeduration 200M -probesize 200M -i "${inputWebp}" -frames:v 1 -update 1 "${pngOut}"`;
       res = await run(tryPng);
-      if (res.ok && fs.existsSync(pngOut)) {
+      if (res.ok && fs.existsSync(pngOut) && fs.statSync(pngOut).size > 500) {
         const img = fs.readFileSync(pngOut);
-        await sock.sendMessage(from, { image: img, caption: "(fallback) extraí 1 frame da figurinha" }, { quoted: msg });
+        await sock.sendMessage(from, { image: img, caption: "(fallback) extraí 1 frame da figurinha animada" }, { quoted: msg });
         return;
       }
 
-      // if we got here: fail
+      // se chegou aqui, realmente falhou
       console.error("Todas as tentativas falharam. Veja logs acima.");
       const installHint = [
         "Não consegui converter a figurinha animada automaticamente.",
-        "Pra resolver 100% instale as ferramentas libwebp (webpmux/dwebp).",
-        "No Windows: baixe os prebuilt binaries do libwebp e coloque webpmux.exe em C:/ffmpeg/bin ou em PATH.",
-        "Depois reinicie o bot — ele vai detectar automaticamente."
+        "Confira se você tem FFmpeg instalado e atualizado e (opcional) webpmux (libwebp).",
+        `FFmpeg detectado em: ${ffmpegPathFound}`,
+        `webpmux detectado em: ${webpmuxPathFound || "não encontrado"}`
       ].join("\n");
       await sock.sendMessage(from, { text: installHint }, { quoted: msg });
 
     } catch (err) {
       console.error("ERRO GERAL no toimg:", err);
-      await sock.sendMessage(from, { text: erros_prontos }, { quoted: msg });
+      await sock.sendMessage(from, { text: erros_prontos || "Erro ao processar." }, { quoted: msg });
     } finally {
-      // cleanup minimal
+      // cleanup básico
       safeUnlink(inputWebp);
       safeUnlink(pngOut);
       safeUnlink(mp4Out);
       safeUnlink(webmTry);
+      // também limpa frames gerados
       try {
-        const files = fs.readdirSync(tempDir);
+        const files = fs.readdirSync(tempDir || ".");
         for (const f of files) {
-          if (f.includes(`frames_${ts}_`) || f.includes(`frame_${ts}_`)) {
-            safeUnlink(path.join(tempDir, f));
-          }
+          if (f.includes(`frame_${ts}_`) || f.includes(`frames_${ts}_`)) safeUnlink(path.join(tempDir, f));
         }
       } catch {}
     }

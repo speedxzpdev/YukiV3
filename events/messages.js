@@ -8,14 +8,22 @@ const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 
-
-
-
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    await sock.readMessages([msg.key])
-    if (msg.key.fromMe) return
+    //await sock.readMessages([msg.key])
+
+    // captura do texto ANTES do controle
+    const body =
+      (msg.message?.conversation) ||
+      (msg.message?.extendedTextMessage?.text) ||
+      (msg.message?.imageMessage?.caption) ||
+      (msg.message?.documentMessage?.caption) ||
+      "Msg estranha..."
+
+    // 👉 permite mensagens enviadas pelo bot APENAS se forem comandos com prefixo
+    if (msg.key.fromMe && !body.startsWith(prefixo)) return
+
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     connectDB();
     const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
@@ -23,7 +31,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const doninhos = await donos.findOne({userLid: sender});
     
-    if(!from.endsWith("@g.us") && !doninhos) return;
+    // lógica original mantida — agora comandos do bot passam por causa do filtro acima
+    if(!from.endsWith("@g.us") && !doninhos && !msg.key.fromMe) return;
     
     if(!await grupos.findOne({groupId: from})) {
       await grupos.create({groupId: from});
@@ -46,92 +55,60 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {msg: 1}}, {upsert: true})
+
+    // -------- prefixo do grupo
+    if(body.startsWith("prefixo")) {
+      await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo}\``})
+    }
     
+    // -------- TIKTOK
+    if (body.startsWith("https://vt.tiktok.com/")) {
+      tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
+    }
     
+    // -------- INSTAGRAM
+    if(body.startsWith("https://www.instagram.com")) {
+      instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
+    }
     
-    
-    
-    
-    
-    
-    
-    const body = (msg.message?.conversation) ||
-    (msg.message?.extendedTextMessage?.text) ||
-    (msg.message?.imageMessage?.caption) ||
-    (msg.message?.documentMessage?.caption) || "Msg estranha..."
-  
-  if(body.startsWith("prefixo")) {
-    await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo}\``})
-  }
-  
-  
-  if (body.startsWith("https://vt.tiktok.com/")) {
-    
-    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
-    
-  }
-  
-  if(body.startsWith("https://www.instagram.com")) {
-    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
-  }
-  
-  
-  let userFind = await users.findOne({userLid: msg.key.participant});
-  
-  const prefixozin = groupDBInfo?.configs?.prefixo || "/";
-  
-  if (body.startsWith(prefixozin)) {
-    const args = body.slice(prefixo.length).trim().split(/ +/);
-    
-    const commandName = args.shift().toLowerCase();
-  
-  const commandGet = commandsMap.get(commandName)
-    
-    if (!commandGet) {
+    let userFind = await users.findOne({userLid: msg.key.participant});
+
+    // -------- COMANDOS
+    if (body.startsWith(prefixo)) {
+      const args = body.slice(prefixo.length).trim().split(/ +/);
+      const commandName = args.shift().toLowerCase();
+      const commandGet = commandsMap.get(commandName)
       
-      const commandNameList = Array.from(commandsMap.keys());
-      
-      
-      
-     const similarity = similarityCmd(commandNameList, commandName);
-      
-      
-      
-      if (similarity.similarity <30) {
+      if (!commandGet) {
+        const commandNameList = Array.from(commandsMap.keys());
+        const similarity = similarityCmd(commandNameList, commandName);
         
-        const mensagensCmdInvalido = [`${msg.pushName}... procurei nessa merda toda e não achei esse comando!`,
-  `${msg.pushName}... procurei pela PORRA dos meus comandos inteiros e não achei nada! Para de inventar moda, caralho!`,
-  `${msg.pushName}, tu tá drogado? Esse comando nem existe, porra.`,
-  `${msg.pushName}... que porra é essa que tu digitou? Meu cérebro eletrônico bugou.`,
-  `${msg.pushName}, tentei entender teu comando e só achei vergonha.`,
-  `${msg.pushName}, eu rodei meus scripts todos e não achei essa merda.`,
-  `${msg.pushName}, esse comando aí foi tirado do cu, né?`,
-  `${msg.pushName}... nem nos logs do inferno existe esse comando.`,
-  `${msg.pushName}, inventando comando agora? Quer programar no meu lugar?`];
+        if (similarity.similarity <30) {
+          const mensagensCmdInvalido = [
+            `${msg.pushName}... procurei nessa merda toda e não achei esse comando!`,
+            `${msg.pushName}... procurei pela PORRA dos meus comandos inteiros e não achei nada! Para de inventar moda, caralho!`,
+            `${msg.pushName}, tu tá drogado? Esse comando nem existe, porra.`,
+            `${msg.pushName}... que porra é essa que tu digitou? Meu cérebro eletrônico bugou.`,
+            `${msg.pushName}, tentei entender teu comando e só achei vergonha.`,
+            `${msg.pushName}, eu rodei meus scripts todos e não achei essa merda.`,
+            `${msg.pushName}, esse comando aí foi tirado do cu, né?`,
+            `${msg.pushName}... nem nos logs do inferno existe esse comando.`,
+            `${msg.pushName}, inventando comando agora? Quer programar no meu lugar?`
+          ];
+          
+          const cmdInvalidMsg = mensagensCmdInvalido[Math.floor(Math.random() * mensagensCmdInvalido.length)];
+          
+          await sock.sendMessage(from, {text: cmdInvalidMsg}, {quoted: msg});
+          return
+        }
         
-        const cmdInvalidMsg = mensagensCmdInvalido[Math.floor(Math.random() * mensagensCmdInvalido.length)];
-        
-        await sock.sendMessage(from, {text: cmdInvalidMsg}, {quoted: msg});
+        sock.sendMessage(from, {text: `😅 Eita, ${msg.pushName}! Parece que você errou o comando… Queria dizer "${prefixo}${similarity.sugest}" talvez? Similaridade: ${similarity.similarity}%`}, {quoted: msg});
         return
       }
-      
-      
-      
-      sock.sendMessage(from, {text: `😅 Eita, ${msg.pushName}! Parece que você errou o comando… Queria dizer "${prefixo}${similarity.sugest}" talvez? Similaridade: ${similarity.similarity}%`}, {quoted: msg});
-      return
-    }
-    await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta);
-    
-    await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
-    
-  }
-  
 
-  
-    
-    
+      await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta);
+      await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
+    }
     
   })
-  
-  
 }
