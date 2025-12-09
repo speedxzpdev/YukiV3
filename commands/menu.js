@@ -1,5 +1,5 @@
 const menu = require("../utils/menu");
-
+const path = require("path")
 
 
 module.exports = {
@@ -17,12 +17,12 @@ module.exports = {
     
     try {
       
-      await sock.sendMessage(from, {image: {url: "https://files.catbox.moe/i0u9h1.jpg"}, caption: menu(msg), mentions: [sender]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, "../assets/images/yuki.jpg")}, caption: menu(msg), mentions: [sender]}, {quoted: msg});
       
       
     }
     catch(err) {
-      await sock.sendMessage(from, {text: erros_prontos});
+      await sock.sendMessage(from, {text: erros_prontos}, {quoted: msg});
       console.log(err)
     }
     
