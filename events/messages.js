@@ -60,6 +60,27 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     (msg.message?.imageMessage?.caption) ||
     (msg.message?.documentMessage?.caption) || "Msg estranha..."
 
+  const groupReply = await grupos.findOne({groupId: from});
+  
+  if(groupReply.autoReply === true) {
+    
+    const bodyCase = body.toLowerCase()
+    
+    if(bodyCase.includes("bom dia")) {
+      
+      await sock.sendMessage(from, {text: `Bom dia, ${msg.pushName}! Tudo bem?`}, {quoted: msg});
+    }
+    
+    if(bodyCase.includes("boa tarde")) {
+      await sock.sendMessage(from, {text: `Boa tarde, Lindão! Uma hora dessa, assitir um bleach é uma boa.`}, {quoted: msg});
+    }
+    
+    if(bodyCase.includes("boa noite")) {
+      await sock.sendMessage(from, {text: `Boa noite, meu fio. Vá dormir, vá`}, {quoted: msg});
+    }
+  }
+
+
   if(body.startsWith("prefixo")) {
     await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo}\``})
   }
