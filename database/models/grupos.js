@@ -6,7 +6,7 @@ const schema = new mongoose.Schema({
   configs: {
     events: {type: Boolean, default: true},
     prefixo: {type: String, default: "/"},
-    welcome: {type: String, default: true},
+    welcome: {type: Boolean, default: true},
     antlink: {type: Boolean, default: false}
   },
   lang: {type: String, default: "pt-br"},

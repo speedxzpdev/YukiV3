@@ -82,7 +82,7 @@ async function yukibot() {
   
 
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
-  
+  require("./events/participantUp")(sock)
   
 }
 
