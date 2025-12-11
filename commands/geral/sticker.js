@@ -88,7 +88,7 @@ const directMedia =
     return;
   }
 
-  const fileName = `../assets/temp/${Date.now()}`;
+  const fileName = `../../assets/temp/${Date.now()}`;
   const inputPath = `${fileName}.jpg`;
   const outputPath = `${fileName}.webp`;
 
