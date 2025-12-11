@@ -1,5 +1,5 @@
 const fs = require("fs").promises
-const { donos } = require("../database/models/donos");
+const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "cleartemp",

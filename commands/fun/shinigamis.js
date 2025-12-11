@@ -1,4 +1,4 @@
-const shinigamiJson = require("../database/random/shinigamis.json");
+const shinigamiJson = require("../../database/random/shinigamis.json");
 
 
 module.exports = {

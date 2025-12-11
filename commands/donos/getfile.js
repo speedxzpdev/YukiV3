@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { numberOwner } = require("../config")
+const { numberOwner } = require("../../config")
 
 
 module.exports = {
@@ -9,7 +9,7 @@ module.exports = {
     try {
     const caminho = args[0]
     const proibidos = [".env", ".json", ".sh"]
-    const sender = msg.key.participant
+    const sender = msg.key.participant || msg.key.remoteJid
     
     if(!sender.includes(numberOwner)) {
       await sock.sendMessage(from, {text: "Só o Ispidi pode usar esse comando!"}, {quoted: msg});

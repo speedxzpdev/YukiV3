@@ -30,7 +30,7 @@ const infoPing = `⚡𝐏𝐢𝐧𝐠: ${ping}ms
 🌨️𝐂𝐨𝐦𝐚𝐧𝐝𝐨𝐬:
 🧊𝐃𝐢𝐚𝐬 𝐫𝐞𝐬𝐭𝐚𝐧𝐭𝐞𝐬: `
 
-await sock.sendMessage(from, {image: {url: path.join(__dirname, "../assets/images/yuki.jpg")}, caption: infoPing}, {quoted: msg});
+await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki.jpg")}, caption: infoPing}, {quoted: msg});
 }
 catch(err) {
   sock.sendMessage(from, {text: erros_prontos}, {quoted: msg});
