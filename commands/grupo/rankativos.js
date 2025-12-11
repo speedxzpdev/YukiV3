@@ -1,4 +1,4 @@
-const { rankativos } = require("../database/models/rankativos");
+const { rankativos } = require("../../database/models/rankativos");
 
 module.exports = {
   name: "rankativos",

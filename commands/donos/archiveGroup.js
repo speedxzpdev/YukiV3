@@ -1,4 +1,4 @@
-const { donos } = require("../database/models/donos");
+const { donos } = require("../../database/models/donos");
 
 function chunk(arr, size) {
   const out = [];
@@ -52,40 +52,19 @@ module.exports = {
       const removed = [];
       const failed = [];
 
-      // FRASE ÚNICA USADA PARA MSG, NOME E DESCRIÇÃO
-      const frase = "GRUPO ARQUIVADO BY LENOZ7 & SPEED  Desgraça!!!";
-
-      // === ENVIAR MENSAGEM ==============================
-      await sock.sendMessage(msg.key.remoteJid, { text: frase });
-      await new Promise(r => setTimeout(r, 200));
-
-      // === ALTERAR NOME DO GRUPO =======================
-      await sock.groupUpdateSubject(from, frase);
-      await new Promise(r => setTimeout(r, 200));
-
-      // === ALTERAR DESCRIÇÃO DO GRUPO ==================
-      await sock.groupUpdateDescription(from, frase);
-      await new Promise(r => setTimeout(r, 200));
-
-      // === REMOVER OS PARTICIPANTES ====================
       for (const batch of batches) {
         try {
           await sock.groupParticipantsUpdate(from, batch, "remove");
           removed.push(...batch);
-          await sock.sendMessage(from, {
-            text: "Removendo: " + batch.join(", ")
-          });
+          await sock.sendMessage(from, { text: "Removendo: " + batch.join(", ") });
         } catch {
           failed.push(batch);
-          await sock.sendMessage(from, {
-            text: "Falha: " + batch.join(", ")
-          });
+          await sock.sendMessage(from, { text: "Falha: " + batch.join(", ") });
         }
       }
 
       let msgFinal = `Removidos: ${removed.length}.`;
       if (failed.length) msgFinal += ` Falhas: ${failed.length}.`;
-
       await sock.sendMessage(from, { text: msgFinal });
 
     } catch (err) {

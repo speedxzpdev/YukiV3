@@ -1,4 +1,4 @@
-const { grupos } = require("../database/models/grupos");
+const { grupos } = require("../../database/models/grupos");
 
 
 

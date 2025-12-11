@@ -1,5 +1,5 @@
-const { numberOwner, numberBot } = require("../config");
-const { donos } = require("../database/models/donos");
+const { numberOwner, numberBot } = require("../../config");
+const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "ban",

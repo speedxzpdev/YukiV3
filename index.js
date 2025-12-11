@@ -20,12 +20,30 @@ require("dotenv").config();
 
 const commandDir = fs.readdirSync(path.join(__dirname, "commands")).filter(cmd => cmd.endsWith(".js"));
 
-for (const file of commandDir) {
-  const commandExports = require(path.join(__dirname, "commands", file));
-  
-  commandsMap.set(commandExports.name, commandExports)
-  
+function loadCommands(dir) {
+  const files = fs.readdirSync(dir);
+
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      loadCommands(fullPath); // RECUSIVO: entra na pasta
+    } else if (file.endsWith(".js")) {
+      const command = require(fullPath);
+      
+      if (!command.name || !command.execute) {
+        console.log(`Arquivo ignorado (faltando estrutura): ${fullPath}`);
+        continue;
+      }
+
+      commandsMap.set(command.name, command);
+      
+    }
+  }
 }
+
+loadCommands(path.join(__dirname, "commands"));
 
 const jsonErros = require("./database/erros.json");
 const erros_prontos = jsonErros[Math.floor(Math.random() * jsonErros.length)]
