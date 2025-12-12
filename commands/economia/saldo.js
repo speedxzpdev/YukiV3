@@ -1,4 +1,4 @@
-const { users } = require("../database/models/users");
+const { users } = require("../../database/models/users");
 
 module.exports = {
   name: "saldo",

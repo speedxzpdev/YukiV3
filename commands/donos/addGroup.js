@@ -1,5 +1,5 @@
-const { grupos } = require("../database/models/grupos");
-const { donos } = require("../database/models/donos");
+const { grupos } = require("../../database/models/grupos");
+const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "addgroup",

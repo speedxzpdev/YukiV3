@@ -1,5 +1,5 @@
 const { downloadMediaMessage } = require('@whiskeysockets/baileys')
-const { donos } = require("../database/models/donos");
+const { donos } = require("../../database/models/donos");
 
 module.exports = {
 

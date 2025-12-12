@@ -1,4 +1,4 @@
-const tiktokDl = require("../utils/tiktok.js");
+const tiktokDl = require("../../utils/tiktok.js");
 
 module.exports = {
   name: "tiktok",
