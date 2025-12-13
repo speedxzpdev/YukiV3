@@ -27,7 +27,7 @@ module.exports = {
       
       const gifsRandom = gifs[Math.floor(Math.random() * gifs.length)];
       
-      const rpgList = [`@${sender.split("@")[0]} beijou @${mention.split("@")[0]} sem avisar nada... Criminoso porém estiloso`, `@${sender.split("@")[0]} deu um beijo em @${mention.split("@")[0]} qe travou o universo...`, `@${sender.split("@")[0]} tentou beijar @${mention.split("@")[0]} e levou um tapa que doeu até o vento...`, `@${sender.split("@")[0]} tentou beijar @${mention.split("@")[0]} e caiu de cara no chãoKKKKKKKK`, `@${sender.split("@")[0]} é... ${mention.split("@")[0]} saiu correndo, acho que foi um amor não correspondido`];
+      const rpgList = [`@${sender.split("@")[0]} beijou @${mention.split("@")[0]} sem avisar nada... Criminoso porém estiloso`, `@${sender.split("@")[0]} deu um beijo em @${mention.split("@")[0]} qe travou o universo...`, `@${sender.split("@")[0]} tentou beijar @${mention.split("@")[0]} e levou um tapa que doeu até o vento...`, `@${sender.split("@")[0]} tentou beijar @${mention.split("@")[0]} e caiu de cara no chãoKKKKKKKK`, `@${sender.split("@")[0]} é... @${mention.split("@")[0]} saiu correndo, acho que foi um amor não correspondido`];
       
       const RpgRandom = rpgList[Math.floor(Math.random() * rpgList.length)];
       
