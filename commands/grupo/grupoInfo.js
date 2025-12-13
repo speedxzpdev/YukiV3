@@ -3,7 +3,7 @@ const { grupos } = require("../../database/models/grupos");
 
 
 module.exports = {
-  name: "grupo",
+  name: "grupoinfo",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     try {

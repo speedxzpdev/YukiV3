@@ -4,7 +4,7 @@ const prefixo = process.env.PREFIXO
 
 const botName = "Yuki"
 
-const version = "3.7.4"
+const version = "4.1.3"
 
 const numberOwner = "188123996786820@lid"
 
