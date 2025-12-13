@@ -12,7 +12,7 @@ module.exports = {
     const sender = msg.key.participant || msg.key.remoteJid
     
     if(!sender.includes(numberOwner)) {
-      await sock.sendMessage(from, {text: "Só o Ispidi pode usar esse comando!"}, {quoted: msg});
+      await sock.sendMessage(from, {text: "Só o Lenzo e o Ispidi podem usar esse comando!"}, {quoted: msg});
       return
     }
     

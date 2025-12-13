@@ -32,10 +32,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       const sender = msg.key.participant || msg.key.remoteJid;
 
       // só pra garantir: se o bot começar a responder em DMs sem permissão, você controla com a lista de donos
-      const doninhos = await donos.findOne({ userLid: sender });
+      //const doninhos = await donos.findOne({ userLid: sender });
 
       // se não for grupo e não for dono, ignora
-      if (!from?.endsWith?.("@g.us") && !doninhos) return;
+      //if (!from?.endsWith?.("@g.us") && !doninhos) return;
 
       // garante registro do grupo no DB
       if (!await grupos.findOne({ groupId: from })) {
@@ -45,7 +45,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       const groupDBInfo = await grupos.findOne({ groupId: from });
 
       // menção ao bot -> responde com sticker aleatório
-      if (mention.includes("11051571658890@lid")) {
+      if (mention.includes("221856653123760@lid")) {
         const figList = [
           "https://files.catbox.moe/99k6q0.webp",
           "https://files.catbox.moe/866c5t.webp",
