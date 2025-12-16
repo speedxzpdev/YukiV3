@@ -7,7 +7,7 @@ const { donos } = require("../database/models/donos");
 const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
-
+const { mutados } = require("../database/models/mute");
 
 
 
@@ -47,7 +47,31 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {msg: 1}}, {upsert: true})
 
-
+     
+    if(await mutados.findOne({userLid: msg.key.participant, grupo: from})) {
+      try {
+      const userMutado = await mutados.findOne({userLid: msg.key.participant, grupo: from});
+      
+      await sock.sendMessage(userMutado.grupo, {delete: msg.key})
+      
+      const muteTentativa = await mutados.findOneAndUpdate({userLid: msg.key.participant, grupo: from}, {$inc: {tentativasMsg: 1}}, {new: true});
+      
+      if(!muteTentativa) return;
+      
+      if(muteTentativa.tentativasMsg >= 3) {
+        await sock.groupParticipantsUpdate(muteTentativa.grupo, [muteTentativa.userLid], 'remove');
+        
+        await mutados.deleteOne({userLid: msg.key.participant, grupo: from});
+        
+      }
+      
+      }
+      
+      catch(err) {
+        console.error(err);
+      }
+      return
+    }
 
 
 
