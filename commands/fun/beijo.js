@@ -10,7 +10,8 @@ module.exports = {
       
       const sender = msg.key.participant
       
-      const mention = msg.message?.textExtendedMessage?.contextInfo?.mentionedJid[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
+      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
+  || msg.message?.extendedTextMessage?.contextInfo?.participant
       
       
       if(!mention) {

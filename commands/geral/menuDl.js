@@ -3,7 +3,7 @@ const path = require("path")
 
 
 module.exports = {
-  name: "menu",
+  name: "menudownloads",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     const sender = msg.key.participant
@@ -17,7 +17,7 @@ module.exports = {
     
     try {
       
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki.jpg")}, caption: menu(msg).menuPrincipal, mentions: [sender]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki.jpg")}, caption: menu(msg).menuDownloads}, {quoted: msg});
       
       
     }

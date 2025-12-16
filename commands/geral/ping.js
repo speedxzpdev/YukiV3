@@ -1,5 +1,8 @@
 const os = require("os");
 const path = require("path");
+const { grupos } = require("../../database/models/grupos");
+const { users } = require("../../database/models/users");
+
 
 module.exports = {
   name: "ping",
@@ -12,23 +15,25 @@ module.exports = {
     const ping = depois - antes
     
     const processador = os.cpus()[0]
+    
+    const usersFind = await users.find();
+    const gruposFind = await grupos.find();
 
+const infoPing = `⚡𝗣𝗶𝗻𝗴:${ping}ms
+💨𝗦𝗶𝘀𝘁𝗲𝗺𝗮 𝗼𝗽𝗲𝗿𝗮𝗰𝗶𝗼𝗻𝗮𝗹: ${os.type()}
+🔥𝗣𝗿𝗼𝗰𝗲𝘀𝘀𝗮𝗱𝗼𝗿: ${processador ? processador.model : "Informação indisponível"}
+⚡𝗩𝗲𝗹𝗼𝗰𝗶𝗱𝗮𝗱𝗲: ${processador ? processador.speed : "Informação indisponível"}MHz
+📂𝗥𝗮𝗺: ${(os.freemem() / (1024 * 1024 * 1024)).toFixed(0)}Gb/${(os.totalmem() / (1024 * 1024 * 1024)).toFixed(0)}Gb
+🗂𝗥𝗮𝗺 𝘂𝘀𝗮𝗱𝗮: ${(process.memoryUsage().rss / 1024 / 1024).toFixed(0)}mb
+✨𝗛𝗼𝘀𝘁 ${os.hostname()}
+⛓️𝗔𝗿𝗾𝘂𝗶𝘁𝗲𝘁𝘂𝗿𝗮: ${os.arch}
+🔧𝗡𝗼𝗱𝗲𝗷𝘀: ${process.version}
 
-const infoPing = `⚡𝐏𝐢𝐧𝐠: ${ping}ms
-💨𝐒𝐢𝐬𝐭𝐞𝐦𝐚 𝐨𝐩𝐞𝐫𝐚𝐜𝐢𝐨𝐧𝐚𝐥: ${os.type()}
-🔥𝐏𝐫𝐨𝐜𝐞𝐬𝐚𝐝𝐨𝐫: ${processador ? processador.model : "Informação indisponível"}
-⚡𝐕𝐞𝐥𝐨𝐜𝐢𝐝𝐚𝐝𝐞: ${processador ? processador.speed : "Informação indisponível"}MHz
-📂𝐑𝐚𝐦: ${(os.freemem() / (1024 * 1024 * 1024)).toFixed(0)}Gb/${(os.totalmem() / (1024 * 1024 * 1024)).toFixed(0)}Gb
-🗂𝐑𝐚𝐦 𝐮𝐬𝐚𝐝𝐚: ${(process.memoryUsage().rss / 1024 / 1024).toFixed(0)}mb
-✨𝐇𝐨𝐬𝐭: ${os.hostname()}
-⛓️𝐀𝐫𝐪𝐮𝐢𝐭𝐞𝐭𝐮𝐫𝐚: ${os.arch}
-🔧𝐍𝐨𝐝𝐞𝐣𝐬: ${process.version}
+𝗕𝗼𝘁 𝗶𝗻𝗳𝗼:
 
-𝐛𝐨𝐭 𝐈𝐧𝐟𝐨:
-
-❄️𝐔𝐬𝐮á𝐫𝐢𝐨𝐬 𝐫𝐞𝐠𝐢𝐬𝐭𝐫𝐚𝐝𝐨𝐬: 
-🌨️𝐂𝐨𝐦𝐚𝐧𝐝𝐨𝐬:
-🧊𝐃𝐢𝐚𝐬 𝐫𝐞𝐬𝐭𝐚𝐧𝐭𝐞𝐬: `
+❄️𝗨𝘀𝘂𝗮́𝗿𝗶𝗼𝘀: ${usersFind.length}
+🩵𝗚𝗿𝘂𝗽𝗼𝘀: ${gruposFind.length}
+`
 
 await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki.jpg")}, caption: infoPing}, {quoted: msg});
 }
