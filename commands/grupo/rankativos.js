@@ -7,14 +7,16 @@ module.exports = {
       const array = await rankativos.find({from: from}).sort({msg: -1}).limit(10);
       
       const list = array.map((item, indice) => {
-        return `${indice + 1} @${item.userLid.split("@")[0]} \nmensagens: ${item.msg}\nComandos usados: ${item.cmdUsados}`
+        return `❛❛.𔓘᷼${indice + 1} ➻ @${item.userLid.split("@")[0]}\n𝗺𝗲𝗻𝘀𝗮𝗴𝗲𝗻𝘀: ${item.msg}
+\n𝗰𝗼𝗺𝗮𝗻𝗱𝗼𝘀 𝘂𝘀𝗮𝗱𝗼𝘀: ${item.cmdUsados}`
       })
       
       const mencao = array.map(i => i.userLid)
       
       
       
-      await sock.sendMessage(from, {text: `Rank de atividade\n\n${list.join("\n\n")}`, mentions: mencao}, {quoted: msg});
+      await sock.sendMessage(from, {text: `┍─┈ ᩡ ִׄ  𝐑𝐚𝐧𝐤 𝐝𝐞 𝐚𝐭𝐢𝐯𝐢𝐝𝐚𝐝𝐞֢  ׄ ❅₊˚❄️⃪꫶໋ᨘ݊˙੭.
+󠇈󠆢󠆠󠆟󠆞󠆜󠆛󠆚󠆙󠅤󠄀󠇈󠆢󠆠󠆟󠆞󠆜󠆛󠆚󠆙󠅤󠄀󠇈󠆢󠆠󠆟󠆞󠆜󠆛 ֵׅᰍํׅᰍ󠇈󠆢󠆠󠆟󠆞󠆜󠆛󠆚󠆙󠅤󠄀󠇈󠆢󠆠󠆟󠆞󠆜󠆛󠆚󠆙󠅤󠄀󠇈󠆢󠆠󠆟󠆞󠆜󠆛󠆚󠆙󠅤󠄀ㅤ໋ ׅㅤํ𔓕 \n\n${list.join("\n\n")}`, mentions: mencao}, {quoted: msg});
       
       
       

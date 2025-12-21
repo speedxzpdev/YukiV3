@@ -25,12 +25,17 @@ module.exports = {
       
       const metadata = await sock.groupMetadata(from);
       
-      const vencimentoDate = new Date(grupoDb.aluguel);
+      const vencimentoMs = grupoDb.aluguel
+      const agora = Date.now();
+      
+      const restanteMs = vencimentoMs - agora
+      
+      const restanteDias = Math.max(0, Math.floor(restanteMs / (24 * 60 * 60 * 1000)));
       
       const info = `𝙄𝙣𝙛𝙤𝙧𝙢𝙖çõ𝙚𝙨 𝙙𝙤 𝙜𝙧𝙪𝙥𝙤
 Nome: ${metadata.subject}
 Id: ${from.split("@")[0]}
-Pago: ${vencimentoDate.toLocaleDateString("pt-BR") || "Não definido"}
+Dias restante: ${restanteDias}
 𝘾𝙤𝙣𝙛𝙞𝙜𝙪𝙧𝙖çõ𝙚𝙨 𝙚 𝙚𝙫𝙚𝙣𝙩𝙤𝙨
 eventos: ${grupoDb.configs?.events ? "On" : "Off"}
 bem-vindo: ${grupoDb.configs?.welcome ? "On" : "Off"}

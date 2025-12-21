@@ -14,8 +14,8 @@ const { mutados } = require("../database/models/mute");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    await sock.readMessages([msg.key])
-    if (msg.key.fromMe) return
+    //await sock.readMessages([msg.key])
+    //if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     connectDB();
     const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
@@ -24,10 +24,14 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const doninhos = await donos.findOne({userLid: sender});
 
     if(!from.endsWith("@g.us") && !doninhos) return;
-
-    if(!await grupos.findOne({groupId: from})) {
+    if(from.endsWith("@g.us")) {
+      
+      if(!await grupos.findOne({groupId: from})) {
       await grupos.create({groupId: from});
     }
+      
+    }
+    
 
     const groupDBInfo = await grupos.findOne({groupId: from});
 
