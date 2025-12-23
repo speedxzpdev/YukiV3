@@ -14,8 +14,8 @@ const { mutados } = require("../database/models/mute");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    //await sock.readMessages([msg.key])
-    //if (msg.key.fromMe) return
+    await sock.readMessages([msg.key])
+    if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     connectDB();
     const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
@@ -37,9 +37,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     if (mention.includes("11051571658890@lid")) {
 
-      const figList = ["https://files.catbox.moe/99k6q0.webp", "https://files.catbox.moe/866c5t.webp", "https://files.catbox.moe/k1xm6g.webp"];
-
-      const figrandom = figList[Math.floor(Math.random() * figList.length)];
+      const figList = ["https://files.catbox.moe/5kt3tp.webp"];
 
       await sock.sendMessage(from, {sticker: {url: figList[1]}}, {quoted: msg});
     }
@@ -120,7 +118,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
   }
 
-  if(body.startsWith("https://www.instagram.com")) {
+  if(body.startsWith("https://www.instagram.com/reel")) {
     instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
   }
 

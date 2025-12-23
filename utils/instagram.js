@@ -5,39 +5,25 @@ async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   
   try {
     
+    if(!body) {
+      await sock.sendMessage(from, {text: "Cadê o link? Porra"}, {quoted: msg})
+      return
+    }
+    
     await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg})
     
-    const req = await axios.get(`https://zero-two-apis.com.br/api/dl/instagram?url=${body}&apikey=yukiBot`)
+    const req = await axios.get(`https://zero-two-apis.com.br/api/instagram?url=${body}&apikey=yukiBot`)
     
-    const data = req.data.resultados
+    const data = req.data
     
-    console.log(req.data)
+    await sock.sendMessage(from, {video: {url: data.resultados[0].url}, caption: "Video baixado com sucesso!"}, {quoted: msg});
     
-    const videoList = data.video
-    
-    const foto = data.images
-    
-    if(videoList.length > 0) {
-      
-      for(let video of videoList) {
-        
-        await sock.sendMessage(from, {video: {url: video}}, {quoted: msg});
-      }
-    }
-    
-    if(foto.length > 0) {
-      
-      for(let image of foto) {
-        
-        await sock.sendMessage(from, {image: {url: image}}, {quoted: msg});
-      }
-    }
     
     
   }
   catch(err) {
     await sock.sendMessage(from, {text: erros_prontos}, {quotes: msg});
-    //console.error(err)
+    console.error(err)
   }
   
   
