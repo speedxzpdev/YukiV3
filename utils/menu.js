@@ -28,7 +28,7 @@ ${prefixo}menudownloads
 
 𝗙𝗶𝗴𝘂𝗿𝗶𝗻𝗵𝗮𝘀 𝗲 𝗰𝗼𝗻𝘃𝗲𝗿𝘀𝗼𝗿𝗲𝘀
 ${prefixo}s - Crie uma figurinha
-${prefixo}toimage - Figurinha em imagem
+${prefixo}toimg - Figurinha em imagem
 
 𝙄𝙣𝙩𝙚𝙡𝙞𝙜ê𝙣𝙘𝙞𝙖 𝙖𝙧𝙩𝙞𝙛𝙞𝙘𝙖𝙡
 ${prefixo}chatgpt - Chat ia
@@ -39,6 +39,8 @@ ${prefixo}tradutor - Traduz algo
 ${prefixo}tiktokstalk - Informações sobre o perfil
 
 𝗘𝗰𝗼𝗻𝗼𝗺𝗶𝗮(𝗗𝗲𝘃)
+${prefixo}perfil
+${prefixo}mudarbio
 ${prefixo}saldo
 
 `,
@@ -55,6 +57,7 @@ ${prefixo}totag - marca todos do grupo
 ${prefixo}d - deleta uma mensagem
 ${prefixo}mute - muta um determinado membro
 ${prefixo}desmute - remove o mute
+
 
 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗮̃𝗼 𝗲 𝗰𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗮𝗰̧𝗮̃𝗼
 ${prefixo}grupoinfo - exibe informações do grupo.

@@ -14,8 +14,8 @@ const { mutados } = require("../database/models/mute");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    //await sock.readMessages([msg.key])
-    //if (msg.key.fromMe) return
+    await sock.readMessages([msg.key])
+    if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     connectDB();
     const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
