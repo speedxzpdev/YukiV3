@@ -13,7 +13,11 @@ module.exports = {
       
       const sender = msg.key.participant
       
-      if(!isAdmin.includes(sender)) {
+      const doninhos = await donos.findOne({userLid: mention});
+      
+      const doninhoSender = await donos.findOne({userLid: sender});
+      
+      if(!isAdmin.includes(sender) && !doninhos) {
         await sock.sendMessage(from, {text: "TU É ADMIN?! FILHO DA PUTA!"}, {quoted: msg});
         return
       }
@@ -25,7 +29,7 @@ module.exports = {
         return
       }
       
-      const doninhos = await donos.findOne({userLid: mention});
+      
       
       if(doninhos) {
         await sock.sendMessage(from, {text: "Tentar advertir um dono é igual um velho tentando fuder. Nunca funciona"}, {quoted: msg});
