@@ -37,9 +37,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     if (mention.includes("11051571658890@lid")) {
 
-      const figList = ["https://files.catbox.moe/99k6q0.webp", "https://files.catbox.moe/866c5t.webp", "https://files.catbox.moe/k1xm6g.webp"];
-
-      const figrandom = figList[Math.floor(Math.random() * figList.length)];
+      const figList = ["https://files.catbox.moe/5kt3tp.webp"];
 
       await sock.sendMessage(from, {sticker: {url: figList[1]}}, {quoted: msg});
     }

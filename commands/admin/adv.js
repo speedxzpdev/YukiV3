@@ -13,6 +13,8 @@ module.exports = {
       
       const sender = msg.key.participant
       
+      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
+      
       const doninhos = await donos.findOne({userLid: mention});
       
       const doninhoSender = await donos.findOne({userLid: sender});
@@ -22,7 +24,7 @@ module.exports = {
         return
       }
       
-      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
+      
       
       if(!mention) {
         await sock.sendMessage(from, {text: "Pelo amor de Deus... Marca alguém seu lixo!"}, {quoted: msg});

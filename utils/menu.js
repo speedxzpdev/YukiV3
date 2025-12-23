@@ -57,6 +57,8 @@ ${prefixo}totag - marca todos do grupo
 ${prefixo}d - deleta uma mensagem
 ${prefixo}mute - muta um determinado membro
 ${prefixo}desmute - remove o mute
+${prefixo}adv - adiciona uma advertência a um usuário
+${prefixo}removeradv - remove uma advertência
 
 
 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗮̃𝗼 𝗲 𝗰𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗮𝗰̧𝗮̃𝗼
@@ -74,6 +76,8 @@ ${prefixo}instagram - baixa videos do instagram!
 
 𝗽𝗲𝘀𝗾𝘂𝗶𝘀𝗮𝘀
 ${prefixo}play - busca por um audio no youtube!
+${prefixo}pin - busca por uma foto no pinterest
+${prefixo}pinvideo - busca por um video no pinterest
 `
 
 
