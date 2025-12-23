@@ -21,7 +21,7 @@ module.exports = {
       const donoSender = await donos.findOne({userLid: sender});
       
       
-      if(!admins.includes(sender) & !donoSender) {
+      if(!admins.includes(sender) && !donoSender) {
         await reply("Você n é admin, zé bct");
         return
       }

@@ -118,7 +118,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
   }
 
-  if(body.startsWith("https://www.instagram.com")) {
+  if(body.startsWith("https://www.instagram.com/reel")) {
     instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
   }
 
