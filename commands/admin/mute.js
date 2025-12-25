@@ -14,7 +14,7 @@ module.exports = {
       
       const metadata = await sock.groupMetadata(from);
       
-      const admins = metadata.participants.filter(p => p.admins).map(p => p.id);
+      const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
       
       const sender = msg.key.participant
       
