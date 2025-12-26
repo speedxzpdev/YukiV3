@@ -14,34 +14,33 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     const result = response.data.resultado
     const infovd = result.statistics
     
-    const legenda = `*Yuki Tiktok!*
-> Informações - Autor
-• *nome*: ${result.author.nickname}
-• *User*: ${result.author.username}
-• *Bio*: ${result.author.signature}
-• *Url do perfil*: ${result.author.url}
+    const legenda = `𝗬𝘂𝗸𝗶 𝗧𝗶𝗸𝘁𝗼𝗸!
+⤷ *Nick*: ${result.author.nickname}
+→ *User*: ${result.author.username}
+→ *Bio*: ${result.author.signature}
+→ *Url do perfil*: ${result.author.url}
 
 > Informações - Post
-• *Título*: ${result.desc.replace(/#[^\s]+/g, '').trim()}
-• *Tipo*: ${result.type}
-• *Região*: ${result.author.region}
-• *Resolução*: ${result.video?.ratio? result.video.ratio : 'Indefinido'}
-• *duração*: ${result.video?.duration? result.video.duration : 'indefinido'}
+⤷ *Título*: ${result.desc.replace(/#[^\s]+/g, '').trim()}
+→ *Tipo*: ${result.type}
+→ *Região*: ${result.author.region}
+→ *Resolução*: ${result.video?.ratio? result.video.ratio : 'Indefinido'}
+→ *duração*: ${result.video?.duration? result.video.duration : 'indefinido'}
 
 > Estatisticas - Post
-• *Likes*: ${infovd.likeCount}
-• *Vizualizações*: ${infovd.playCount}
-• *Comentários*: ${infovd.commentCount}
-• *Compartilhamentos*: ${infovd.shareCount}
-• *Hashtags*: ${result.hashtag}
+⤷ *Likes*: ${infovd.likeCount}
+→ *Vizualizações*: ${infovd.playCount}
+→ *Comentários*: ${infovd.commentCount}
+→ *Compartilhamentos*: ${infovd.shareCount}
+→ *Hashtags*: ${result.hashtag}
 
 > 🎶Informações da musica
-• *Id*: ${result.music.id}
-• *Titulo*: ${result.music.title}
-• *Album*: ${result.music.album}
-• *duração*: ${result.music.duration}
-• *Comercial?* ${result.music.isOriginalSound ? 'Sim' : 'Não'}
-• *Som original?* ${result.music.isOriginalSound ? 'Sim' : 'Não'}`
+⤷ *Id*: ${result.music.id}
+→ *Titulo*: ${result.music.title}
+→ *Album*: ${result.music.album}
+→ *duração*: ${result.music.duration}
+→ *Comercial?* ${result.music.isOriginalSound ? 'Sim' : 'Não'}
+→ *Som original?* ${result.music.isOriginalSound ? 'Sim' : 'Não'}`
 
 if(result.type === 'image') {
   const images = result.images
