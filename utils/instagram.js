@@ -16,7 +16,7 @@ async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     
     const data = req.data
     
-    await sock.sendMessage(from, {video: {url: data.resultados[0].url}, caption: "Video baixado com sucesso!"}, {quoted: msg});
+    await sock.sendMessage(from, {video: {url: data.resultados[0].url}, caption: "Yuki reels!"}, {quoted: msg});
     
     
     

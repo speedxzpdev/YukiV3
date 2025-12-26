@@ -53,14 +53,14 @@ const todos = metadata.participants.map(p => p.id)
   
   if (foto) {
     const imgDl = await downloadMediaMessage({message: {imageMessage: foto}}, 'buffer', {})
-    await sock.sendMessage(from, { image: imgDl, mentions: todos}, { quoted: seloTotag })
+    await sock.sendMessage(from, { image: imgDl, caption: foto.caption, mentions: todos}, { quoted: seloTotag })
     return
   }
   
   if (video) {
   const videoDl = await downloadMediaMessage({message: {videoMessage: video}}, 'buffer', {})
   
-  await sock.sendMessage(from, { video: videoDl, mentions: todos}, { quoted: seloTotag })
+  await sock.sendMessage(from, { video: videoDl, caption: video.caption, mentions: todos}, { quoted: seloTotag })
   return
   }
   

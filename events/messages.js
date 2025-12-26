@@ -113,7 +113,6 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
           });
           
           await sock.sendMessage(from, {text: response.text}, {quoted: msg});
-          console.log(response);
           await sock.sendPresenceUpdate("paused", from);
           
         }
