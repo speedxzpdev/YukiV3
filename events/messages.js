@@ -1,4 +1,4 @@
-const { prefixo } = require("../config");
+const { prefixo, numberBot } = require("../config");
 const tiktokDl = require("../utils/tiktok");
 const connectDB = require("../database/index");
 const similarityCmd = require("../utils/similaridadeCmd");
@@ -8,8 +8,10 @@ const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
+const { GoogleGenAI } = require("@google/genai");
+require("dotenv").config();
 
-
+const menu = require("../utils/menu");
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
@@ -18,11 +20,25 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     connectDB();
-    const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || []
+    
+   const mentions =
+  msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+
     const sender = msg.key.participant || msg.key.remoteJid
 
     const doninhos = await donos.findOne({userLid: sender});
 
+    const ia = new GoogleGenAI({apiKey: process.env.GEMINI_APIKEY});
+    
+    const promptBase = `
+Você é Yuki, uma bot de WhatsApp engraçada e direta. Não permita assuntos sexuais ou explícitos.
+- Use o nome do usuário apenas se fizer sentido.
+- Se perguntarem sobre comandos, use o mapa de comandos: ${JSON.stringify(commandsMap)}
+- Prefixo de comando: "/"
+- Se perguntarem sobre o dono: o dono é Speed, ele trabalha na bot todo dia. Você é mulher.
+Responda apenas à mensagem do usuário, de forma curta e direta.
+`;
+    
     if(!from.endsWith("@g.us") && !doninhos) return;
     if(from.endsWith("@g.us")) {
       
@@ -34,14 +50,6 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
 
     const groupDBInfo = await grupos.findOne({groupId: from});
-
-    if (mention.includes("11051571658890@lid")) {
-
-      const figList = ["https://files.catbox.moe/5kt3tp.webp"];
-
-      await sock.sendMessage(from, {sticker: {url: figList[1]}}, {quoted: msg});
-    }
-
 
     if(!await users.findOne({userLid: msg.key.participant})) {
       await users.create({userLid: msg.key.participant || msg.key.remoteJid})
@@ -85,12 +93,44 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     (msg.message?.extendedTextMessage?.text) ||
     (msg.message?.imageMessage?.caption) ||
     (msg.message?.documentMessage?.caption) || "Msg estranha..."
+    
+    
+    
+    const bodyCase = body.toLowerCase()
+    if(mentions.includes('239165908242449@lid') || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
+        
+        try {
+          
+          await sock.sendPresenceUpdate("composing", from);
+          
+          const args = body.split(" ")
+          
+          const response = await ia.models.generateContent({
+            model: "gemini-2.5-flash-lite",
+            contents: [
+              {text: promptBase},
+              {text: `nome: ${msg.pushName}, mensagem: ${args.slice(1).join(" ").trim()}`}]
+          });
+          
+          await sock.sendMessage(from, {text: response.text}, {quoted: msg});
+          console.log(response);
+          await sock.sendPresenceUpdate("paused", from);
+          
+        }
+        catch(err) {
+          console.error(err);
+          if(err.status === 429) {
+            await sock.sendMessage(from, {text: "Limite de requisição atigindo, espere alguns instantes."}, {quoted: msg})
+          }
+        }
+      }
+  
+
+
 
   const groupReply = await grupos.findOne({groupId: from});
   
   if(groupReply.autoReply === true) {
-    
-    const bodyCase = body.toLowerCase()
     
     if(bodyCase.includes("bom dia")) {
       
@@ -99,6 +139,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     if(bodyCase.includes("boa tarde")) {
       await sock.sendMessage(from, {text: `Boa tarde, Lindão! Uma hora dessa, assitir um bleach é uma boa.`}, {quoted: msg});
+      
+      
+      
+      
     }
     
     if(bodyCase.includes("boa noite")) {
