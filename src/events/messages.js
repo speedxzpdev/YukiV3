@@ -16,7 +16,6 @@ const menu = require("../utils/menu");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    console.log(msg);
     //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
