@@ -2,7 +2,7 @@ const menu = require("../../utils/menu");
 const path = require("path");
 
 module.exports = {
-  name: "menuadmin",
+  name: "menubrincadeira",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     try {
@@ -14,7 +14,7 @@ module.exports = {
       
       const imgsRandom = icons[Math.floor(Math.random() * icons.length)];
       
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, imgsRandom)}, caption: menu(msg).menuAdmin}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, imgsRandom)}, caption: menu(msg).menuBrincadeira}, {quoted: msg});
       
     }
     catch(err) {
