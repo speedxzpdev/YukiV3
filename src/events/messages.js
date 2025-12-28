@@ -149,7 +149,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
   const groupReply = await grupos.findOne({groupId: from});
   //caso o grupo tenha autoreply ativo
-  if(groupReply.autoReply === true) {
+  if(groupReply.autoReply) {
     
     if(bodyCase.includes("bom dia")) {
       
@@ -230,6 +230,19 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
       sock.sendMessage(from, {text: `😅 Eita, ${msg.pushName}! Parece que você errou o comando… Queria dizer "${prefixo}${similarity.sugest}" talvez? Similaridade: ${similarity.similarity}%`}, {quoted: msg});
       return
     }
+    
+    //busca um grupo
+    const grupoFun = await grupos.findOne({groupId: from});
+    
+    //se um comando for de diversao
+    if (commandGet.categoria && commandGet.categoria === "diversao") {
+      //se nao tiver o modobrincadeira ativo
+      if(!grupoFun?.configs?.cmdFun) {
+        await sock.sendMessage(from, {text: "Modo brincadeira desativado no grupo. Peça pra um admin usar /modobrincadeira 1"}, {quoted: msg});
+        return
+      }
+    }
+    
     //executa o comando
     await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta);
 //adiciona no contador de comandos

@@ -40,7 +40,8 @@ Dias restante: ${restanteDias}
 eventos: ${grupoDb.configs?.events ? "On" : "Off"}
 bem-vindo: ${grupoDb.configs?.welcome ? "On" : "Off"}
 anti-link: ${grupoDb.configs?.antlink ? "On" : "Off"}
-auto-resposta: ${grupoDb?.autoReply ? "On" : "Off"}`
+auto-resposta: ${grupoDb?.autoReply ? "On" : "Off"}
+Modo brincadeira: ${grupoDb?.configs?.cmdFun ? "On" : "Off"}`
       
       
       await sock.sendMessage(from, {image: {url: "https://files.catbox.moe/zj7yc6.jpg"}, caption: info}, {quoted: msg});

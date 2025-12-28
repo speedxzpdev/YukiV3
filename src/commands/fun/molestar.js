@@ -3,7 +3,7 @@ const { numberBot } = require("../../config");
 
 
 module.exports = {
-  name: "beijar",
+  name: "molestar",
   categoria: "diversao",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
@@ -16,20 +16,23 @@ module.exports = {
       
       
       if(!mention) {
-        await sock.sendMessage(from, {text: "Menciona alguém, seu jumento romântico."}, {quoted: msg});
+        await sock.sendMessage(from, {text: "Menciona alguém, seu jumento tarado(a)."}, {quoted: msg});
         return
       }
       
       if(mention.includes(numberBot)) {
-        await sock.sendMessage(from, {text: "KKKKKK, eca que nojo!"}, {quoted: msg});
+        await sock.sendMessage(from, {text: "?... Acha que consegue me molestar?!"}, {quoted: msg});
         return
       }
       
-      const gifs = ["https://files.catbox.moe/atqyhn.mp4", "https://files.catbox.moe/2xlkyh.mp4", "https://files.catbox.moe/37lj7l.mp4", "https://files.catbox.moe/shw2ex.mp4"];
+      const gifs = ["https://files.catbox.moe/d772lq.mp4", "https://files.catbox.moe/kos8j9.mp4", "https://files.catbox.moe/3yty81.mp4", "https://files.catbox.moe/j6v543.mp4"];
       
       const gifsRandom = gifs[Math.floor(Math.random() * gifs.length)];
       
-      const rpgList = [`@${sender.split("@")[0]} beijou @${mention.split("@")[0]} sem avisar nada... Criminoso porém estiloso`, `@${sender.split("@")[0]} deu um beijo em @${mention.split("@")[0]} qe travou o universo...`, `@${sender.split("@")[0]} tentou beijar @${mention.split("@")[0]} e levou um tapa que doeu até o vento...`, `@${sender.split("@")[0]} tentou beijar @${mention.split("@")[0]} e caiu de cara no chãoKKKKKKKK`, `@${sender.split("@")[0]} é... @${mention.split("@")[0]} saiu correndo, acho que foi um amor não correspondido`];
+      const alvo = "@"+mention.split("@")[0];
+      const autor = "@"+sender.split("@")[0];
+      
+      const rpgList = [`-N NÃO... ${autor} molestou o ${alvo} e ele acabou gostando...`, `O ${autor} foi molestar o ${alvo} e acabou broxando...`, `Eu já não entendo mais nada... ${autor} foi tentar molestar o ${alvo} e acabou sendo molestado...`, `O ${autor} foi todo empolgado... E acabou escorregando na pika do ${alvo} e dizem que ele gostou...`];
       
       const RpgRandom = rpgList[Math.floor(Math.random() * rpgList.length)];
       

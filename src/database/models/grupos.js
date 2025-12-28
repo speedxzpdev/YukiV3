@@ -8,7 +8,7 @@ const schema = new mongoose.Schema({
     prefixo: {type: String, default: "/"},
     welcome: {type: Boolean, default: true},
     antlink: {type: Boolean, default: false},
-    cmdDivertidos: {type: Boolean, default: false}
+    cmdFun: {type: Boolean, default: false}
   },
   lang: {type: String, default: "pt-br"},
   autoReply: {type: Boolean, default: false},
