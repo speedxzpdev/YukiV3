@@ -20,16 +20,21 @@ require("dotenv").config();
 
 const commandDir = fs.readdirSync(path.join(__dirname, "commands")).filter(cmd => cmd.endsWith(".js"));
 
+//funcao que carrega os comandos de forma recursiva
 function loadCommands(dir) {
+  //nome de cada arquivo da pasta commands
   const files = fs.readdirSync(dir);
-
+//loop que busca cada arquivo
   for (const file of files) {
+    //busca o arquivo pelo nome se n estiver denreo de uma pasta
     const fullPath = path.join(dir, file);
     const stat = fs.statSync(fullPath);
-
+    
+    //se estiver
     if (stat.isDirectory()) {
       loadCommands(fullPath); // RECUSIVO: entra na pasta
     } else if (file.endsWith(".js")) {
+      //carrega todos os comandos que tem .js no final
       const command = require(fullPath);
       
       if (!command.name || !command.execute) {
@@ -52,8 +57,8 @@ const jsonEspera = require("./database/espera.json");
 const espera_pronta = jsonEspera[Math.floor(Math.random() * jsonEspera.length)]
 
 async function yukibot() {
-  const { state, saveCreds } = await useMultiFileAuthState("./auth");
-  
+  const { state, saveCreds } = await useMultiFileAuthState("./assets/auth");
+  //sock do bot
   const sock = makeWASocket({
     logger: P({level: "error"}),
     auth: {
@@ -98,7 +103,7 @@ async function yukibot() {
     
   })
   
-
+//importacoes de eventos
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
   require("./events/participantUp")(sock)
   
