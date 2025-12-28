@@ -41,7 +41,7 @@ function loadCommands(dir) {
         console.log(`Arquivo ignorado (faltando estrutura): ${fullPath}`);
         continue;
       }
-
+      //adiciona o comando no map
       commandsMap.set(command.name, command);
       
     }
@@ -57,7 +57,7 @@ const jsonEspera = require("./database/espera.json");
 const espera_pronta = jsonEspera[Math.floor(Math.random() * jsonEspera.length)]
 
 async function yukibot() {
-  const { state, saveCreds } = await useMultiFileAuthState("./assets/auth");
+  const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "/assets/auth"));
   //sock do bot
   const sock = makeWASocket({
     logger: P({level: "error"}),

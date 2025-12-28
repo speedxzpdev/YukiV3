@@ -4,7 +4,7 @@ const shinigamiJson = require("../../database/random/shinigamis.json");
 module.exports = {
   
   name: "shinigami",
-  
+  categoria: "diversao",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     try {
