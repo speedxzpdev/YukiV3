@@ -4,6 +4,7 @@ const { numberBot } = require("../../config");
 
 module.exports = {
   name: "beijar",
+  categoria: "diversao",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     try {

@@ -58,13 +58,14 @@ ${prefixo}d - deleta uma mensagem
 ${prefixo}mute - muta um determinado membro
 ${prefixo}desmute - remove o mute
 ${prefixo}adv - adiciona uma advertência a um usuário
-${prefixo}removeradv - remove uma advertência
+${prefixo}rmadv - remove uma advertência
 
 
 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗮̃𝗼 𝗲 𝗰𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗮𝗰̧𝗮̃𝗼
 ${prefixo}grupoinfo - exibe informações do grupo.
 ${prefixo}autoreply - ativa ou desativa auto respostas.
 ${prefixo}welcome - desativa ou ativa o boas vindas.
+${prefixo}modobrincadeira - ativa ou desativa comandos de diversão.
 `,
 
 menuDownloads: `${subMenu}
@@ -78,9 +79,21 @@ ${prefixo}instagram - baixa videos do instagram!
 ${prefixo}play - busca por um audio no youtube!
 ${prefixo}pin - busca por uma foto no pinterest
 ${prefixo}pinvideo - busca por um video no pinterest
+`,
+
+menuBrincadeira: `${subMenu}
+
+𝗿𝗼𝗹𝗲𝗽𝗹𝗮𝘆
+${prefixo}beijar
+${prefixo}comer
+${prefixo}molestar
+${prefixo}tapa
+𝗔𝗹𝗲𝗮𝘁𝗼𝗿𝗶𝗲𝗱𝗮𝗱𝗲
+${prefixo}gay 
+${prefixo}gostoso
+${prefixo}gostosa
+${prefixo}shinigami
 `
-
-
   
   
   

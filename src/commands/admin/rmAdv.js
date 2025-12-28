@@ -3,7 +3,7 @@ const { advertidos } = require("../../database/models/adverts");
 const { donos } = require("../../database/models/donos");
 
 module.exports = {
-  name: "removeradv",
+  name: "rmadv",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     try {
       const metadata = await sock.groupMetadata(from);

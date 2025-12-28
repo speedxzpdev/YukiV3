@@ -2,7 +2,7 @@ const menu = require("../../utils/menu");
 const path = require("path");
 
 module.exports = {
-  name: "menuadm",
+  name: "menuadmin",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     try {
