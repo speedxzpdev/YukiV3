@@ -16,6 +16,7 @@ const menu = require("../utils/menu");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
+    console.log(msg);
     //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
@@ -33,9 +34,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     //ingnora mensagens de si mesmo
     if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
-    //conecta o mongo
-    try {await connectDB();}
-    catch(err){console.log("Nao foi possivel se conectar ao mongoDB\n\n", err); process.exit()}
+
     
    const mentions =
   msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
@@ -43,6 +42,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const sender = msg.key.participant || msg.key.remoteJid
 
     const doninhos = await donos.findOne({userLid: sender});
+    
+    const donosFrom = await donos.findOne({userLid: msg?.key.remoteJid});
+    
     //Instancia do gemini
     const ia = new GoogleGenAI({apiKey: process.env.GEMINI_APIKEY});
     //promp base pra yuki
@@ -55,7 +57,8 @@ Você é Yuki, uma bot de WhatsApp engraçada e direta. Não permita assuntos se
 Responda apenas à mensagem do usuário, de forma curta e direta.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
-    if(!from.endsWith("@g.us") && !doninhos) return;
+    if(!from.endsWith("@g.us") && !donosFrom) return;
+    //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
       if(!await grupos.findOne({groupId: from})) {
@@ -149,7 +152,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
   const groupReply = await grupos.findOne({groupId: from});
   //caso o grupo tenha autoreply ativo
-  if(groupReply.autoReply) {
+  if(groupReply && groupReply.autoReply) {
     
     if(bodyCase.includes("bom dia")) {
       
