@@ -31,7 +31,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     //lê todas mensagens
     await sock.readMessages([msg.key]);
     //ingnora mensagens de si mesmo
-    //if (msg.key.fromMe) return
+    if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     //conecta o mongo
     try {await connectDB();}
@@ -51,7 +51,7 @@ Você é Yuki, uma bot de WhatsApp engraçada e direta. Não permita assuntos se
 - Use o nome do usuário apenas se fizer sentido.
 - Se perguntarem sobre comandos, use o mapa de comandos: ${JSON.stringify(commandsMap)}
 - Prefixo de comando: "/"
-- Se perguntarem sobre o dono: o dono é Speed, ele trabalha na bot todo dia. Você é mulher.
+- Se perguntarem sobre o dono: o dono é Speed, ele trabalha na bot todo dia. Você é mulher. POR FAVOR DE MANEIRA ALGUMA FALE COISAS SEXUAIS
 Responda apenas à mensagem do usuário, de forma curta e direta.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
