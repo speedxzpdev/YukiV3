@@ -30,13 +30,6 @@ return {
 ┆𓏲🫧֪𝆫➺ ${prefixo}menuadmin
 ┆𓏲🫧֪𝆫➺ ${prefixo}menubrincadeira
 ┆𓏲🫧֪𝆫➺ ${prefixo}menudono
-┆𓏲🫧֪𝆫➺ ${prefixo}menumemb
-┆𓏲🫧֪𝆫➺ ${prefixo}ferramentas
-┆𓏲🫧֪𝆫➺ ${prefixo}menufig
-┆𓏲🫧֪𝆫➺ ${prefixo}alteradores
-┆𓏲🫧֪𝆫➺ ${prefixo}menurpg
-┆𓏲🫧֪𝆫➺ ${prefixo}menuvip
-┆𓏲🫧֪𝆫➺ ${prefixo}menubuscas
 ╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 
