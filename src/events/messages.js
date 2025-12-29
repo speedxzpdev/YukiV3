@@ -41,7 +41,7 @@ const menu = require("../utils/menu");
           console.error("Erro ao processar mensagem", err);
         }
               //cria uma nova promise
-      await new Promise(resolve => setTimeout(resolve, 1000 * 5));
+      await new Promise(resolve => setTimeout(resolve, 1000 * 2));
       }
       flagMessage = false;
     }
