@@ -83,6 +83,7 @@ ${prefixo}gostoso
 ${prefixo}gostosa
 ${prefixo}shinigami
 ${prefixo}casal
+${prefixo}randomwaifu
 `,
 
 menuAI: `${subMenu}
@@ -93,9 +94,6 @@ menuAI: `${subMenu}
 ┆𓏲🫧֪𝆫➺ ${prefixo}tradutor
 ┆𓏲🫧֪𝆫➺ ${prefixo}gemini
 ┆𓏲🫧֪𝆫➺ ${prefixo}geminipesquisa
-┆𓏲🫧֪𝆫➺ ${prefixo}geminifoto
-┆𓏲🫧֪𝆫➺ ${prefixo}gerarpoema
-┆𓏲🫧֪𝆫➺ ${prefixo}gerarcodigo
 ╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯`
   
   
