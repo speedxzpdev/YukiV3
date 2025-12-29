@@ -16,21 +16,24 @@ const menu = require("../utils/menu");
 
 
     //Parte que lida com mensagens em lotes
-    //fila de mensagens
-    let messageQueue = [];
-    //flag pra evitar que seja rodado 2 msg ao mesmo tempo
-    let flagMessage = false;
+    //fila de mensagens de cada grupo
+    let messageQueue = new Map();
+    //flag pra evitar que seja rodado 2 msg ao mesmo tempo por grupo
+    let flagMessage = new Map();
+    
     //parte que lida com cada mensagem
-    async function processMessage(sock) {
+    async function processMessage(groupId) {
       //caso já estiver true um processamento
-      if(flagMessage) return;
+      if(flagMessage.get(groupId)) return;
       //se nao ativa o true e continua
-      flagMessage = true;
+      flagMessage.set(groupId, true);
+      
+      const queue = messageQueue.get(groupId);
       
       //enquanto messageQueue for maior que zero
-      while(messageQueue.length > 0) {
+      while(queue.length > 0) {
         //pega a primeira mensagem
-        const messageFuc = messageQueue.shift();
+        const messageFuc = queue.shift();
         
         try {
           //e executa
@@ -41,9 +44,9 @@ const menu = require("../utils/menu");
           console.error("Erro ao processar mensagem", err);
         }
               //cria uma nova promise
-      await new Promise(resolve => setTimeout(resolve, 1000 * 2));
+      await new Promise(resolve => setTimeout(resolve, 1000 * 3));
       }
-      flagMessage = false;
+      flagMessage.set(groupId, false);
     }
 
 
@@ -53,8 +56,18 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     //caso nao tenha mensagens
     if(!msg) return;
     
+    const grupoRemote = msg.key.remoteJid
+    
+              //Se o grupo nao foi iniciado
+      if(!messageQueue.has(grupoRemote)) {
+        //Cria a lista de cada grupo
+        messageQueue.set(grupoRemote, []);
+        //marca como false
+        flagMessage.set(grupoRemote, false);
+      }
+    
     //adiciona tudo em uma fila
-    messageQueue.push(async () => {
+    messageQueue.get(grupoRemote).push(async () => {
           //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
@@ -293,7 +306,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     });
     
     //chama a funcao que processa cada mensagem
-    processMessage(sock);
+    processMessage(grupoRemote);
     
     
 
