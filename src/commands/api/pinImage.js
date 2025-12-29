@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+require("dotenv").config();
 
 module.exports = {
   name: "pin",
@@ -17,7 +17,7 @@ module.exports = {
       
       await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
       
-      const url = await axios.get(`https://zero-two-apis.com.br/api/pinterest2?text=${pesquisa}&apikey=yukiBot`);
+      const url = await axios.get(`https://zero-two-apis.com.br/api/pinterest2?text=${pesquisa}&apikey=${process.env.ZEROTWO_APIKEY}`);
       
       const data = url.data.resultado
       

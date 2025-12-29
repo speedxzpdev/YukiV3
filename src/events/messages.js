@@ -13,10 +13,49 @@ require("dotenv").config();
 
 const menu = require("../utils/menu");
 
+
+
+    //Parte que lida com mensagens em lotes
+    //fila de mensagens
+    let messageQueue = [];
+    //flag pra evitar que seja rodado 2 msg ao mesmo tempo
+    let flagMessage = false;
+    //parte que lida com cada mensagem
+    async function processMessage(sock) {
+      //caso já estiver true um processamento
+      if(flagMessage) return;
+      //se nao ativa o true e continua
+      flagMessage = true;
+      
+      //enquanto messageQueue for maior que zero
+      while(messageQueue.length > 0) {
+        //pega a primeira mensagem
+        const messageFuc = messageQueue.shift();
+        
+        try {
+          //e executa
+          await messageFuc();
+        }
+        catch(err) {
+          // se der erro printa
+          console.error("Erro ao processar mensagem", err);
+        }
+              //cria uma nova promise
+      await new Promise(resolve => setTimeout(resolve, 1000 * 5));
+      }
+      flagMessage = false;
+    }
+
+
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    //escopo pra Nao vazar variaveis
+    //caso nao tenha mensagens
+    if(!msg) return;
+    
+    //adiciona tudo em uma fila
+    messageQueue.push(async () => {
+          //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
     const msgTime = msg.messageTimestamp * 1000
@@ -25,7 +64,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const msgTemp = agora - msgTime
     //se for mensagem de 10 seg ingnora
-    if(msgTemp >= 10000) return;
+    if(msgTemp >= 20000) return;
     
     }
     //lê todas mensagens
@@ -251,13 +290,15 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
 
   }
+    });
+    
+    //chama a funcao que processa cada mensagem
+    processMessage(sock);
+    
+    
 
 
-
-
-
-
-  })
+  });
 
 
 }

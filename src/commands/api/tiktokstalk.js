@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+require("dotenv").config();
 
 module.exports = {
   name: "tiktokstalk",
@@ -18,7 +18,7 @@ module.exports = {
     }
     
     
-    const req = await axios.get(`https://zero-two-apis.com.br/api/tiktokstalker/v3?usuario=${texto}&apikey=yukiBot`);
+    const req = await axios.get(`https://zero-two-apis.com.br/api/tiktokstalker/v3?usuario=${texto}&apikey=${process.env.ZEROTWO_APIKEY}`);
     
     const data = req.data.resultado
     

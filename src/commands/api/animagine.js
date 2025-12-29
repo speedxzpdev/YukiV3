@@ -1,4 +1,4 @@
-
+require("dotenv").config();
 
 module.exports = {
   
@@ -23,7 +23,7 @@ module.exports = {
     
     await sock.sendMessage(from, {text: randomResp}, {quoted: msg});
     
-    const img = `https://zero-two-apis.com.br/api/ia/animagine?prompt=${prompt}&apikey=yukiBot`
+    const img = `https://zero-two-apis.com.br/api/ia/animagine?prompt=${prompt}&apikey=${process.env.ZEROTWO_APIKEY}`
     
     
     await sock.sendMessage(from, {image: {url: img}, caption: texto}, {quoted: msg});

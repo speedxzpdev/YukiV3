@@ -26,11 +26,6 @@ return
     return
   }
     
-    if(await donos.findOne({userLid: mention})) {
-      await sock.sendMessage(from, {text: "O cara é subDono zé bct"}, {quoted: msg});
-      return
-    }
-    
     await sock.groupParticipantsUpdate(from, [mention], "add");
       
     }

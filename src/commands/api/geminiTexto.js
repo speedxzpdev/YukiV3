@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+require("dotenv").config();
 
 module.exports = {
   name: "gemini",
@@ -19,7 +19,7 @@ module.exports = {
       
       await sock.sendPresenceUpdate("composing", from);
       
-      const url = await axios.get(`https://zero-two-apis.com.br/gemini/texto/imagem?query=${perguntaUrl}&apikey=yukiBot`);
+      const url = await axios.get(`https://zero-two-apis.com.br/gemini/texto/imagem?query=${perguntaUrl}&apikey=${process.env.ZEROTWO_APIKEY}`);
       
       const data = url.data.resposta
       

@@ -20,7 +20,7 @@ module.exports = {
        
        await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
        
-       const url = await axios.get(`https://zero-two-apis.com.br/api/info/translate?texto=${palavraUrl}&ling=pt&apikey=yukiBot`);
+       const url = await axios.get(`https://zero-two-apis.com.br/api/info/translate?texto=${palavraUrl}&ling=pt&apikey=${process.env.ZEROTWO_APIKEY}`);
        
        
        const traducao = `⤷ "${url.data.result}"`
