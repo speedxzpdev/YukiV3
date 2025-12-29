@@ -30,13 +30,6 @@ return {
 ┆𓏲🫧֪𝆫➺ ${prefixo}menuadmin
 ┆𓏲🫧֪𝆫➺ ${prefixo}menubrincadeira
 ┆𓏲🫧֪𝆫➺ ${prefixo}menudono
-┆𓏲🫧֪𝆫➺ ${prefixo}menumemb
-┆𓏲🫧֪𝆫➺ ${prefixo}ferramentas
-┆𓏲🫧֪𝆫➺ ${prefixo}menufig
-┆𓏲🫧֪𝆫➺ ${prefixo}alteradores
-┆𓏲🫧֪𝆫➺ ${prefixo}menurpg
-┆𓏲🫧֪𝆫➺ ${prefixo}menuvip
-┆𓏲🫧֪𝆫➺ ${prefixo}menubuscas
 ╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 
@@ -54,6 +47,7 @@ ${prefixo}mute - muta um determinado membro
 ${prefixo}desmute - remove o mute
 ${prefixo}adv - adiciona uma advertência a um usuário
 ${prefixo}rmadv - remove uma advertência
+${prefixo}roletarussa - Bane alguem aleatorio
 
 
 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗮̃𝗼 𝗲 𝗰𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗮𝗰̧𝗮̃𝗼
@@ -88,6 +82,7 @@ ${prefixo}gay
 ${prefixo}gostoso
 ${prefixo}gostosa
 ${prefixo}shinigami
+${prefixo}casal
 `
   
   
