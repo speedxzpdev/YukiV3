@@ -10,7 +10,7 @@ module.exports = (sock) => {
     
     const groupsDb = await grupos.findOne({groupId: from});
     
-    if (groupsDb.configs.welcome === true) {
+    if (groupsDb?.configs?.welcome) {
       const action = update.action
       
       if(action === "add") {

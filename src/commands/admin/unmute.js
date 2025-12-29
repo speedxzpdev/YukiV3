@@ -4,7 +4,7 @@ const { numberBot } = require("../../config");
 
 
 module.exports = {
-  name: "desmute",
+  name: "unmute",
    async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
      
      async function reply(texto) {
