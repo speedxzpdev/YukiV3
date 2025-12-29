@@ -18,7 +18,7 @@ function menu(msg) {
 ⏤͟͟͞͞❈𝐃𝐚𝐭𝐚: ${semanas[agora.getDay()]}, ${agora.getDate()} De ${meses[agora.getMonth()]}
 ⏤͟͟͞͞❈𝐇𝐨𝐫𝐚: ${agora.toLocaleTimeString("pt-BR")}
 ⏤͟͟͞͞❈𝐇𝐨𝐬𝐭: ${os.hostname()}
-╰─────── ─ ─ 𖹭 ׅ ʕ•⁠ᴥ⁠•⁠ʔ  ׄ    ᩿
+╰─────── ─ ─ 𖹭   ׅ ʕ•⁠ᴥ⁠•⁠ʔ  ׄ    ᩿   ׅ
 `
 
 return {
@@ -83,7 +83,20 @@ ${prefixo}gostoso
 ${prefixo}gostosa
 ${prefixo}shinigami
 ${prefixo}casal
-`
+`,
+
+menuAI: `${subMenu}
+
+╭┈⊰ ❅ 𝐌𝐄𝐍𝐔 𝐈𝐀
+┆𓏲🫧֪𝆫➺${prefixo}chatgpt
+┆𓏲🫧֪𝆫➺ ${prefixo}animagine
+┆𓏲🫧֪𝆫➺ ${prefixo}tradutor
+┆𓏲🫧֪𝆫➺ ${prefixo}gemini
+┆𓏲🫧֪𝆫➺ ${prefixo}geminipesquisa
+┆𓏲🫧֪𝆫➺ ${prefixo}geminifoto
+┆𓏲🫧֪𝆫➺ ${prefixo}gerarpoema
+┆𓏲🫧֪𝆫➺ ${prefixo}gerarcodigo
+╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯`
   
   
   
