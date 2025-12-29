@@ -11,13 +11,10 @@ module.exports = {
     
     try {
       
-      const assetsPast = '../../assets/images'
+      const assetsPast = '../../assets/images/yukiBanner.jpg'
       
-      const icons = [`${assetsPast}/yuki.jpg`, `${assetsPast}/yuki2.jpg`, `${assetsPast}/yuki3.jpg`, `${assetsPast}/yuki4.jpg`, `${assetsPast}/yuki5.jpg`];
       
-      const imgsRandom = icons[Math.floor(Math.random() * icons.length)];
-      
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, imgsRandom)}, caption: menu(msg).menuPrincipal, mentions: [sender]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, assetsPast)}, caption: menu(msg).menuPrincipal, mentions: [sender]}, {quoted: msg});
       
       
     }

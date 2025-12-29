@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+require("dotenv").config();
 
 
 module.exports = {
@@ -16,7 +16,7 @@ module.exports = {
       return
     }
       
-      const req = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt?query=${pergunta}&apikey=yukiBot`);
+      const req = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt?query=${pergunta}&apikey=${process.env.ZEROTWO_APIKEY}`);
 
     
     const data = req.data

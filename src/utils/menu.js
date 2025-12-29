@@ -9,40 +9,35 @@ function menu(msg) {
   const semanas = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
   const meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
   
-  const subMenu = `Olá, ${msg.pushName || "Sem nome"}
-𝗕𝗼𝘁: ${botName}
-𝗣𝗿𝗲𝗳𝗶𝘅𝗼: ${prefixo}
-𝗩𝗲𝗿𝘀ã𝗼: ${version}
-𝗗𝗮𝘁𝗮: ${semanas[agora.getDay()]}, ${agora.getDate()} De ${meses[agora.getMonth()]}
-𝗛𝗼𝗿𝗮: ${agora.toLocaleTimeString("pt-BR")}
-𝗛𝗼𝘀𝘁: ${os.hostname()}
+  const subMenu = `┏╾   ፝  ✦  ❄️ ᩡ  ⠞   𝓜𝓮𝓷𝓾 𝓟𝓻𝓲𝓷𝓬𝓲𝓹𝓪𝓵‍᪶  ⭒
+╏ 𝘉𝘦𝘮-𝘷𝘪𝘯𝘥𝘰 (𝘢) ${msg.pushName || "Sem nome"}
+   ׁ   ⏝꒡𝆺𝅥᠀݃
+⏤͟͟͞͞❈𝐁𝐨𝐭: ${botName}
+⏤͟͟͞͞❈𝐏𝐫𝐞𝐟𝐢𝐱𝐨: ${prefixo}
+⏤͟͟͞͞❈𝐕𝐞𝐫𝐬𝐚̃𝐨: ${version}
+⏤͟͟͞͞❈𝐃𝐚𝐭𝐚: ${semanas[agora.getDay()]}, ${agora.getDate()} De ${meses[agora.getMonth()]}
+⏤͟͟͞͞❈𝐇𝐨𝐫𝐚: ${agora.toLocaleTimeString("pt-BR")}
+⏤͟͟͞͞❈𝐇𝐨𝐬𝐭: ${os.hostname()}
+╰─────── ─ ─ 𖹭 ׅ ʕ•⁠ᴥ⁠•⁠ʔ  ׄ    ᩿
 `
 
 return {
   
   menuPrincipal: `${subMenu}
-  
-𝗣𝗮𝗶𝗻𝗲𝗹 𝗱𝗲 𝗺𝗲𝗻𝘂
-${prefixo}menuadmin - Veja comandos de admin!
-${prefixo}menudownloads
-
-𝗙𝗶𝗴𝘂𝗿𝗶𝗻𝗵𝗮𝘀 𝗲 𝗰𝗼𝗻𝘃𝗲𝗿𝘀𝗼𝗿𝗲𝘀
-${prefixo}s - Crie uma figurinha
-${prefixo}toimg - Figurinha em imagem
-
-𝙄𝙣𝙩𝙚𝙡𝙞𝙜ê𝙣𝙘𝙞𝙖 𝙖𝙧𝙩𝙞𝙛𝙞𝙘𝙖𝙡
-${prefixo}chatgpt - Chat ia
-${prefixo}animagine - Geração de imagem
-${prefixo}tradutor - Traduz algo
-
-𝙎𝙩𝙖𝙡𝙠𝙚𝙧𝙨
-${prefixo}tiktokstalk - Informações sobre o perfil
-
-𝗘𝗰𝗼𝗻𝗼𝗺𝗶𝗮(𝗗𝗲𝘃)
-${prefixo}perfil
-${prefixo}mudarbio
-${prefixo}saldo
-
+╭┈⊰ ❅ 𝐌𝐄𝐍𝐔 𝐏𝐑𝐈𝐍𝐂𝐈𝐏𝐀𝐋
+┆𓏲🫧֪𝆫➺ ${prefixo}menuia
+┆𓏲🫧֪𝆫➺ ${prefixo}menudownloads
+┆𓏲🫧֪𝆫➺ ${prefixo}menuadmin
+┆𓏲🫧֪𝆫➺ ${prefixo}menubrincadeira
+┆𓏲🫧֪𝆫➺ ${prefixo}menudono
+┆𓏲🫧֪𝆫➺ ${prefixo}menumemb
+┆𓏲🫧֪𝆫➺ ${prefixo}ferramentas
+┆𓏲🫧֪𝆫➺ ${prefixo}menufig
+┆𓏲🫧֪𝆫➺ ${prefixo}alteradores
+┆𓏲🫧֪𝆫➺ ${prefixo}menurpg
+┆𓏲🫧֪𝆫➺ ${prefixo}menuvip
+┆𓏲🫧֪𝆫➺ ${prefixo}menubuscas
+╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 
 menuAdmin: `${subMenu}

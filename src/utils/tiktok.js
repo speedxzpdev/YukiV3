@@ -1,4 +1,5 @@
 const axios = require("axios");
+require("dotenv").config();
 
 async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   try {
@@ -8,7 +9,7 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
     
     
-    const url = `https://zero-two-apis.com.br/api/download/tiktok?url=${body}&apikey=yukiBot`
+    const url = `https://zero-two-apis.com.br/api/download/tiktok?url=${body}&apikey=${process.env.ZEROTWO_APIKEY}`
     
     const response = await axios.get(url);
     const result = response.data.resultado

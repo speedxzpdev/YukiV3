@@ -13,10 +13,49 @@ require("dotenv").config();
 
 const menu = require("../utils/menu");
 
+
+
+    //Parte que lida com mensagens em lotes
+    //fila de mensagens
+    let messageQueue = [];
+    //flag pra evitar que seja rodado 2 msg ao mesmo tempo
+    let flagMessage = false;
+    //parte que lida com cada mensagem
+    async function processMessage(sock) {
+      //caso já estiver true um processamento
+      if(flagMessage) return;
+      //se nao ativa o true e continua
+      flagMessage = true;
+      
+      //enquanto messageQueue for maior que zero
+      while(messageQueue.length > 0) {
+        //pega a primeira mensagem
+        const messageFuc = messageQueue.shift();
+        
+        try {
+          //e executa
+          await messageFuc();
+        }
+        catch(err) {
+          // se der erro printa
+          console.error("Erro ao processar mensagem", err);
+        }
+              //cria uma nova promise
+      await new Promise(resolve => setTimeout(resolve, 1000 * 5));
+      }
+      flagMessage = false;
+    }
+
+
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    //escopo pra Nao vazar variaveis
+    //caso nao tenha mensagens
+    if(!msg) return;
+    
+    //adiciona tudo em uma fila
+    messageQueue.push(async () => {
+          //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
     const msgTime = msg.messageTimestamp * 1000
@@ -25,7 +64,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const msgTemp = agora - msgTime
     //se for mensagem de 10 seg ingnora
-    if(msgTemp >= 10000) return;
+    if(msgTemp >= 20000) return;
     
     }
     //lê todas mensagens
@@ -33,9 +72,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     //ingnora mensagens de si mesmo
     if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
-    //conecta o mongo
-    try {await connectDB();}
-    catch(err){console.log("Nao foi possivel se conectar ao mongoDB\n\n", err); process.exit()}
+
     
    const mentions =
   msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
@@ -43,6 +80,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const sender = msg.key.participant || msg.key.remoteJid
 
     const doninhos = await donos.findOne({userLid: sender});
+    
+    const donosFrom = await donos.findOne({userLid: msg?.key.remoteJid});
+    
     //Instancia do gemini
     const ia = new GoogleGenAI({apiKey: process.env.GEMINI_APIKEY});
     //promp base pra yuki
@@ -55,7 +95,8 @@ Você é Yuki, uma bot de WhatsApp engraçada e direta. Não permita assuntos se
 Responda apenas à mensagem do usuário, de forma curta e direta.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
-    if(!from.endsWith("@g.us") && !doninhos) return;
+    if(!from.endsWith("@g.us") && !donosFrom) return;
+    //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
       if(!await grupos.findOne({groupId: from})) {
@@ -149,7 +190,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
   const groupReply = await grupos.findOne({groupId: from});
   //caso o grupo tenha autoreply ativo
-  if(groupReply.autoReply) {
+  if(groupReply && groupReply.autoReply) {
     
     if(bodyCase.includes("bom dia")) {
       
@@ -249,13 +290,15 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
 
   }
+    });
+    
+    //chama a funcao que processa cada mensagem
+    processMessage(sock);
+    
+    
 
 
-
-
-
-
-  })
+  });
 
 
 }

@@ -76,7 +76,9 @@ async function yukibot() {
     }, 2000);
   }
   
-  
+      //conecta o mongo
+    try {await connectDB();}
+    catch(err){console.log("Nao foi possivel se conectar ao mongoDB\n\n", err); process.exit()}
   
   
   

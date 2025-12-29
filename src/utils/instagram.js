@@ -1,5 +1,5 @@
 const axios = require("axios");
-
+require("dotenv").config();
 
 async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   
@@ -12,7 +12,7 @@ async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     
     await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg})
     
-    const req = await axios.get(`https://zero-two-apis.com.br/api/instagram?url=${body}&apikey=yukiBot`)
+    const req = await axios.get(`https://zero-two-apis.com.br/api/instagram?url=${body}&apikey=${process.env.ZEROTWO_APIKEY}`)
     
     const data = req.data
     
