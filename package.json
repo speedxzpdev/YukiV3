@@ -15,6 +15,7 @@
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "axios": "^1.13.2",
+    "catbox.moe": "^1.0.2",
     "cheerio": "^1.1.2",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
@@ -23,6 +24,7 @@
     "pino": "^10.1.0",
     "qrcode-terminal": "^0.12.0",
     "string-similarity": "^4.0.4",
+    "telegraph-uploader": "^2.0.0",
     "ytdl-core": "^4.11.5"
   }
 }

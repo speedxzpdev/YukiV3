@@ -1,4 +1,4 @@
-const { downloadMediaMessage } = require('@whiskeysockets/baileys')
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { donos } = require("../../database/models/donos");
 
 module.exports = {
@@ -17,7 +17,7 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
 
 
   if (!groupAdmins.includes(msg.key.participant) && !await donos.findOne({userLid: sender})) {
-    await sock.sendMessage(from, {text: "Entrosa n mlk", mentions: ["188123996786820@lid"]}, {quoted: msg})
+    await sock.sendMessage(from, {text: "Entrosa n mlk"}, {quoted: msg})
     return
   }
   
