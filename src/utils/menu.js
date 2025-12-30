@@ -34,44 +34,47 @@ return {
 `,
 
 menuAdmin: `${subMenu}
+ʔ  ׄ    ᩿   ׅ
+╭┈⊰ ❅ 𝐌𝐄𝐍𝐔 𝐀𝐃𝐌𝐈𝐍
 
-𝗔𝗱𝗺𝗶𝗻𝗶𝘀𝘁𝗿𝗮𝗰̧𝗮̃𝗼 𝗲 𝗺𝗼𝗱𝗲𝗿𝗮𝗰̧𝗮̃𝗼
-${prefixo}ban - remove um membro do grupo.
-${prefixo}add - adiciona alguém ao grupo
-${prefixo}promover - promove um membro a admin
-${prefixo}rebaixar - Remove o admin de um membro
-${prefixo}grupo - libera ou desativa mensagens
-${prefixo}totag - marca todos do grupo
-${prefixo}d - deleta uma mensagem
-${prefixo}mute - muta um determinado membro
-${prefixo}desmute - remove o mute
-${prefixo}adv - adiciona uma advertência a um usuário
-${prefixo}rmadv - remove uma advertência
-${prefixo}roletarussa - Bane alguem aleatorio
-
-
-𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗮̃𝗼 𝗲 𝗰𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗮𝗰̧𝗮̃𝗼
-${prefixo}grupoinfo - exibe informações do grupo.
-${prefixo}autoreply - ativa ou desativa auto respostas.
-${prefixo}welcome - desativa ou ativa o boas vindas.
-${prefixo}modobrincadeira - ativa ou desativa comandos de diversão.
+╭┄➤🛡️𝐀𝐝𝐦𝐢𝐧𝐢𝐬𝐭𝐫𝐚𝐜̧𝐚̃𝐨 𝐞 𝐦𝐨𝐝𝐞𝐫𝐚𝐜̧𝐚̃𝐨:
+┆𓏲🫧֪𝆫➺ ${prefixo}ban
+┆𓏲🫧֪𝆫➺ ${prefixo}add
+┆𓏲🫧֪𝆫➺ ${prefixo}promover
+┆𓏲🫧֪𝆫➺ ${prefixo}rebaixar
+┆𓏲🫧֪𝆫➺ ${prefixo}grupo
+┆𓏲🫧֪𝆫➺ ${prefixo}totag
+┆𓏲🫧֪𝆫➺ ${prefixo}d
+┆𓏲🫧֪𝆫➺ ${prefixo}mute
+┆𓏲🫧֪𝆫➺ ${prefixo}desmute
+┆𓏲🫧֪𝆫➺ ${prefixo}adv
+┆𓏲🫧֪𝆫➺ ${prefixo}rmadv
+┆𓏲🫧֪𝆫➺ ${prefixo}roletarussa
+╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
+╭┄➤⚙️ 𝐈𝐧𝐟𝐨𝐫𝐦𝐚𝐜̧𝐨̃𝐞𝐬 𝐞 𝐜𝐨𝐧𝐟𝐢𝐠𝐮𝐫𝐚𝐜̧𝐨̃𝐞𝐬:
+┆𓏲🫧֪𝆫➺ ${prefixo}grupoinfo
+┆𓏲🫧֪𝆫➺ ${prefixo}autoreply
+┆𓏲🫧֪𝆫➺ ${prefixo}welcome
+┆𓏲🫧֪𝆫➺ ${prefixo}modobrincadeira
+╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 
 menuDownloads: `${subMenu}
+  ׄ    ᩿   ׅ
+╭┈⊰ ❅ 𝐌𝐄𝐍𝐔 𝐃𝐎𝐖𝐍𝐋𝐎𝐀𝐃
 
-𝗧𝗶𝗸𝘁𝗼𝗸 𝗲 𝗶𝗻𝘀𝘁𝗮𝗴𝗿𝗮𝗺
-
-${prefixo}tiktok - baixa videos do tiktok!
-${prefixo}instagram - baixa videos do instagram!
-
-𝗽𝗲𝘀𝗾𝘂𝗶𝘀𝗮𝘀
-${prefixo}play - busca por um audio no youtube!
-${prefixo}pin - busca por uma foto no pinterest
-${prefixo}pinvideo - busca por um video no pinterest
+╭┄➤📱 𝐓𝐢𝐤𝐓𝐨𝐤 𝐞 𝐈𝐧𝐬𝐭𝐚𝐠𝐫𝐚𝐦:
+┆𓏲🫧֪𝆫➺ TikTok 
+┆𓏲🫧֪𝆫➺  Instagram
+╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
+╭┄➤🔎 𝐏𝐞𝐬𝐪𝐮𝐢𝐬𝐚𝐬:
+┆𓏲🫧֪𝆫➺ Play
+┆𓏲🫧֪𝆫➺ Pin
+┆𓏲🫧֪𝆫➺ Pinvideo
+╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 
 menuBrincadeira: `${subMenu}
-
 𝗿𝗼𝗹𝗲𝗽𝗹𝗮𝘆
 ${prefixo}beijar
 ${prefixo}comer
@@ -87,7 +90,6 @@ ${prefixo}randomwaifu
 `,
 
 menuAI: `${subMenu}
-
 ╭┈⊰ ❅ 𝐌𝐄𝐍𝐔 𝐈𝐀
 ┆𓏲🫧֪𝆫➺${prefixo}chatgpt
 ┆𓏲🫧֪𝆫➺ ${prefixo}animagine
