@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   userLid: {type: String, required: true},
+  name: {type: String, required: true},
   bio: {type: String, default: "Olá, amo a Yuki!"},
   registro: {type: Date, default: new Date()},
   casal: {
@@ -13,7 +14,8 @@ const userSchema = new mongoose.Schema({
   daily: {type: Date, default: null},
   dinheiro: {type: Number, default: 100},
   donwloads: {type: Number, default: 0},
-  figurinhas: {type: Number, default: 0}
+  figurinhas: {type: Number, default: 0},
+  cmdCount: {type: Number, default: 0}
 })
 
 const users = mongoose.model("User", userSchema);

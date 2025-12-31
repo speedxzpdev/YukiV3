@@ -4,15 +4,17 @@ const { numberOwner } = require("../../config")
 
 
 module.exports = {
-  name: "get",
+  name: "getfile",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     try {
     const caminho = args[0]
     const proibidos = [".env", ".json", ".sh"]
     const sender = msg.key.participant || msg.key.remoteJid
     
-    if(!sender.includes(numberOwner)) {
-      await sock.sendMessage(from, {text: "Só o Ispidi pode usar esse comando!"}, {quoted: msg});
+    const donoSender = await donos.findOne({userLid: sender});
+    
+    if(!donoSender) {
+      await sock.sendMessage(from, {text: "Só o Sub-Donos podem usar esse comando."}, {quoted: msg});
       return
     }
     
