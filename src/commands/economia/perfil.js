@@ -13,7 +13,7 @@ module.exports = {
       const Isuser = await users.findOne({userLid: sender});
       
       if(!Isuser) {
-        await users.create({userLid: sender});
+        await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
       }
       
       const userSender = await users.findOne({userLid: sender});

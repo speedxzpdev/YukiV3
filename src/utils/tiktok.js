@@ -51,7 +51,7 @@ if(result.type === 'image') {
     await sock.sendMessage(from, {image: {url: imgs}, caption: legenda}, {quoted: msg})
   }
   await sock.sendMessage(from, {text: "Baixando o melhor áudio!"}, {quoted: msg});
-await sock.sendMessage(from, {audio: {url: result.music.playUrl[0]}, mimetype: "audio/mpeg", ptt: false}, {quoted: msg});
+await sock.sendMessage(from, {audio: {url: result.music.playUrl[0]}, mimetype: "audio/mp3", ptt: false}, {quoted: msg});
   return
 }
 

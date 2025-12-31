@@ -9,7 +9,7 @@ module.exports = {
       const sender = msg.key.participant
       
       if(!await users.findOne({userLid: sender})) {
-        await users.create({userLid: sender});
+        await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
       }
       
       const bioText = args?.join(" ")?.trim();

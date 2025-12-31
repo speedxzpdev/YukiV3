@@ -113,7 +113,10 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     if(from.endsWith("@g.us")) {
       
       if(!await grupos.findOne({groupId: from})) {
-      await grupos.create({groupId: from});
+        
+        const groupDados = await sock.groupMetadata(from);
+        
+      await grupos.create({groupId: from, grupoName: groupDados.subject});
     }
       
     }
@@ -122,7 +125,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     const groupDBInfo = await grupos.findOne({groupId: from});
 
     if(!await users.findOne({userLid: msg.key.participant})) {
-      await users.create({userLid: msg.key.participant || msg.key.remoteJid})
+      await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
     }
 
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {msg: 1}}, {upsert: true})

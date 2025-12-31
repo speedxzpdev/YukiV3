@@ -6,7 +6,7 @@ const path = require("path")
 const commandsMap = new Map();
 const qrcode = require("qrcode-terminal");
 
-const { prefixo } = require("./config");
+const { prefixo, botName } = require("./config");
 const tiktokDl = require("./utils/tiktok");
 const connectDB = require("./database/index");
 const similarityCmd = require("./utils/similaridadeCmd");
@@ -14,6 +14,7 @@ const { users } = require("./database/models/users");
 const { donos } = require("./database/models/donos");
 const { rankativos } = require("./database/models/rankativos");
 const { grupos } = require("./database/models/grupos");
+const os = require("os");
 require("dotenv").config();
 
 
@@ -44,11 +45,16 @@ function loadCommands(dir) {
       //adiciona o comando no map
       commandsMap.set(command.name, command);
       
+      
+      
     }
   }
 }
 
 loadCommands(path.join(__dirname, "commands"));
+console.log(`NOME: ${botName}
+COMANDOS: ${commandsMap.size}
+SISTEM: ${os.type()}`);
 
 const jsonErros = require("./database/erros.json");
 const erros_prontos = jsonErros[Math.floor(Math.random() * jsonErros.length)]
