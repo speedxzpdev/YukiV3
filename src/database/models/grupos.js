@@ -14,6 +14,7 @@ const schema = new mongoose.Schema({
   },
   lang: {type: String, default: "pt-br"},
   autoReply: {type: Boolean, default: false},
+  autoDownload: {type: Boolean, default: true}
   cmdUsados: {type: Number, default: 0}
   
   

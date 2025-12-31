@@ -115,7 +115,7 @@ menuDono: `${subMenu}
 menuCompleto: `${subMenu}
 ╭┉⊰✾ 𝑷𝑨𝑰𝑵𝑬𝑳 𝑫𝑬 𝑪𝑶𝑴𝑨𝑵𝑫𝑶𝑺 ʸᵘᵏᶦ
 
-✿𝆬𓏲ַ♥︎֪𝆫${prefixo}១ 𝙢𝙚𝙣𝙪𝙞𝙖 ➻ inteligências artificiais
+✿𝆬𓏲ַ♥︎֪𝆫១${prefixo}𝙢𝙚𝙣𝙪𝙞𝙖 ➻ inteligências artificiais
 ✿𝆬𓏲ַ♥︎֪𝆫១ ${prefixo}𝙢𝙚𝙣𝙪𝙙𝙤𝙬𝙣𝙡𝙤𝙖𝙙 ➻ variações de download
 ✿𝆬𓏲ַ♥︎֪𝆫១ ${prefixo}𝙢𝙚𝙣𝙪𝙖𝙙𝙢𝙞𝙣 ➻ veja comandos de admin
 ✿𝆬𓏲ַ♥︎֪𝆫១ ${prefixo}𝙢𝙚𝙣𝙪𝙗𝙧𝙞𝙣𝙘𝙖𝙙𝙚𝙞𝙧𝙖𝙨 ➻ brincadeiras e interações
