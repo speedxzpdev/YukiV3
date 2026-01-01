@@ -13,7 +13,7 @@ const schema = new mongoose.Schema({
     cmdAdulto: {type: Boolean, default: false}
   },
   lang: {type: String, default: "pt-br"},
-  autoReply: {type: Boolean, default: false},
+  autoReply: {type: Boolean, default: true},
   autoDownload: {type: Boolean, default: true},
   cmdUsados: {type: Number, default: 0}
   
