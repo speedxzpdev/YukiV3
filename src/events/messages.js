@@ -10,7 +10,7 @@ const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
 const { GoogleGenAI } = require("@google/genai");
 require("dotenv").config();
-
+const axios = require("axios");
 const menu = require("../utils/menu");
 
 
@@ -81,7 +81,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     }
     //lê todas mensagens
-    await sock.readMessages([msg.key]);
+    //await sock.readMessages([msg.key]);
     //ingnora mensagens de si mesmo
     if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
@@ -100,7 +100,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const ia = new GoogleGenAI({apiKey: process.env.GEMINI_APIKEY});
     //promp base pra yuki
     const promptBase = `
-Você é Yuki, uma bot de WhatsApp engraçada e direta. Não permita assuntos sexuais ou explícitos.
+Você é Yuki, uma bot de WhatsApp engraçada e carinhosa e viva, nao escreva textos grandes. Não permita assuntos sexuais ou explícitos.
 - Use o nome do usuário apenas se fizer sentido.
 - Se perguntarem sobre comandos, use o mapa de comandos: ${JSON.stringify(commandsMap)}
 - Prefixo de comando: "/"
@@ -171,7 +171,31 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     
     
     const bodyCase = body.toLowerCase()
-    //caso ouva uma mencao ou frase com a yuki
+  
+  
+    //Caso um grupo tenha auto download
+  const groupDonwload = await grupos.findOne({groupId: from});
+  if(groupDonwload && groupDonwload.autoDownload || from.endsWith("@lid")) {
+  //caso tenha um link de tiktok
+  if (body.startsWith("https://vt.tiktok.com/")) {
+
+    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
+
+  }
+  
+  if(body.startsWith("https://www.instagram.com/reel")) {
+    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
+  }
+  
+  }
+
+
+
+  const groupReply = await grupos.findOne({groupId: from});
+  //caso o grupo tenha autoreply ativo
+  if(groupReply && groupReply.autoReply) {
+    
+      //caso ouva uma mencao ou frase com a yuki
     if(mentions.includes('239165908242449@lid') || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
         
         try {
@@ -180,14 +204,9 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
           //separa cada palavra
           const args = body.split(" ")
           //estrutura de resposta
-          const response = await ia.models.generateContent({
-            model: "gemini-2.5-flash-lite",
-            contents: [
-              {text: promptBase},
-              {text: `nome: ${msg.pushName}, mensagem: ${args.slice(1).join(" ").trim()}`}]
-          });
+          const yukiGpt = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt?query=${encodeURIComponent(promptBase) + encodeURIComponent(`USER: ${msg.pushName || "sem nome"}, MESSAGE: ${args.slice(1).join(" ")}`)}&apikey=${process.env.ZEROTWO_APIKEY}`);
           //manda a mensagem
-          await sock.sendMessage(from, {text: response.text}, {quoted: msg});
+          await sock.sendMessage(from, {text: yukiGpt.data.resultado}, {quoted: msg});
           //pausa a simulacao
           await sock.sendPresenceUpdate("paused", from);
           
@@ -200,30 +219,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
           }
         }
       }
-  
-
-
-
-  const groupReply = await grupos.findOne({groupId: from});
-  //caso o grupo tenha autoreply ativo
-  if(groupReply && groupReply.autoReply) {
     
-    if(bodyCase.includes("bom dia")) {
-      
-      await sock.sendMessage(from, {text: `Bom dia, ${msg.pushName}! Tudo bem?`}, {quoted: msg});
-    }
-    
-    if(bodyCase.includes("boa tarde")) {
-      await sock.sendMessage(from, {text: `Boa tarde, Lindão! Uma hora dessa, assitir um bleach é uma boa.`}, {quoted: msg});
-      
-      
-      
-      
-    }
-    
-    if(bodyCase.includes("boa noite")) {
-      await sock.sendMessage(from, {text: `Boa noite, meu fio. Vá dormir, vá`}, {quoted: msg});
-    }
   }
 
   //Caso uma mensagem comece com prefixo
@@ -231,16 +227,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo}\``})
   }
 
-  //caso tenha um link de tiktok
-  if (body.startsWith("https://vt.tiktok.com/")) {
 
-    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
-
-  }
-  
-  if(body.startsWith("https://www.instagram.com/reel")) {
-    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
-  }
 
 
   let userFind = await users.findOne({userLid: msg.key.participant});

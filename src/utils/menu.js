@@ -105,7 +105,7 @@ menuDono: `${subMenu}
 
 ╭┄➤👑 𝐅𝐮𝐧𝐜̧𝐨̃𝐞𝐬 𝐝𝐞 𝐃𝐨𝐧𝐨
 ┆𓏲🫧֪𝆫➺ ${prefixo}addgroup
-┆𓏲🫧֪𝆫➺ ${prefixo}seradm
+┆𓏲🫧֪𝆫➺ ${prefixo}seradmin
 ┆𓏲🫧֪𝆫➺ ${prefixo}getfile
 ┆𓏲🫧֪𝆫➺ ${prefixo}aqv
 ┆𓏲🫧֪𝆫➺ ${prefixo}reset
