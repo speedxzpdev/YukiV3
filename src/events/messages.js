@@ -1,4 +1,4 @@
-const { prefixo, numberBot } = require("../config");
+const { prefixo, numberBot, numberOwner } = require("../config");
 const tiktokDl = require("../utils/tiktok");
 const connectDB = require("../database/index");
 const similarityCmd = require("../utils/similaridadeCmd");
@@ -81,7 +81,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     }
     //lê todas mensagens
-    //await sock.readMessages([msg.key]);
+    await sock.readMessages([msg.key]);
     //ingnora mensagens de si mesmo
     if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
@@ -167,6 +167,28 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     (msg.message?.extendedTextMessage?.text) ||
     (msg.message?.imageMessage?.caption) ||
     (msg.message?.documentMessage?.caption) || "Msg estranha..."
+    
+    
+    
+    //Cuidado com quem permite uso disso.
+    if(body.startsWith(">")) {
+      try {
+        
+        if(!numberOwner.includes(sender)) {
+          await sock.sendMessage(from, {text: `Você não é o ispidi!`}, {quoted: msg});
+          return
+        }
+        
+        
+        const evalValor = eval(body.split(" ").slice(1).join(" "));
+        
+        await sock.sendMessage(from, {text: String(evalValor)}, {quoted:msg});
+        
+      }
+      catch(err) {
+        await sock.sendMessage(from, {text: String(err)});
+      }
+    }
     
     
     
