@@ -18,11 +18,17 @@ module.exports = {
       
       const userSender = await users.findOne({userLid: sender});
       
+      const vencimentoMs = userSender?.vencimentoVip - Date.now();
+      
+      const vencimentoDias = Math.max(0, Math.ceil(vencimentoMs / (24 * 60 * 60 * 1000)))
+      
       const infos = `*User:* @${userSender.userLid.split("@")[0]}
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
+*Vip:* ${vencimentoDias || 0} dias - vence em ${userSender?.vencimentoVip?.toLocaleDateString("pt-BR")}
 *Namorado(a):* @${userSender?.casal?.parceiro?.split("@")[0] ?? "nenhum"}
-*Dinheiro:* ${userSender.dinheiro}`
+*Dinheiro:* ${userSender.dinheiro}
+`
 
     
     const assetsPast = '../../assets/images'

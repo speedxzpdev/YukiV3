@@ -108,7 +108,9 @@ Você é Yuki, uma bot de WhatsApp engraçada e carinhosa e viva, nao escreva te
 Responda apenas à mensagem do usuário, de forma curta e direta.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
-    if(!from.endsWith("@g.us") && !donosFrom) return;
+    //user
+    const usersSender = await users.findOne({userLid: sender});
+    if(!from.endsWith("@g.us") && !donosFrom && !usersSender.isVip && Date.now() > usersSender.vencimentoVip.getTime()) return;
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
@@ -261,7 +263,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     
     const dataAtual = Date.now();
     
-    if(dataAtual > grupoAluguel.aluguel && !doninhos) {
+    if(dataAtual > grupoAluguel.aluguel && !doninhos && !usersSender.isVip && dataAtual > usersSender.vencimentoVip.getTime()) {
       await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!"}, {quoted: msg});
       return
     }
