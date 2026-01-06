@@ -25,7 +25,7 @@ module.exports = {
       
       const metadata = await sock.groupMetadata(from);
       
-      const vencimentoMs = grupoDb.aluguel.getTime();
+      const vencimentoMs = grupoDb?.aluguel?.getTime();
       const agora = Date.now();
       
       const restanteMs = vencimentoMs - agora
@@ -35,7 +35,7 @@ module.exports = {
       const info = `𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗼̃𝗲𝘀 𝗱𝗼 𝗴𝗿𝘂𝗽𝗼
 *Nome:* ${metadata.subject}
 *Id:* ${from.split("@")[0]}
-*Vence em:* ${grupoDb.aluguel.toLocaleDateString("pt-BR")} - Faltam ${restanteDias} dias
+*Vence em:* ${grupoDb?.aluguel?.toLocaleDateString("pt-BR")} - Faltam ${restanteDias || 0} dias
 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗼̃𝗲𝘀 𝗱𝗼 𝗴𝗿𝘂𝗽𝗼
 *eventos:* ${grupoDb.configs?.events ? "On" : "Off"}
 *bem-vindo:* ${grupoDb.configs?.welcome ? "On" : "Off"}
