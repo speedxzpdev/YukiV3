@@ -7,6 +7,8 @@ module.exports = {
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     try {
       
+      const metadata = await sock.groupMetadata(from);
+      
       const sender = msg.key.participant
       
       const donoSender = await donos.findOne({userLid: sender});
@@ -39,7 +41,7 @@ module.exports = {
       
       const diasVencimento = diasAluguel * diaMs
       
-      await grupos.updateOne({groupId: from}, {$set: {aluguel: diasVencimento + Date.now()}});
+      await grupos.updateOne({groupId: from}, {$set: {aluguel: diasVencimento + Date.now(), grupoName: metadata.subject}});
       
       await sock.sendMessage(from, {text: 'Dias adicionados com sucesso! Use: "/grupoinfo", para ver mais informações.', edit: msgEspera.key});
       

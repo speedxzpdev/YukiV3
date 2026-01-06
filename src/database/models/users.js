@@ -5,6 +5,8 @@ const userSchema = new mongoose.Schema({
   userLid: {type: String, required: true},
   name: {type: String, required: true},
   bio: {type: String, default: "Olá, amo a Yuki!"},
+  isVip: {type: String, default: false},
+  vencimentoVip: {type: Date, default: null},
   registro: {type: Date, default: new Date()},
   casal: {
     parceiro: {type: String, default: null},
