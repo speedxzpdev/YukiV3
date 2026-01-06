@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const schema = new mongoose.Schema({
   groupId: {type: String, required: true},
   grupoName: {type: String, required: true},
+  ownerId: {type: String, required: true},
   aluguel: {type: Date, default: null},
   configs: {
     events: {type: Boolean, default: true},

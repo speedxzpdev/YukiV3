@@ -81,9 +81,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     }
     //lê todas mensagens
-    await sock.readMessages([msg.key]);
+    //await sock.readMessages([msg.key]);
     //ingnora mensagens de si mesmo
-    if (msg.key.fromMe) return
+    //if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
 
     
@@ -116,13 +116,15 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
         
         const groupDados = await sock.groupMetadata(from);
         
-      await grupos.create({groupId: from, grupoName: groupDados.subject});
+      await grupos.create({groupId: from, grupoName: groupDados.subject, ownerId: groupDados.owner});
     }
       
     }
     
 
     const groupDBInfo = await grupos.findOne({groupId: from});
+    
+    
 
     if(!await users.findOne({userLid: msg.key.participant})) {
       await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
@@ -171,24 +173,21 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     
     
     //Cuidado com quem permite uso disso.
-    if(body.startsWith(">")) {
-      try {
-        
-        if(!numberOwner.includes(sender)) {
-          await sock.sendMessage(from, {text: `Você não é o ispidi!`}, {quoted: msg});
-          return
-        }
-        
-        
-        const evalValor = eval(body.split(" ").slice(1).join(" "));
-        
-        await sock.sendMessage(from, {text: String(evalValor)}, {quoted:msg});
-        
-      }
-      catch(err) {
-        await sock.sendMessage(from, {text: String(err)});
-      }
-    }
+    if (body.startsWith(">")) {
+  try {
+    if (!numberOwner.includes(sender)) return;
+
+    const result = await eval(body.slice(2));
+
+    return sock.sendMessage(
+      from,
+      { text: require("util").inspect(result, { depth: 2 }) },
+      { quoted: msg }
+    );
+  } catch (e) {
+    return sock.sendMessage(from, { text: String(e) }, { quoted: msg });
+  }
+}
     
     
     
@@ -218,7 +217,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
   if(groupReply && groupReply.autoReply) {
     
       //caso ouva uma mencao ou frase com a yuki
-    if(mentions.includes('239165908242449@lid') || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
+    if(mentions.includes(numberBot) || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
         
         try {
           //simula escrita
@@ -256,6 +255,20 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
 //tratamento dos comandos
   if (body.startsWith(prefixo)) {
+    
+    //lida com aluguel
+    const grupoAluguel = await grupos.findOne({groupId: from});
+    
+    const dataAtual = Date.now();
+    
+    if(dataAtual > grupoAluguel.aluguel && !doninhos) {
+      await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!"}, {quoted: msg});
+      return
+    }
+    
+    
+    
+    //argumentos 
     const args = body.slice(prefixo.length).trim().split(/ +/);
 //pega o argumento digitado e deixa ele em letras minusculas
     const commandName = args.shift().toLowerCase();

@@ -109,6 +109,8 @@ menuDono: `${subMenu}
 ┆𓏲🫧֪𝆫➺ ${prefixo}getfile
 ┆𓏲🫧֪𝆫➺ ${prefixo}aqv
 ┆𓏲🫧֪𝆫➺ ${prefixo}reset
+┆𓏲🫧֪𝆫➺ ${prefixo}alugar
+┆𓏲🫧֪𝆫➺ ${prefixo}listargrupos
 
 ╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯`,
 

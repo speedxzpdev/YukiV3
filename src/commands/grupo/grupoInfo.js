@@ -1,5 +1,5 @@
 const { grupos } = require("../../database/models/grupos");
-
+const path = require("path");
 
 
 module.exports = {
@@ -25,27 +25,27 @@ module.exports = {
       
       const metadata = await sock.groupMetadata(from);
       
-      const vencimentoMs = grupoDb.aluguel
+      const vencimentoMs = grupoDb.aluguel.getTime();
       const agora = Date.now();
       
       const restanteMs = vencimentoMs - agora
       
-      const restanteDias = Math.max(0, Math.floor(restanteMs / (24 * 60 * 60 * 1000)));
+      const restanteDias = Math.max(0, Math.ceil(restanteMs / (24 * 60 * 60 * 1000)));
       
-      const info = `𝙄𝙣𝙛𝙤𝙧𝙢𝙖çõ𝙚𝙨 𝙙𝙤 𝙜𝙧𝙪𝙥𝙤
-Nome: ${metadata.subject}
-Id: ${from.split("@")[0]}
-Dias restante: ${restanteDias}
-𝘾𝙤𝙣𝙛𝙞𝙜𝙪𝙧𝙖çõ𝙚𝙨 𝙚 𝙚𝙫𝙚𝙣𝙩𝙤𝙨
-eventos: ${grupoDb.configs?.events ? "On" : "Off"}
-bem-vindo: ${grupoDb.configs?.welcome ? "On" : "Off"}
-anti-link: ${grupoDb.configs?.antlink ? "On" : "Off"}
-auto-resposta: ${grupoDb?.autoReply ? "On" : "Off"}
-Modo brincadeira: ${grupoDb?.configs?.cmdFun ? "On" : "Off"}
-Auto-Download: ${grupoDb?.autoDownload ? "On" : "Off"}`
+      const info = `𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗼̃𝗲𝘀 𝗱𝗼 𝗴𝗿𝘂𝗽𝗼
+*Nome:* ${metadata.subject}
+*Id:* ${from.split("@")[0]}
+*Vence em:* ${grupoDb.aluguel.toLocaleDateString("pt-BR")} - Faltam ${restanteDias} dias
+𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗼̃𝗲𝘀 𝗱𝗼 𝗴𝗿𝘂𝗽𝗼
+*eventos:* ${grupoDb.configs?.events ? "On" : "Off"}
+*bem-vindo:* ${grupoDb.configs?.welcome ? "On" : "Off"}
+*anti-link:* ${grupoDb.configs?.antlink ? "On" : "Off"}
+*auto-resposta:* ${grupoDb?.autoReply ? "On" : "Off"}
+*Modo brincadeira:* ${grupoDb?.configs?.cmdFun ? "On" : "Off"}
+*Auto-Download:* ${grupoDb?.autoDownload ? "On" : "Off"}`
       
       
-      await sock.sendMessage(from, {image: {url: "https://files.catbox.moe/zj7yc6.jpg"}, caption: info}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki2.jpg")}, caption: info}, {quoted: msg});
       
     }
     catch(err) {
