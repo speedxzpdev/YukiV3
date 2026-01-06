@@ -81,9 +81,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     }
     //lê todas mensagens
-    //await sock.readMessages([msg.key]);
+    await sock.readMessages([msg.key]);
     //ingnora mensagens de si mesmo
-    //if (msg.key.fromMe) return
+    if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
 
     
