@@ -8,7 +8,7 @@ const version = "4.1.3"
 
 const numberOwner = "188123996786820@lid"
 
-const numberBot = "239165908242449"
+const numberBot = "241725708722215@lid"
 
 module.exports = {
   prefixo,
