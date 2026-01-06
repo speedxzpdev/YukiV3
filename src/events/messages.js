@@ -116,7 +116,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
         
         const groupDados = await sock.groupMetadata(from);
         
-      await grupos.create({groupId: from, grupoName: groupDados.subject, ownerId: groupDados.owner});
+      await grupos.create({groupId: from, grupoName: groupDados.subject, ownerId: groupDados?.owner || "Sem dono"});
     }
       
     }
