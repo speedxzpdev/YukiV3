@@ -82,7 +82,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     //lê todas mensagens
     await sock.readMessages([msg.key]);
-    //ingnora mensagens de si mesmo
+    //ignora mensagens de si mesmo
     if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
 
@@ -110,7 +110,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
     const usersSender = await users.findOne({userLid: sender});
-    if(!from.endsWith("@g.us") && !donosFrom && !usersSender.isVip && Date.now() > usersSender.vencimentoVip.getTime()) return;
+    if(!from.endsWith("@g.us") && !donosFrom && !usersSender?.isVip && Date.now() > usersSender?.vencimentoVip?.getTime()) return;
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
@@ -263,7 +263,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     
     const dataAtual = Date.now();
     
-    if(dataAtual > grupoAluguel.aluguel && !doninhos && !usersSender.isVip && dataAtual > usersSender.vencimentoVip.getTime()) {
+    if(dataAtual > grupoAluguel.aluguel && !doninhos && !usersSender?.isVip && dataAtual > usersSender?.vencimentoVip?.getTime()) {
       await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!"}, {quoted: msg});
       return
     }
@@ -328,7 +328,12 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta);
 //adiciona no contador de comandos
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
-
+//adiciona no contador do grupo
+   if(from.endsWith("@g.us")) {
+   await grupos.updateOne({groupId: from}, {$inc: {cmdUsados: 1}});
+     
+   }
+   
   }
     });
     

@@ -31,9 +31,9 @@ module.exports = {
       
       const restanteDias = Math.max(0, Math.ceil(restanteMs / diasMs))
         
-        return `${indice + 1}. ${item?.grupoName || "Sem nome"}
-*Aluguel:* ${restanteDias || 0} dias restantes
-*Dono:* @${item?.ownerId.split("@")[0] || "Sem dono"}`
+        return `\`${indice + 1}. ${item?.grupoName || "Sem nome"}\`
+⤷ *Aluguel:* ${restanteDias || 0} dias restantes
+⤷ *Dono:* ${"@" + item?.ownerId ? "@" + item?.ownerId?.split("@")[0] : "Sem dono"}`
         
       });
       
