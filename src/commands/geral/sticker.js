@@ -5,6 +5,7 @@ const webp = require('node-webpmux');
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const fs = require('fs')
 const { exec } = require('child_process')
+const { version } = require("../../config");
 
 
 module.exports = {
@@ -116,18 +117,12 @@ const directMedia =
       
       
 const time = new Date()      
-const dadosfig = `🩵⃟𓏲ַ⁠ 𐙚 𝒀𝒖𝒌𝒊 𝑩𝒐𝒕．֪𝆫១
-
-꒡⫰﹒ৎ❄️୭ ﹕𝗡іᥴ𝐤 𝗢ᥕᥒᥱ𝐫﹒↯
-↦  𝐒𝐩𝐞𝐞𝐝 
-
-꒡⫰﹒ৎ❄️୭ ﹕𝗖һᥲ𝗍 𝗦๑ᥣіᥴі𝗍ᥲძ᥆﹒↯ ${groupName}
-↦
-
-𝝑🧊⃞𝝔 ! 𝖴𝗌𝖾𝗋 ➺ ${pushname}\n`
+const dadosfig = `🍷⃟  Yᴜᴋɪ ʙᴏᴛ 
+⤷ Dᴏɴᴏ: Speed
+⤷ Cʜᴀᴛ: ${groupName}
+⤷ Usᴇʀ: ${pushname}`
       
-const subdados = `Feito em: ${time.toLocaleDateString('pt-BR')}
-YukiBot`
+const subdados = `↦ ⏱ ${time.toLocaleDateString('pt-BR')} • ${version}`
       
       const finalPath = await addExif(outputPath, dadosfig, subdados);
 
