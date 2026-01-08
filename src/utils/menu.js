@@ -178,6 +178,13 @@ ${prefixo}𝘀 ➺  Faça uma figurinha
 ${prefixo}𝗿𝗲𝗻𝗮𝗺𝗲 ➺  renomeie uma figurinha
 ${prefixo}𝗿𝗮𝗻𝗱𝗼𝗺𝗳𝗶𝗴 ➺ figurinha aleatórias
 ${prefixo}toimage ➺ Converte fig em imagem
+
+*Perfil e usúarios:*
+${prefixo}casar ➺  case com alguém
+${prefixo}terminar ➺ Término do casal
+${prefixo}perfil ➺ veja seu perfil
+${prefixo}mudarbio ➺ mude sua bio
+${prefixo}saldo ➺ veja seu saldo
 `
   
   
