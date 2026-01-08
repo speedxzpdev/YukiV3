@@ -170,6 +170,8 @@ ${prefixo}𝙜𝙤𝙨𝙩𝙤𝙨𝙖 ➺ sua porcentagem de gostosa
 ${prefixo}𝙨𝙝𝙞𝙣𝙞𝙜𝙖𝙢𝙞 ➺ veja qual é o seu shinigami
 ${prefixo}𝙘𝙖𝙨𝙖𝙡 ➺ shipps aleatórios do grupo
 ${prefixo}𝙧𝙖𝙣𝙙𝙤𝙢𝙬𝙖𝙞𝙛𝙪 ➺ veja qual a sua Waifu aleatória
+${prefixo}gruposrank ➺ Veja o rank do seu grupo
+${prefixo}rankcmd ➺ veja o rank global de comandos
            ࿙࿚࿙࿚ ❈ ࿙࿚࿙࿚
 🎮⃞ ➻ 𝐌𝐞𝐧𝐮 𝐟𝐢𝐠𝐮𝐫𝐢𝐧𝐡𝐚𝐬 ❈ ᜒ︵᷼ ⊹
 ${prefixo}𝘀 ➺  Faça uma figurinha

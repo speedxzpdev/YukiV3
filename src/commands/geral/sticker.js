@@ -6,6 +6,7 @@ const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const fs = require('fs')
 const { exec } = require('child_process')
 const { version } = require("../../config");
+const { users } = require("../../database/models/users");
 
 
 module.exports = {
@@ -127,7 +128,10 @@ const subdados = `↦ ⏱ ${time.toLocaleDateString('pt-BR')} • ${version}`
       const finalPath = await addExif(outputPath, dadosfig, subdados);
 
       const stickerBuffer = fs.readFileSync(finalPath);
+      
       await sock.sendMessage(jid, { sticker: stickerBuffer }, { quoted: msg });
+      
+      await users.updateOne({userLid: msg.key.participant}, {$inc: {figurinhas: 1}});
 
       await fs.unlinkSync(inputPath);
       await fs.unlinkSync(outputPath);

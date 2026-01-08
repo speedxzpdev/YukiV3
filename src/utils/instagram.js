@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { users } = require("../database/models/users");
 require("dotenv").config();
 
 async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
@@ -17,6 +18,8 @@ async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     const data = req.data
     
     await sock.sendMessage(from, {video: {url: data.resultados[0].url}, caption: "Yuki reels!"}, {quoted: msg});
+    
+    await users.updateOne({userLid: msg.key.participant}, {$inc: {donwloads: 1}});
     
     
     
