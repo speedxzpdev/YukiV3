@@ -82,9 +82,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     }
     //lê todas mensagens
-    await sock.readMessages([msg.key]);
+    //await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    if (msg.key.fromMe) return
+    //if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
 
     
@@ -111,7 +111,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
     const usersSender = await users.findOne({userLid: sender});
-    if(!from.endsWith("@g.us") && !donosFrom && !usersSender?.isVip && Date.now() > usersSender?.vencimentoVip?.getTime()) return;
+    if(!from.endsWith("@g.us") && !donosFrom && Date.now() > usersSender?.vencimentoVip?.getTime()) return;
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
@@ -284,13 +284,17 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
   if (body.startsWith(prefixo)) {
     
     //lida com aluguel
+    if(from.endsWith("@g.us")) {
     const grupoAluguel = await grupos.findOne({groupId: from});
+    
+    if(!grupoAluguel) return;
     
     const dataAtual = Date.now();
     
-    if(dataAtual > grupoAluguel.aluguel && !doninhos && !usersSender?.isVip && dataAtual > usersSender?.vencimentoVip?.getTime()) {
+    if(dataAtual > grupoAluguel.aluguel && !doninhos && dataAtual > usersSender?.vencimentoVip?.getTime()) {
       await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!"}, {quoted: msg});
       return
+    }
     }
     
     
