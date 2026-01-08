@@ -25,9 +25,13 @@ module.exports = {
       const infos = `*User:* @${userSender.userLid.split("@")[0]}
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
-*Vip:* ${vencimentoDias || 0} dias - vence em ${userSender?.vencimentoVip?.toLocaleDateString("pt-BR")}
-*Namorado(a):* @${userSender?.casal?.parceiro?.split("@")[0] ?? "nenhum"}
+*Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + userSender.vencimentoVip.toLocaleDateString("pt-BR") : "Vencido!"}
+*Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
+*Desde:* ${userSender?.casal?.pedido.toLocaleDateString("pt-BR")}💕` : "nenhum"}
 *Dinheiro:* ${userSender.dinheiro}
+*Comandos usados:* ${userSender.cmdCount}
+*Downloads:* ${userSender.donwloads}
+*Figurinhas:* ${userSender.figurinhas}
 `
 
     
@@ -38,7 +42,7 @@ module.exports = {
       const imgsRandom = icons[Math.floor(Math.random() * icons.length)];
     
     
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, imgsRandom)}, caption: infos, mentions: [sender]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, imgsRandom)}, caption: infos, mentions: [sender, ...(userSender?.casal?.parceiro ? [userSender.casal.parceiro] : [])]}, {quoted: msg});
       
       
       

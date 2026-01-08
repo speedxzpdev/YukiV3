@@ -8,7 +8,9 @@ module.exports = {
     try {
       
       
-      const assetsPast = '../../assets/images/yukiBanner.jpg'
+      const assetsList = ['../../assets/images/yukiBanner.jpg', '../../assets/images/yukiBanner2.jpg'];
+      
+      const assetsPast = assetsList[Math.floor(Math.random() * assetsList.length)];
       
       await sock.sendMessage(from, {image: {url: path.join(__dirname, assetsPast)}, caption: menu(msg).menuAdmin}, {quoted: msg});
       

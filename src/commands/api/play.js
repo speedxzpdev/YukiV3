@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { users } = require("../../database/models/users");
 require("dotenv").config();
 
 module.exports = {
@@ -55,6 +56,8 @@ module.exports = {
     await sock.sendMessage(from, {text: "Prontinho! Aqui seu áudio", edit: msgEspera.key});
     
     await sock.sendPresenceUpdate("paused", from);
+    
+    await users.updateOne({userLid: msg.key.participant}, {$inc: {donwloads: 1}});
     
     
   }

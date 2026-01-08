@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
   registro: {type: Date, default: new Date()},
   casal: {
     parceiro: {type: String, default: null},
-    pedido: {type: Date, default: null}
+    pedido: {type: Date, default: null},
+    filhos: [String]
   },
   prefixo: {type: Boolean, default: true},
   daily: {type: Date, default: null},
