@@ -177,6 +177,7 @@ ${prefixo}rankcmd ➺ veja o rank global de comandos
 ${prefixo}𝘀 ➺  Faça uma figurinha
 ${prefixo}𝗿𝗲𝗻𝗮𝗺𝗲 ➺  renomeie uma figurinha
 ${prefixo}𝗿𝗮𝗻𝗱𝗼𝗺𝗳𝗶𝗴 ➺ figurinha aleatórias
+${prefixo}toimage ➺ Converte fig em imagem
 `
   
   

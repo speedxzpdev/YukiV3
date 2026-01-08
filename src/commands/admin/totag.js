@@ -12,7 +12,6 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
   
   const Admins = metadados.participants.filter(p => p.admin)
   const groupAdmins = Admins.map(m => m.id)
-  console.log(Admins)
   const sender = msg.key.participant
 
 
@@ -27,11 +26,9 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
       remoteJid: from,
       id: 'yuki123',
       fromMe: false,
-      participant: '0@s.whatsapp.net'},
+      participant: msg.key.participant},
       message: {
-        extendedTextMessage: {text: `*🫟𝐆𝐫𝐮𝐩𝐨:* ${metadados.subject}
-*🪻𝐛𝐨𝐭:* 
-*💜 𝐕𝐞𝐫𝐬ã𝐨:* `}
+        extendedTextMessage: {text: `⤷ ❄️ Mᴀʀᴄᴀᴄ̧ᴀ̃ᴏ ᴅᴏ ᴀᴅᴍɪɴ: ${msg.pushName} `}
         
       }
     }

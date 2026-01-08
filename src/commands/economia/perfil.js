@@ -25,8 +25,9 @@ module.exports = {
       const infos = `*User:* @${userSender.userLid.split("@")[0]}
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
-*Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + vencimentoVip.toLocaleDateString("pt-BR") : "Vencido"}
-*Namorado(a):* @${userSender?.casal?.parceiro?.split("@")[0] ?? "nenhum"}
+*Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + userSender.vencimentoVip.toLocaleDateString("pt-BR") : "Vencido!"}
+*Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
+*Desde:* ${userSender?.casal?.pedido}` : "nenhum"}
 *Dinheiro:* ${userSender.dinheiro}
 *Comandos usados:* ${userSender.cmdCount}
 *Downloads:* ${userSender.donwloads}
