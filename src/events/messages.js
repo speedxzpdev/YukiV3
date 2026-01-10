@@ -1,4 +1,4 @@
-const { prefixo, numberBot, numberOwner } = require("../config");
+const { prefixo, numberBot, numberOwner, numberBotJid } = require("../config.js");
 const tiktokDl = require("../utils/tiktok");
 const connectDB = require("../database/index");
 const similarityCmd = require("../utils/similaridadeCmd");
@@ -54,22 +54,7 @@ const menu = require("../utils/menu");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
-    //caso nao tenha mensagens
-    if(!msg) return;
-    
-    const grupoRemote = msg.key.remoteJid
-    
-              //Se o grupo nao foi iniciado
-      if(!messageQueue.has(grupoRemote)) {
-        //Cria a lista de cada grupo
-        messageQueue.set(grupoRemote, []);
-        //marca como false
-        flagMessage.set(grupoRemote, false);
-      }
-    
-    //adiciona tudo em uma fila
-    messageQueue.get(grupoRemote).push(async () => {
-          //escopo pra Nao vazar variaveis
+//escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
     const msgTime = msg.messageTimestamp * 1000
@@ -79,17 +64,18 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const msgTemp = agora - msgTime
     //se for mensagem de 10 seg ingnora
     if(msgTemp >= 20000) return;
-    
     }
-    //lê todas mensagens
-    //await sock.readMessages([msg.key]);
+    
+        //lê todas mensagens
+    await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    //if (msg.key.fromMe) return
+    if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
-
+    
+    const ctx = msg.message?.extendedTextMessage?.contextInfo;
     
    const mentions =
-  msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
+  msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || ctx?.participant || [];
 
     const sender = msg.key.participant || msg.key.remoteJid
 
@@ -103,9 +89,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const promptBase = `
 Você é Yuki, uma bot de WhatsApp engraçada e carinhosa e viva, nao escreva textos grandes. Não permita assuntos sexuais ou explícitos.
 - Use o nome do usuário apenas se fizer sentido.
-- Se perguntarem sobre comandos, use o mapa de comandos: ${JSON.stringify(commandsMap)}
 - Prefixo de comando: "/"
-- Se perguntarem sobre o dono: o dono é Speed, ele trabalha na bot todo dia. Você é mulher. POR FAVOR DE MANEIRA ALGUMA FALE COISAS SEXUAIS
+- Se perguntarem sobre o dono: o dono é Speed, ele trabalha na bot todo dia. Você é mulher.
 Responda apenas à mensagem do usuário, de forma curta e direta.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
@@ -162,41 +147,14 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
       return
     }
 
-
-
-
-
-
-
     const body = (msg.message?.conversation) ||
     (msg.message?.extendedTextMessage?.text) ||
     (msg.message?.imageMessage?.caption) ||
-    (msg.message?.documentMessage?.caption) || "Msg estranha..."
+    (msg.message?.documentMessage?.caption) || "Msg estranha...";
     
+    const bodyCase = body.toLowerCase();
     
-    
-    //Cuidado com quem permite uso disso.
-    if (body.startsWith(">")) {
-  try {
-    if (!numberOwner.includes(sender)) return;
-
-    const result = await eval(body.slice(2));
-
-    return sock.sendMessage(
-      from,
-      { text: require("util").inspect(result, { depth: 2 }) },
-      { quoted: msg }
-    );
-  } catch (e) {
-    return sock.sendMessage(from, { text: String(e) }, { quoted: msg });
-  }
-}
-    
-    
-    
-    const bodyCase = body.toLowerCase()
-  
-  //Caso tenha um user com pedido pendente
+      //Caso tenha um user com pedido pendente
   const alvoNamoro = await namoros.findOne({alvo: sender});
   if(alvoNamoro) {
     
@@ -219,32 +177,13 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     }
     
   }
-  
-  
-    //Caso um grupo tenha auto download
-  const groupDonwload = await grupos.findOne({groupId: from});
-  if(groupDonwload && groupDonwload.autoDownload || from.endsWith("@lid")) {
-  //caso tenha um link de tiktok
-  if (body.startsWith("https://vt.tiktok.com/")) {
-
-    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
-
-  }
-  
-  if(body.startsWith("https://www.instagram.com/reel")) {
-    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
-  }
-  
-  }
-
-
-
+  //pega os dados do grupo
   const groupReply = await grupos.findOne({groupId: from});
   //caso o grupo tenha autoreply ativo
   if(groupReply && groupReply.autoReply) {
     
       //caso ouva uma mencao ou frase com a yuki
-    if(mentions.includes(numberBot) || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
+    if(mentions.includes(numberBot) || mentions.includes(numberBotJid) || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
         
         try {
           //simula escrita
@@ -268,6 +207,56 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
         }
       }
     
+  }
+    
+    //caso nao tenha mensagens
+    if(!msg) return;
+    
+    const grupoRemote = msg.key.remoteJid
+    
+              //Se o grupo nao foi iniciado
+      if(!messageQueue.has(grupoRemote)) {
+        //Cria a lista de cada grupo
+        messageQueue.set(grupoRemote, []);
+        //marca como false
+        flagMessage.set(grupoRemote, false);
+      }
+    
+    
+    //PROCESSAMENTO DE MENSAGENS
+    //adiciona tudo em uma fila
+    messageQueue.get(grupoRemote).push(async () => {
+    //Cuidado com quem permite uso disso.
+    if (body.startsWith(">")) {
+  try {
+    if (!numberOwner.includes(sender)) return;
+
+    const result = await eval(body.slice(2));
+
+    return sock.sendMessage(
+      from,
+      { text: require("util").inspect(result, { depth: 2 }) },
+      { quoted: msg }
+    );
+  } catch (e) {
+    return sock.sendMessage(from, { text: String(e) }, { quoted: msg });
+  }
+}
+    //Caso um grupo tenha auto download
+  const groupDonwload = await grupos.findOne({groupId: from});
+  
+  if(groupDonwload && groupDonwload.autoDownload || from.endsWith("@lid")) {
+  //caso tenha um link de tiktok
+  if (body.startsWith("https://vt.tiktok.com/")) {
+
+    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
+
+  }
+  
+  if(body.startsWith("https://www.instagram.com/reel")) {
+    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
+  }
+  
   }
 
   //Caso uma mensagem comece com prefixo
