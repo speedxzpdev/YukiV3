@@ -185,6 +185,11 @@ ${prefixo}terminar ➺ Término do casal
 ${prefixo}perfil ➺ veja seu perfil
 ${prefixo}mudarbio ➺ mude sua bio
 ${prefixo}saldo ➺ veja seu saldo
+
+*Stalkear com a yuki:*
+${prefixo}tiktokstalk - Veja info sobre um perfil
+${prefixo}githubstalk - veja informações de um dev no github
+
 `
   
   

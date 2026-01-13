@@ -13,7 +13,7 @@ const { GoogleGenAI } = require("@google/genai");
 require("dotenv").config();
 const axios = require("axios");
 const menu = require("../utils/menu");
-
+const YukiBot = require("../utils/fuc");
 
 
     //Parte que lida com mensagens em lotes
@@ -67,9 +67,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     
         //lê todas mensagens
-    await sock.readMessages([msg.key]);
+    //await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    if (msg.key.fromMe) return
+    //if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
@@ -82,6 +82,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const doninhos = await donos.findOne({userLid: sender});
     
     const donosFrom = await donos.findOne({userLid: msg?.key.remoteJid});
+    
+    const bot = new YukiBot({sock: sock, msg});
+    
+    
     
     //Instancia do gemini
     const ia = new GoogleGenAI({apiKey: process.env.GEMINI_APIKEY});
@@ -343,7 +347,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     }
     
     //executa o comando
-    await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta);
+    await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta, bot);
 //adiciona no contador de comandos
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
 //adiciona no contador do grupo

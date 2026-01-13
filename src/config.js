@@ -12,6 +12,8 @@ const numberBotJid = "21910056837@s.whatsapp.net";
 
 const numberBot = "241725708722215@lid"
 
+let logs = true;
+
 module.exports = {
   prefixo,
   numberBot,
