@@ -67,9 +67,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     
         //lê todas mensagens
-    await sock.readMessages([msg.key]);
+    //await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    if (msg.key.fromMe) return
+    //if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
@@ -100,7 +100,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
     const usersSender = await users.findOne({userLid: sender});
-    if(!from.endsWith("@g.us") && !donosFrom && Date.now() > usersSender?.vencimentoVip?.getTime()) return;
+    if(!from.endsWith("@g.us") && !donosFrom && (!usersSender.vencimentoVip|| Date.now() > usersSender.vencimentoVip.getTime())) return;
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
