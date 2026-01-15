@@ -30,6 +30,7 @@ return {
 ┆𓏲🫧֪𝆫➺ ${prefixo}menuadmin
 ┆𓏲🫧֪𝆫➺ ${prefixo}menubrincadeira
 ┆𓏲🫧֪𝆫➺ ${prefixo}menudono
+┆𓏲🫧֪𝆫➺${prefixo}menucompleto
 ╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 
@@ -185,6 +186,7 @@ ${prefixo}terminar ➺ Término do casal
 ${prefixo}perfil ➺ veja seu perfil
 ${prefixo}mudarbio ➺ mude sua bio
 ${prefixo}saldo ➺ veja seu saldo
+${prefixo}diario  ➺  resgate uma quantidade de moedas aleatória
 
 *Stalkear com a yuki:*
 ${prefixo}tiktokstalk - Veja info sobre um perfil
