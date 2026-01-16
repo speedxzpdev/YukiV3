@@ -187,6 +187,7 @@ ${prefixo}perfil ➺ veja seu perfil
 ${prefixo}mudarbio ➺ mude sua bio
 ${prefixo}saldo ➺ veja seu saldo
 ${prefixo}diario  ➺  resgate uma quantidade de moedas aleatória
+${prefixo}coinflip ➺ aposte cara ou coroa com alguém
 
 *Stalkear com a yuki:*
 ${prefixo}tiktokstalk - Veja info sobre um perfil
