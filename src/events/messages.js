@@ -14,6 +14,7 @@ require("dotenv").config();
 const axios = require("axios");
 const menu = require("../utils/menu");
 const YukiBot = require("../utils/fuc");
+const { desafios } = require("../database/models/desafios");
 
 
     //Parte que lida com mensagens em lotes
@@ -67,9 +68,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     
         //lê todas mensagens
-    //await sock.readMessages([msg.key]);
+    await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    //if (msg.key.fromMe) return
+    if (msg.key.fromMe) return
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
@@ -179,8 +180,53 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
       
       await sock.sendMessage(from, {text: `Sinto muito @${alvoNamoro.pedidor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
     }
-    
   }
+    //caso tenha uma aposta 
+    const desafioAtivo = await desafios.findOne({alvo: sender});
+    if(desafioAtivo) {
+      
+      if(bodyCase === "aceitarap") {
+        try {
+          const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
+          
+          const caraOuCora = Math.floor(Math.random() * 100);
+          
+          if(caraOuCora < 50) {
+            await sock.sendMessage(from, {text: `Coroa! @${desafioAtivo.alvo.split("@")[0]} ganhou +${desafioAtivo.valor}`, mentions: [desafioAtivo.alvo], edit: msgEspera.key});
+            //dá o dinheiro
+            await users.updateOne({userLid: desafioAtivo.alvo}, {$inc: {dinheiro: desafioAtivo.valor}});
+            //remove de quem perdeu
+            await users.updateOne({userLid: desafioAtivo.user}, {$inc: {dinheiro: -desafioAtivo.valor}})
+            
+            //apaga
+            await desafios.deleteOne({_id: desafioAtivo._id});
+          }
+          else {
+            await sock.sendMessage(from, {text: `Cara! @${desafioAtivo.user.split("@")[0]} ganhou +${desafioAtivo.valor}`, mentions: [desafioAtivo.user], edit: msgEspera.key});
+            //dá o valor
+            await users.updateOne({userLid: desafioAtivo.user}, {$inc: {dinheiro: desafioAtivo.valor}});
+            
+            //remove de quem perdeu
+            await users.updateOne({userLid: desafioAtivo.alvo}, {$inc: {dinheiro: -desafioAtivo.valor}})
+            
+            await desafios.deleteOne({_id: desafioAtivo._id});
+          }
+        }
+        catch(err) {
+          await bot.reply(from, erros_prontos);
+          console.error(err);
+        }
+        
+      }
+      if(bodyCase === "recusarap") {
+        await sock.sendMessage(from, {text: `Aposta de: @${desafioAtivo.user.split("@")[0]} recusada!`, mentions: [desafioAtivo.user]}, {quoted: msg});
+      }
+      
+      await desafios.deleteOne({_id: desafioAtivo._id});
+      
+    }
+    
+  
   //pega os dados do grupo
   const groupReply = await grupos.findOne({groupId: from});
   //caso o grupo tenha autoreply ativo

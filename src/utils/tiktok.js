@@ -65,7 +65,7 @@ await sock.sendMessage(from, {video: {url: result.video.playAddr[0]}, caption: l
 
 await sock.sendMessage(from, {text: "Baixando o melhor áudio!"}, {quoted: msg});
 
-await sock.sendMessage(from, {audio: {url: result.music.playUrl[0]}, mimetype: "audio/mp4", ptt: true}, {quoted: msg});
+await sock.sendMessage(from, {audio: {url: result.music.playUrl[0]}, mimetype: "audio/mp4"}, {quoted: msg});
 
 }
 catch(err) {
