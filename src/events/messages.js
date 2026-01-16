@@ -193,13 +193,21 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
           
           if(caraOuCora < 50) {
             await sock.sendMessage(from, {text: `Coroa! @${desafioAtivo.alvo.split("@")[0]} ganhou +${desafioAtivo.valor}`, mentions: [desafioAtivo.alvo], edit: msgEspera.key});
-            
+            //dá o dinheiro
             await users.updateOne({userLid: desafioAtivo.alvo}, {$inc: {dinheiro: desafioAtivo.valor}});
+            //remove de quem perdeu
+            await users.updateOne({userLid: desafioAtivo.user}, {$inc: {dinheiro: -desafioAtivo.valor}})
+            
+            //apaga
+            await desafios.deleteOne({_id: desafioAtivo._id});
           }
           else {
             await sock.sendMessage(from, {text: `Cara! @${desafioAtivo.user.split("@")[0]} ganhou +${desafioAtivo.valor}`, mentions: [desafioAtivo.user], edit: msgEspera.key});
-            
+            //dá o valor
             await users.updateOne({userLid: desafioAtivo.user}, {$inc: {dinheiro: desafioAtivo.valor}});
+            
+            //remove de quem perdeu
+            await users.updateOne({userLid: desafioAtivo.alvo}, {$inc: {dinheiro: -desafioAtivo.valor}})
             
             await desafios.deleteOne({_id: desafioAtivo._id});
           }
