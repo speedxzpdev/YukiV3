@@ -1,0 +1,8 @@
+{
+  "comum": 300,
+  "raro": 500,
+  "epica": 2000,
+  "lendaria": 4000,
+  "mitico": 8000,
+  "secreto": 20000
+}
