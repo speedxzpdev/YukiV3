@@ -188,6 +188,9 @@ ${prefixo}mudarbio ➺ mude sua bio
 ${prefixo}saldo ➺ veja seu saldo
 ${prefixo}diario  ➺  resgate uma quantidade de moedas aleatória
 ${prefixo}coinflip ➺ aposte cara ou coroa com alguém
+${prefixo}loja ➺ veja a loja de waifus
+${prefixo}comprarwaifu ➺ Compre uma waifu
+${prefixo}rankmoedas ➺ rank de moedas
 
 *Stalkear com a yuki:*
 ${prefixo}tiktokstalk - Veja info sobre um perfil

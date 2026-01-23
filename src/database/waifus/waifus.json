@@ -286,5 +286,11 @@
   "image": "../../assets/waifusImg/yukiTsukomo.jpg",
   "raridade": "comum",
   "id": 47
+},
+{
+  "nome": "Yoruichi Shihoin",
+  "image": "../../assets/waifusImg/yoruichiShihoin.jpg",
+  "raridade": "lendaria",
+  "id": 48
 }
 ]
