@@ -18,6 +18,24 @@ module.exports = {
       
       const userSender = await users.findOne({userLid: sender});
       
+      
+      
+      const waifusInv = userSender.waifus.sort((a, b) => {
+        return b.preco - a.preco
+      }).map((item, indice) => {
+        return `${indice + 1}° ${item.nome}
+⤷ *Raridade:* ${item.raridade}
+⤷ *Preço:* ${item.preco} moedas`
+      });
+      
+      let senderProfile;
+      
+      try {
+        senderProfile = await sock.profilePictureUrl(sender, "image");
+      } catch(e) {
+        senderProfile = null;
+      }
+      
       const vencimentoMs = userSender?.vencimentoVip - Date.now();
       
       const vencimentoDias = Math.max(0, Math.ceil(vencimentoMs / (24 * 60 * 60 * 1000)))
@@ -29,9 +47,13 @@ module.exports = {
 *Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
 *Desde:* ${userSender?.casal?.pedido.toLocaleDateString("pt-BR")}💕` : "nenhum"}
 *Dinheiro:* ${userSender.dinheiro}
+*Quantidade waifus:* ${userSender.waifus.length}
 *Comandos usados:* ${userSender.cmdCount}
 *Downloads:* ${userSender.donwloads}
 *Figurinhas:* ${userSender.figurinhas}
+
+*Inventário de waifus:*
+${waifusInv.join("\n\n")}
 `
 
     
@@ -42,7 +64,7 @@ module.exports = {
       const imgsRandom = icons[Math.floor(Math.random() * icons.length)];
     
     
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, imgsRandom)}, caption: infos, mentions: [sender, ...(userSender?.casal?.parceiro ? [userSender.casal.parceiro] : [])]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: senderProfile ? senderProfile : path.join(__dirname ,imgsRandom)}, caption: infos, mentions: [sender, ...(userSender?.casal?.parceiro ? [userSender.casal.parceiro] : [])]}, {quoted: msg});
       
       
       

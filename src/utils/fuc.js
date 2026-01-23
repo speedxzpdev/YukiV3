@@ -10,7 +10,9 @@ class YukiBot {
   
   //responde a uma mensagem
   async reply(from, text, quoted) {
-    await this.sock.sendMessage(from, {text: text}, {quoted: quoted ?? this.msg});
+    const r = await this.sock.sendMessage(from, {text: text}, {quoted: quoted ?? this.msg});
+    return r
+    
   }
   
   //envia uma mensagem
@@ -42,6 +44,10 @@ class YukiBot {
   //envia uma reação
   async react(from, text, message) {
     await this.sock.sendMessage(from, {react: {text: text, key: message.key ?? this.msg.key}});
+  }
+  
+  async editReply(from, key, text) {
+    await this.sock.sendMessage(from, {text: text, edit: key});
   }
 }
 

@@ -1,0 +1,296 @@
+[
+  {
+  "nome": "Alya Kujo",
+  "image": "../../assets/waifusImg/alyaKujo.jpg",
+  "raridade": "mitico",
+  "id": 1
+},
+{
+  "nome": "Asa Mitaka",
+  "image": "../../assets/waifusImg/asaMitaka.jpg",
+  "raridade": "raro",
+  "id": 2
+},
+{
+  "nome": "Bambietta Basterbine",
+  "image": "../../assets/waifusImg/bambiettaBasterbine.jpg",
+  "raridade": "comum",
+  "id": 3
+},
+{
+  "nome": "Citlali",
+  "image": "../../assets/waifusImg/citlali.jpg",
+  "raridade": "lendaria",
+  "id": 4
+},
+{
+  "nome": "Clorinde",
+  "image": "../../assets/waifusImg/Clorinde.jpg",
+  "raridade": "lendaria",
+  "id": 5
+},
+{
+  "nome": "Columbina",
+  "image": "../../assets/waifusImg/columbina.jpg",
+  "raridade": "lendaria",
+  "id": 6
+},
+{
+  "nome": "Echidna",
+  "image": "../../assets/waifusImg/echidna.jpg",
+  "raridade": "lendaria",
+  "id": 7
+},
+{
+  "nome": "Emilía",
+  "image": "../../assets/waifusImg/emilia.jpg",
+  "raridade": "epica",
+  "id": 8
+},
+{
+  "nome": "felix",
+  "image": "../../assets/waifusImg/felix.jpg",
+  "raridade": "secreto",
+  "id": 9
+},
+{
+  "nome": "Ganyu",
+  "image": "../../assets/waifusImg/ganyu.jpg",
+  "raridade": "lendaria",
+  "id": 10
+},
+{
+  "nome": "Gilese Gewelle",
+  "image": "../../assets/waifusImg/giseleGewelle.jpg",
+  "raridade": "comum",
+  "id": 11
+},
+{
+  "nome": "Gold Ship",
+  "image": "../../assets/waifusImg/goldShip.jpg",
+  "raridade": "mitico",
+  "id": 12
+},
+{
+"nome": "Hu Tao",
+  "image": "../../assets/waifusImg/huTao.jpg",
+  "raridade": "epica",
+  "id": 13
+},
+{
+  "nome": "Kobeni",
+  "image": "../../assets/waifusImg/kobeni.jpg",
+  "raridade": "raro",
+  "id": 14
+},
+{
+  "nome": "Kyouka",
+  "image": "../../assets/waifusImg/kyouka.jpg",
+  "raridade": "raro",
+  "id": 15
+},
+{
+  "nome": "Lauma",
+  "image": "../../assets/waifusImg/lauma.jpg",
+  "raridade": "lendaria",
+  "id": 16
+},
+{
+  "nome": "Lena Fox",
+  "image": "../../assets/waifusImg/lenaFox.jpg",
+  "raridade": "exclusiva",
+  "id": 17
+},
+{
+  "nome": "Makima",
+  "image": "../../assets/waifusImg/makima.jpg",
+  "raridade": "mitico",
+  "id": 18
+},
+{
+  "nome": "Maki Zenin",
+  "image": "../../assets/waifusImg/makiZenim.jpg",
+  "raridade": "lendaria",
+  "id": 19
+},
+{
+  "nome": "Mambo",
+  "image": "../../assets/waifusImg/mambo.jpg",
+  "raridade": "secreto",
+  "id": 20
+},
+{
+  "nome": "Masha kujou",
+  "image": "../../assets/waifusImg/mashaKujou.jpg",
+  "raridade": "epica",
+  "id": 21
+},
+{
+  "nome": "Mavuika",
+  "image": "../../assets/waifusImg/mavuika.jpg",
+  "raridade": "lendaria",
+  "id": 22
+},
+{
+  "nome": "Miwa Kasumi",
+  "image": "../../assets/waifusImg/miwaKasumi.jpg",
+  "raridade": "raro",
+  "id": 23
+},
+{
+  "nome": "Mizuki",
+  "image": "../../assets/waifusImg/mizuki.jpg",
+  "raridade": "raro",
+  "id": 24
+},
+{
+  "nome": "Navia",
+  "image": "../../assets/waifusImg/navia.jpg",
+  "raridade": "raro",
+  "id": 25
+},
+{
+  "nome": "Neffer",
+  "image": "../../assets/waifusImg/neffer.jpg",
+  "raridade": "raro",
+  "id": 26
+},
+{
+  "nome": "Nobara Kugisaki",
+  "image": "../../assets/waifusImg/nobaraKugisaki.jpg",
+  "raridade": "comum",
+  "id": 27
+},
+{
+  "nome": "Orihime Inoue",
+  "image": "../../assets/waifusImg/orihimeInoue.jpg",
+  "raridade": "epica",
+  "id": 27
+},
+{
+  "nome": "Power",
+  "image": "../../assets/waifusImg/power.jpg",
+  "raridade": "raro",
+  "id": 28
+},
+{
+  "nome": "Priscila",
+  "image": "../../assets/waifusImg/priscila.jpg",
+  "raridade": "comum",
+  "id": 29
+},
+{
+  "nome": "Raiden Shogun",
+  "image": "../../assets/waifusImg/raidenShogun.jpg",
+  "raridade": "mitico",
+  "id": 30
+},
+{
+  "nome": "Ram",
+  "image": "../../assets/waifusImg/ram.jpg",
+  "raridade": "comum",
+  "id": 31
+},
+{
+  "nome": "Rem",
+  "image": "../../assets/waifusImg/ren.jpg",
+  "raridade": "raro",
+  "id": 32
+},
+{
+  "nome": "Ren Yamashiro",
+  "image": "../../assets/waifusImg/renYamashiro.jpg",
+  "raridade": "lendaria",
+  "id": 33
+},
+{
+  "nome": "Reze",
+  "image": "../../assets/waifusImg/reze.jpg",
+  "raridade": "epica",
+  "id": 34
+},
+{
+  "nome": "Rukia Kuchiki",
+  "image": "../../assets/waifusImg/rukiaKuchiki.jpg",
+  "raridade": "mitico",
+  "id": 35
+},
+{
+  "nome": "Shikoku",
+  "image": "../../assets/waifusImg/shikoku.jpg",
+  "raridade": "raro",
+  "id": 36
+},
+{
+  "nome": "Special Week",
+  "image": "../../assets/waifusImg/specialWeek.jpg",
+  "raridade": "raro",
+  "id": 37
+},
+{
+  "nome": "Teio",
+  "image": "../../assets/waifusImg/teio.jpg",
+  "raridade": "comum",
+  "id": 38
+},
+{
+  "nome": "Tenka",
+  "image": "../../assets/waifusImg/tenka.jpg",
+  "raridade": "raro",
+  "id": 39
+},
+{
+  "nome": "Trish",
+  "image": "../../assets/waifusImg/trish.jpg",
+  "raridade": "raro",
+  "id": 40
+},
+{
+  "nome": "Utahime Lori",
+  "image": "../../assets/waifusImg/utahimeLori.jpg",
+  "raridade": "comum",
+  "id": 41
+},
+{
+  "nome": "Varesa",
+  "image": "../../assets/waifusImg/varesa.jpg",
+  "raridade": "epica",
+  "id": 42
+},
+{
+  "nome": "Yae Miko",
+  "image": "../../assets/waifusImg/yaeMiko.jpg",
+  "raridade": "mitico",
+  "id": 43
+},
+{
+  "nome": "Yor Forger",
+  "image": "../../assets/waifusImg/yorForger.jpg",
+  "raridade": "comum",
+  "id": 44
+},
+{
+  "nome": "Yoru",
+  "image": "../../assets/waifusImg/yoru.jpg",
+  "raridade": "mitico",
+  "id": 45
+},
+{
+  "nome": "Yuki Suou",
+  "image": "../../assets/waifusImg/yukiSuou.jpg",
+  "raridade": "mitico",
+  "id": 46
+},
+{
+  "nome": "Yuki Tsukomo",
+  "image": "../../assets/waifusImg/yukiTsukomo.jpg",
+  "raridade": "comum",
+  "id": 47
+},
+{
+  "nome": "Yoruichi Shihoin",
+  "image": "../../assets/waifusImg/yoruichiShihoin.jpg",
+  "raridade": "lendaria",
+  "id": 48
+}
+]

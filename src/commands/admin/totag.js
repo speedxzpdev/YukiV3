@@ -4,7 +4,7 @@ const { donos } = require("../../database/models/donos");
 module.exports = {
 
 name: "totag",
-async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
   
   const texto = args.slice(0).join(" ")?.trim();
   
@@ -16,7 +16,7 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
 
 
   if (!groupAdmins.includes(msg.key.participant) && !await donos.findOne({userLid: sender})) {
-    await sock.sendMessage(from, {text: "Entrosa n mlk"}, {quoted: msg})
+    await bot.sendNoAdmin(from);
     return
   }
   
@@ -43,6 +43,8 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
   const video = quoted?.videoMessage
   
   const sticker = quoted?.stickerMessage
+  
+  const enquete = quoted?.pollCreationMessageV3
   
   
  const metadata = await sock.groupMetadata(from)

@@ -15,7 +15,7 @@ const axios = require("axios");
 const menu = require("../utils/menu");
 const YukiBot = require("../utils/fuc");
 const { desafios } = require("../database/models/desafios");
-
+const spotifyDl = require("../utils/spotify.js");
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -50,11 +50,14 @@ const { desafios } = require("../database/models/desafios");
       }
       flagMessage.set(groupId, false);
     }
-
+    
+    //map de usos de comando
+    const cooldown = new Map();
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0]
+    //console.log(msg)
 //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
@@ -303,6 +306,10 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
   }
   
+  if(body.includes("https://open.spotify.com/track/")) {
+    spotifyDl(sock, msg, from, body, erros_prontos, espera_pronta, bot)
+  }
+  
   if(body.startsWith("https://www.instagram.com/reel")) {
     instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
   }
@@ -310,8 +317,11 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
   }
 
   //Caso uma mensagem comece com prefixo
-  if(body.startsWith("prefixo")) {
-    await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo}\``})
+  if(body.includes("prefixo")) {
+    
+    if(msg.key.fromMe) return;
+    
+    await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo || "/"}\``}, {quoted: msg});
   }
 
 
@@ -321,6 +331,36 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
 //tratamento dos comandos
   if (body.startsWith(prefixo)) {
+    
+    //Lida com spams de mesmos comandos
+    
+    
+    function spamCommand(user, command) {
+      const LIMITE = 5;
+      const TEMPO = 60 * 1000;
+      const agora = Date.now();
+      const key = `${user}:${command}`
+      
+      //Se nao existe cria
+      if(!cooldown.has(key)) {
+        cooldown.set(key, []);
+      }
+      
+      //pega os usos 
+      const usos = cooldown.get(key);
+      
+      //filtra por recentes
+      const usosRecentes = usos.filter(tempo => agora - tempo < TEMPO);
+      
+      //adiciona o TEMPO
+      usosRecentes.push(agora);
+      //adiciona e volta pro Map
+      cooldown.set(key, usosRecentes);
+      
+      
+      return usosRecentes.length >= LIMITE
+      
+    }
     
     //lida com aluguel
     if(from.endsWith("@g.us")) {
@@ -376,7 +416,12 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
 
 
 //caso tenha um comando similar
-      sock.sendMessage(from, {text: `😅 Eita, ${msg.pushName}! Parece que você errou o comando… Queria dizer "${prefixo}${similarity.sugest}" talvez? Similaridade: ${similarity.similarity}%`}, {quoted: msg});
+      
+      const ListMsgSimilarCmd = [`${prefixo}${commandName}...? Eu não entendo essa língua porém... Acho que você quis dizer *${prefixo}${similarity.sugest}* Estou certa?`, `Não faço a miníma ideia do que seja ${prefixo}${commandName}, mas... Achei um comando similar, *${prefixo}${similarity.sugest}*. Acertei?`, `Procurei esse comando em todas minhas receitas porém... Achei um parecido, ${prefixo}${similarity.sugest}, Estou certa?`, `Tentei adivinhar oque você pediu, porém não consegui. Mas achei um comando similar, *${prefixo}${similarity.sugest}*, é oque deseja?`];
+      
+      const similarCmdRandom = ListMsgSimilarCmd[Math.floor(Math.random() * ListMsgSimilarCmd.length)];
+      
+      sock.sendMessage(from, {text: `${similarCmdRandom}\n\n⤷ Similaridade: ${similarity.similarity}%`}, {quoted: msg});
       return
     }
     
@@ -390,6 +435,15 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
         await sock.sendMessage(from, {text: "Modo brincadeira desativado no grupo. Peça pra um admin usar /modobrincadeira 1"}, {quoted: msg});
         return
       }
+    }
+    //Verifica se tem spam 
+    if(spamCommand(sender, commandName)) {
+      const respostasSpamList = [`Ei! Pare de spamar o mesmo comando!`, `Eu entendo que você gostou muito do comando mas não posso deixar você abusar.`, `Hum... Você gostou do comando né...? Porém não permito spam dele!`, `A Yuki detectou spam do mesmo comando! Pare de abusar do comando!`];
+      
+      const frasesSpamCommand = respostasSpamList[Math.floor(Math.random() * respostasSpamList.length)];
+      
+      await bot.reply(from, frasesSpamCommand);
+      return
     }
     
     //executa o comando
