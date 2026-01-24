@@ -67,13 +67,15 @@ return
     }
     
     if(await donos.findOne({userLid: mention})) {
-      await sock.sendMessage(from, {text: "O cara é subDono zé bct"}, {quoted: msg});
+      await sock.sendMessage(from, {text: "Ele é um dos meus donos especiais, não pode ser banido!"}, {quoted: msg});
       return
     }
     
     await sock.groupParticipantsUpdate(from, [mention], "remove");
     
     await sock.sendMessage(from, {text: "Usuário banido com sucesso!"}, {quoted: msg});
+    
+    
       
     }
     catch(err) {

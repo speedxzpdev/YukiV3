@@ -113,7 +113,8 @@ async function yukibot() {
   
 //importacoes de eventos
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
-  require("./events/participantUp")(sock)
+  require("./events/participantUp")(sock);
+  require("./events/waifus.js")(sock);
   
 }
 

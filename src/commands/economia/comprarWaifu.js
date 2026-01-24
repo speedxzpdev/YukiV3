@@ -2,6 +2,8 @@ const waifus = require("../../database/waifus/waifus.json");
 const preco = require("../../database/waifus/raridadePreço.json");
 const { users } = require("../../database/models/users.js");
 const path = require("path");
+const { comprarWaifu } = require("../../utils/events.js");
+
 
 module.exports = {
   name: "comprarwaifu",
@@ -57,12 +59,9 @@ Caso tenha o valor que custa a waifu ela será adicionada ao seu inventário.`)
         }, $inc: {dinheiro: -waifuEscolhida.preco}});
         
         await bot.reply(from, `${waifuEscolhida.nome}, comprada com sucesso!`);
-        await sock.sendMessage(from, { image: { url: path.join(__dirname ,waifuEscolhida.img)}, caption: `*@${userSender.userLid.split("@")[0]}* acaba de obter a *${waifuEscolhida.nome}*!\n*Raridade:* ${waifuEscolhida.raridade}\n*id*: ${waifuEscolhida.id}`, mentions: [userSender.userLid]});
+        comprarWaifu({ctx: msg, waifu: waifuEscolhida})
+        
       }
-      
-      
-      
-      
     }
     catch(err) {
       await bot.reply(from, erros_prontos);

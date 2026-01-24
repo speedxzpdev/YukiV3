@@ -4,6 +4,7 @@ const path = require("path")
 
 module.exports = {
   name: "menudownloads",
+  categoria: "padrao",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     const sender = msg.key.participant
