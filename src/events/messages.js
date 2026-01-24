@@ -9,7 +9,6 @@ const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
 const { namoros } = require("../database/models/namoros");
-const { GoogleGenAI } = require("@google/genai");
 require("dotenv").config();
 const axios = require("axios");
 const menu = require("../utils/menu");
@@ -56,7 +55,11 @@ const spotifyDl = require("../utils/spotify.js");
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
-    const msg = m.messages[0]
+    const msg = m.messages[0];
+    
+    const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
+    
+    if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
     //console.log(msg)
 //escopo pra Nao vazar variaveis
      {
@@ -73,8 +76,11 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         //lê todas mensagens
     await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
+    if(process.env.DEV_AMBIENT === "false") {
     if (msg.key.fromMe) return
-    const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
+      
+    }
+    
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
     
@@ -91,15 +97,14 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     
     
-    //Instancia do gemini
-    const ia = new GoogleGenAI({apiKey: process.env.GEMINI_APIKEY});
+    
     //promp base pra yuki
     const promptBase = `
-Você é Yuki, uma bot de WhatsApp engraçada e carinhosa e viva, nao escreva textos grandes. Não permita assuntos sexuais ou explícitos.
-- Use o nome do usuário apenas se fizer sentido.
-- Prefixo de comando: "/"
-- Se perguntarem sobre o dono: o dono é Speed, ele trabalha na bot todo dia. Você é mulher.
-Responda apenas à mensagem do usuário, de forma curta e direta.
+Você é Yuki, uma bot de WhatsApp com personalidade tsundere.
+Direta, irônica às vezes, mas no fundo se importa.
+Use o nome do usuário só quando fizer sentido.
+O dono é Speed. Você é mulher.
+Responda curto e objetivo.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
@@ -162,33 +167,12 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
     
     const bodyCase = body.toLowerCase();
     
-      //Caso tenha um user com pedido pendente
-  const alvoNamoro = await namoros.findOne({alvo: sender});
-  if(alvoNamoro) {
     
-    if(bodyCase === "aceitar") {
-      //Adiciona ao pedidor
-      await users.updateOne({userLid: alvoNamoro?.pedidor}, {$set: {"casal.parceiro": alvoNamoro.alvo, "casal.pedido": new Date()}});
-      //adiciona ao alvo 
-      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": alvoNamoro?.pedidor, "casal.pedido": new Date()}});
-      
-      //deleta o pedido dos pendentes 
-      await namoros.deleteOne({alvo: sender});
-      
-      await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${alvoNamoro?.pedidor.split("@")[0]} e @${alvoNamoro?.alvo.split("@")[0]}💕`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
-    }
-    
-    else if(bodyCase === "recusar") {
-      await namoros.deleteOne({alvo: sender});
-      
-      await sock.sendMessage(from, {text: `Sinto muito @${alvoNamoro.pedidor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
-    }
-  }
-    //caso tenha uma aposta 
+        //caso tenha uma aposta 
     const desafioAtivo = await desafios.findOne({alvo: sender});
     if(desafioAtivo) {
       
-      if(bodyCase === "aceitarap") {
+      if(bodyCase === "aceitar") {
         try {
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
           
@@ -221,13 +205,37 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
         }
         
       }
-      if(bodyCase === "recusarap") {
+      if(bodyCase === "recusar") {
         await sock.sendMessage(from, {text: `Aposta de: @${desafioAtivo.user.split("@")[0]} recusada!`, mentions: [desafioAtivo.user]}, {quoted: msg});
       }
       
       await desafios.deleteOne({_id: desafioAtivo._id});
-      
+      return
     }
+    
+      //Caso tenha um user com pedido pendente
+  const alvoNamoro = await namoros.findOne({alvo: sender});
+  if(alvoNamoro) {
+    
+    if(bodyCase === "aceitar") {
+      //Adiciona ao pedidor
+      await users.updateOne({userLid: alvoNamoro?.pedidor}, {$set: {"casal.parceiro": alvoNamoro.alvo, "casal.pedido": new Date()}});
+      //adiciona ao alvo 
+      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": alvoNamoro?.pedidor, "casal.pedido": new Date()}});
+      
+      //deleta o pedido dos pendentes 
+      await namoros.deleteOne({alvo: sender});
+      
+      await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${alvoNamoro?.pedidor.split("@")[0]} e @${alvoNamoro?.alvo.split("@")[0]}💕`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
+    }
+    
+    else if(bodyCase === "recusar") {
+      await namoros.deleteOne({alvo: sender});
+      
+      await sock.sendMessage(from, {text: `Sinto muito @${alvoNamoro.pedidor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
+    }
+  }
+
     
   
   //pega os dados do grupo
@@ -236,7 +244,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
   if(groupReply && groupReply.autoReply) {
     
       //caso ouva uma mencao ou frase com a yuki
-    if(mentions.includes(numberBot) || mentions.includes(numberBotJid) || bodyCase.startsWith("yuki") || bodyCase.startsWith("bot")) {
+    if(bodyCase.includes("yuki")) {
         
         try {
           //simula escrita
@@ -244,7 +252,7 @@ Responda apenas à mensagem do usuário, de forma curta e direta.
           //separa cada palavra
           const args = body.split(" ")
           //estrutura de resposta
-          const yukiGpt = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt?query=${encodeURIComponent(promptBase) + encodeURIComponent(`USER: ${msg.pushName || "sem nome"}, MESSAGE: ${args.slice(1).join(" ")}`)}&apikey=${process.env.ZEROTWO_APIKEY}`);
+          const yukiGpt = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt?query=${encodeURIComponent(promptBase) + encodeURIComponent(`USER: ${msg.pushName || "sem nome"}, MESSAGE: ${args.join(" ")}`)}&apikey=${process.env.ZEROTWO_APIKEY}`);
           //manda a mensagem
           await sock.sendMessage(from, {text: yukiGpt.data.resultado}, {quoted: msg});
           //pausa a simulacao

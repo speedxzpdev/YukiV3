@@ -3,6 +3,7 @@ const path = require("path");
 
 module.exports = {
   name: "menuadmin",
+  categoria: "padrao",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     
     try {

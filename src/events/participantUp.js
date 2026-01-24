@@ -1,12 +1,16 @@
 const { grupos } = require("../database/models/grupos");
+require("dotenv").config();
 
 
 
 module.exports = (sock) => {
   
   sock.ev.on("group-participants.update", async(update) => {
+    if(process.env.DEV_AMBIENT === "true") return
     
     const from = update.id
+    
+    const metadata = await sock.groupMetadata(from);
     
     const groupsDb = await grupos.findOne({groupId: from});
     
@@ -33,6 +37,8 @@ module.exports = (sock) => {
         
         else {
           await sock.sendMessage(from, {text: `Eita que tensão! @${author.split("@")[0]} removeu @${sender.split("@")[0]}`, mentions: [sender, author]});
+          
+          await sock.sendMessage(sender, {text: `@${sender.split("@")[0]} você foi removido do grupo: ${metadata.subject}\n⤷ Removido em: ${new Date().toLocaleDataString("pt-BR")}\n⤷ Por: @${author.split("@")[0]}`, mentions: [author, sender]})
         }
       }
       
