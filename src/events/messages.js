@@ -45,7 +45,7 @@ const spotifyDl = require("../utils/spotify.js");
           console.error("Erro ao processar mensagem", err);
         }
               //cria uma nova promise
-      await new Promise(resolve => setTimeout(resolve, 1000 * 3));
+      await new Promise(resolve => setTimeout(resolve, 1000 * 2));
       }
       flagMessage.set(groupId, false);
     }
@@ -379,7 +379,7 @@ Responda curto e objetivo.
     const dataAtual = Date.now();
     
     if(dataAtual > grupoAluguel.aluguel && !doninhos && dataAtual > usersSender?.vencimentoVip?.getTime()) {
-      await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!"}, {quoted: msg});
+      await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!\n\n⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Quero%20alugar%20a%20yuki,%20seu%20lixo!&type=phone_number&app_absent=0&wame_ctl=1"}, {quoted: msg});
       return
     }
     }

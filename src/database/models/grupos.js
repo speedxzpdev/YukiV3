@@ -16,7 +16,8 @@ const schema = new mongoose.Schema({
   lang: {type: String, default: "pt-br"},
   autoReply: {type: Boolean, default: true},
   autoDownload: {type: Boolean, default: false},
-  cmdUsados: {type: Number, default: 0}
+  cmdUsados: {type: Number, default: 0},
+  afkList: [String]
   
   
   

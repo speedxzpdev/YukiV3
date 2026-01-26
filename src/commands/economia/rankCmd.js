@@ -1,5 +1,5 @@
 const { users } = require("../../database/models/users");
-
+const { numberOwner } = require("../../config.js");
 
 module.exports = {
   name: "rankcmd",
@@ -10,7 +10,9 @@ module.exports = {
       
       const globalUsers = await users.find().sort({cmdCount: -1}).limit(10);
       
-      const rankMap = globalUsers.map((item, indice) => {
+      const rankMap = globalUsers.filter(p => {
+        return p.userLid !== numberOwner
+      }).map((item, indice) => {
         return `${indice + 1}. @${item.userLid.split("@")[0]}\n⤷ *Comandos usados:* ${item.cmdCount}\n⤷ *Figurinhas feitas:* ${item.figurinhas}\n⤷ *Downloads:* ${item.donwloads}`
       });
       

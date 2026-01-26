@@ -20,8 +20,10 @@ const userSchema = new mongoose.Schema({
   dinheiro: {type: Number, default: 100},
   donwloads: {type: Number, default: 0},
   figurinhas: {type: Number, default: 0},
-  cmdCount: {type: Number, default: 0}
-})
+  cmdCount: {type: Number, default: 0},
+  level: {type: Number, default: 0},
+  xp: {type: Number, default: 0}
+});
 
 const users = mongoose.model("User", userSchema);
 
