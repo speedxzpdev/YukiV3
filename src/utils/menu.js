@@ -191,6 +191,7 @@ ${prefixo}coinflip ➺ aposte cara ou coroa com alguém
 ${prefixo}loja ➺ veja a loja de waifus
 ${prefixo}comprarwaifu ➺ Compre uma waifu
 ${prefixo}rankmoedas ➺ rank de moedas
+${prefixo}transferir ➺ Transfira um valor pra alguém
 
 *Stalkear com a yuki:*
 ${prefixo}tiktokstalk - Veja info sobre um perfil

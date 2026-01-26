@@ -1,5 +1,6 @@
 const { downloadMediaMessage } = require('@whiskeysockets/baileys');
 const { donos } = require("../../database/models/donos");
+const { grupos } = require("../../database/models/grupos.js");
 
 module.exports = {
 
@@ -28,7 +29,7 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
       fromMe: false,
       participant: msg.key.participant},
       message: {
-        extendedTextMessage: {text: `⤷ ❄️ Mᴀʀᴄᴀᴄ̧ᴀ̃ᴏ ᴅᴏ ᴀᴅᴍɪɴ: ${msg.pushName} `}
+        extendedTextMessage: {text: `⤷ ❄️ Mᴀʀᴄᴀᴄ̧ᴀ̃ᴏ ᴅᴏ ᴀᴅᴍɪɴ: ${msg.pushName}\n• Caso não queira ser marcado use: */afkmode 1*`}
         
       }
     }
@@ -47,8 +48,15 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
   const enquete = quoted?.pollCreationMessageV3
   
   
- const metadata = await sock.groupMetadata(from)
-const todos = metadata.participants.map(p => p.id)
+ const metadata = await sock.groupMetadata(from);
+ 
+ const grupo = await grupos.findOne({groupId: from});
+ 
+ const afkList = grupo?.afkList ?? [];
+
+const todos = metadata.participants.map(p => p.id).filter(p => {
+  return !afkList.includes(p);
+});
   
   if (foto) {
     const imgDl = await downloadMediaMessage({message: {imageMessage: foto}}, 'buffer', {})
