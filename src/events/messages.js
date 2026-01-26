@@ -172,7 +172,7 @@ Responda curto e objetivo.
     const desafioAtivo = await desafios.findOne({alvo: sender});
     if(desafioAtivo) {
       
-      if(bodyCase === "aceitar") {
+      if(bodyCase.includes("aceitar")) {
         try {
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
           
@@ -205,7 +205,7 @@ Responda curto e objetivo.
         }
         
       }
-      if(bodyCase === "recusar") {
+      if(bodyCase.includes("recusar")) {
         await sock.sendMessage(from, {text: `Aposta de: @${desafioAtivo.user.split("@")[0]} recusada!`, mentions: [desafioAtivo.user]}, {quoted: msg});
       }
       
