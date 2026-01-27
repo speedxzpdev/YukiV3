@@ -14,6 +14,7 @@ const { users } = require("./database/models/users");
 const { donos } = require("./database/models/donos");
 const { rankativos } = require("./database/models/rankativos");
 const { grupos } = require("./database/models/grupos");
+const { redisConnect } = require("./database/redis.js");
 const os = require("os");
 require("dotenv").config();
 
@@ -86,7 +87,8 @@ async function yukibot() {
     try {await connectDB();}
     catch(err){console.log("Nao foi possivel se conectar ao mongoDB\n\n", err); process.exit()}
   
-  
+    //Conecta o redis
+    await redisConnect();
   
   
   sock.ev.on("connection.update", async (update) => {
