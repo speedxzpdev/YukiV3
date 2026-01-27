@@ -20,7 +20,7 @@ module.exports = {
       
       await bot.reply(from, espera_pronta);
       
-      const dinheiro = Math.floor(Math.random() * 300);
+      const dinheiro = Math.floor(Math.random() * 1000);
       
       
       await users.updateOne({userLid: sender}, {$set: {daily: new Date()}, $inc: {dinheiro: dinheiro}});
