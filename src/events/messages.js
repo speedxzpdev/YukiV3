@@ -31,6 +31,9 @@ const spotifyDl = require("../utils/spotify.js");
       
       const queue = messageQueue.get(groupId);
       
+      //Decide um delay aleatorio entre 1 e 2
+      const delayRandom = Math.max(1000, Math.floor(Math.random() * 2000));
+      
       //enquanto messageQueue for maior que zero
       while(queue.length > 0) {
         //pega a primeira mensagem
@@ -45,13 +48,45 @@ const spotifyDl = require("../utils/spotify.js");
           console.error("Erro ao processar mensagem", err);
         }
               //cria uma nova promise
-      await new Promise(resolve => setTimeout(resolve, 1000 * 2));
+      await new Promise(resolve => setTimeout(resolve, delayRandom * 2));
       }
+      console.log(`Mensagem duplicada. Esperando ${delayRandom}`);
+      //Depois dos 2 segundos ele seta pra false
       flagMessage.set(groupId, false);
     }
     
     //map de usos de comando
     const cooldown = new Map();
+    
+     //Lida com spams de mesmos comandos
+    
+    
+    function spamCommand(user, command) {
+      const LIMITE = 5;
+      const TEMPO = 60 * 1000;
+      const agora = Date.now();
+      const key = `${user}:${command}`
+      
+      //Se nao existe cria
+      if(!cooldown.has(key)) {
+        cooldown.set(key, []);
+      }
+      
+      //pega os usos 
+      const usos = cooldown.get(key);
+      
+      //filtra por recentes
+      const usosRecentes = usos.filter(tempo => agora - tempo < TEMPO);
+      
+      //adiciona o TEMPO
+      usosRecentes.push(agora);
+      //adiciona e volta pro Map
+      cooldown.set(key, usosRecentes);
+      
+      //Retorna se usos recente for maior ou igual ao limite
+      return usosRecentes.length >= LIMITE
+      
+    }
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
@@ -108,7 +143,7 @@ Responda curto e objetivo.
 `;
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
-    const usersSender = await users.findOne({userLid: sender});
+    let usersSender = await users.findOne({userLid: sender});
     if(!from.endsWith("@g.us") && !donosFrom && (!usersSender.vencimentoVip|| Date.now() > usersSender.vencimentoVip.getTime())) return;
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
@@ -129,6 +164,8 @@ Responda curto e objetivo.
 
     if(!await users.findOne({userLid: msg.key.participant})) {
       await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
+      
+      usersSender = await users.findOne({userLid: sender})
     }
 
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {msg: 1}}, {upsert: true})
@@ -167,12 +204,14 @@ Responda curto e objetivo.
     
     const bodyCase = body.toLowerCase();
     
+    //argumentos 
+    const args = body.slice(prefixo.length).trim().split(/ +/);
     
         //caso tenha uma aposta 
     const desafioAtivo = await desafios.findOne({alvo: sender});
     if(desafioAtivo) {
       
-      if(bodyCase === "aceitar") {
+      if(bodyCase.includes("aceitar")) {
         try {
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
           
@@ -205,7 +244,7 @@ Responda curto e objetivo.
         }
         
       }
-      if(bodyCase === "recusar") {
+      if(bodyCase.includes("recusar")) {
         await sock.sendMessage(from, {text: `Aposta de: @${desafioAtivo.user.split("@")[0]} recusada!`, mentions: [desafioAtivo.user]}, {quoted: msg});
       }
       
@@ -283,6 +322,36 @@ Responda curto e objetivo.
         flagMessage.set(grupoRemote, false);
       }
     
+    //Caso o users tenha o modo sem prefixo
+if(!usersSender.prefixo && !body.startsWith(prefixo)) {
+  
+  const argsNoPrefix = body.trim().split(" ");
+  
+  const commandNamePrefix = argsNoPrefix.shift().toLowerCase();
+  
+  //Busca pelo mapa
+  const commandNoPrefix = commandsMap.get(commandNamePrefix);
+  
+  
+  
+  //se nao existir
+  if(!commandNoPrefix) return;
+  
+      //Verifica se tem spam no comando
+    if(spamCommand(sender, commandNamePrefix)) {
+      const respostasSpamList = [`Ei! Pare de spamar o mesmo comando!`, `Eu entendo que você gostou muito do comando mas não posso deixar você abusar.`, `Hum... Você gostou do comando né...? Porém não permito spam dele!`, `A Yuki detectou spam do mesmo comando! Pare de abusar do comando!`];
+      
+      const frasesSpamCommandNoPrefix = respostasSpamList[Math.floor(Math.random() * respostasSpamList.length)];
+      
+      await bot.reply(from, frasesSpamCommandNoPrefix);
+      return
+    }
+  
+  //Se existe executa
+  messageQueue.get(grupoRemote).push(async () => {
+  commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot);
+  });
+}
     
     //PROCESSAMENTO DE MENSAGENS
     //adiciona tudo em uma fila
@@ -325,7 +394,7 @@ Responda curto e objetivo.
   }
 
   //Caso uma mensagem comece com prefixo
-  if(body.includes("prefixo")) {
+  if(body.startsWith("prefixo")) {
     
     if(msg.key.fromMe) return;
     
@@ -335,40 +404,12 @@ Responda curto e objetivo.
 
 
 
-  let userFind = await users.findOne({userLid: msg.key.participant});
+  let userFind = await users.findOne({userLid: sender});
+
+
 
 //tratamento dos comandos
   if (body.startsWith(prefixo)) {
-    
-    //Lida com spams de mesmos comandos
-    
-    
-    function spamCommand(user, command) {
-      const LIMITE = 5;
-      const TEMPO = 60 * 1000;
-      const agora = Date.now();
-      const key = `${user}:${command}`
-      
-      //Se nao existe cria
-      if(!cooldown.has(key)) {
-        cooldown.set(key, []);
-      }
-      
-      //pega os usos 
-      const usos = cooldown.get(key);
-      
-      //filtra por recentes
-      const usosRecentes = usos.filter(tempo => agora - tempo < TEMPO);
-      
-      //adiciona o TEMPO
-      usosRecentes.push(agora);
-      //adiciona e volta pro Map
-      cooldown.set(key, usosRecentes);
-      
-      
-      return usosRecentes.length >= LIMITE
-      
-    }
     
     //lida com aluguel
     if(from.endsWith("@g.us")) {
@@ -386,8 +427,7 @@ Responda curto e objetivo.
     
     
     
-    //argumentos 
-    const args = body.slice(prefixo.length).trim().split(/ +/);
+    
 //pega o argumento digitado e deixa ele em letras minusculas
     const commandName = args.shift().toLowerCase();
   //procura no map
@@ -395,7 +435,8 @@ Responda curto e objetivo.
 
 //se nao existir
     if (!commandGet) {
-
+      
+      //Cria um array de chaves pra verificar
       const commandNameList = Array.from(commandsMap.keys());
 
 

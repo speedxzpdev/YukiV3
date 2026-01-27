@@ -25,6 +25,13 @@ return {
   
   menuPrincipal: `${subMenu}
 ╭┈⊰ ❅ 𝐌𝐄𝐍𝐔 𝐏𝐑𝐈𝐍𝐂𝐈𝐏𝐀𝐋
+
+𝐂𝐨𝐧𝐟𝐢𝐠𝐮𝐫𝐚𝐜̧𝐚̃𝐨 𝐞 𝐮𝐬𝐨:
+┆𓏲🫧֪𝆫➺ ${prefixo}disable-prefix - Deixa o uso do prefixo opcional.
+┆𓏲🫧֪𝆫➺ ${prefixo}afk - silencia totags chatas!
+┆𓏲🫧֪𝆫➺ ${prefixo}grupoinfo - Olhe as configurações do grupo
+
+𝐎𝐮𝐭𝐫𝐨𝐬 𝐦𝐞𝐧𝐮𝐬:
 ┆𓏲🫧֪𝆫➺ ${prefixo}menuia
 ┆𓏲🫧֪𝆫➺ ${prefixo}menudownloads
 ┆𓏲🫧֪𝆫➺ ${prefixo}menuadmin

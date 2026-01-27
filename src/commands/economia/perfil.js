@@ -18,10 +18,15 @@ module.exports = {
       
       const userSender = await users.findOne({userLid: sender});
       
-      
+      const waifuRepetidas = new Set();
       
       const waifusInv = userSender.waifus.sort((a, b) => {
         return b.preco - a.preco
+      }).filter(f => {
+        if (waifuRepetidas.has(f.nome)) return false;
+        
+        waifuRepetidas.add(f.nome);
+        return true;
       }).map((item, indice) => {
         return `${indice + 1}° ${item.nome}
 ⤷ *Raridade:* ${item.raridade}
@@ -44,6 +49,7 @@ module.exports = {
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
 *Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + userSender.vencimentoVip.toLocaleDateString("pt-BR") : "Vencido!"}
+*Modo sem prefixo:* ${userSender?.prefixo ? "Desativado" : "Ativado"}
 *Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
 *Desde:* ${userSender?.casal?.pedido.toLocaleDateString("pt-BR")}💕` : "nenhum"}
 *Dinheiro:* ${userSender.dinheiro}

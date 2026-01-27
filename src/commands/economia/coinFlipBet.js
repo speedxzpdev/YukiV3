@@ -2,14 +2,14 @@ const { users } = require("../../database/models/users");
 const { desafios } = require("../../database/models/desafios");
 
 module.exports = {
-  name: "coinflip",
+  name: "coinflipbet",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
     try {
       async function sendHelp() {
         await bot.reply(from, `*Como usar comandos de economia*
 
 Responda alguém ou mencione usando o comando junto com o valor desejado.
-> Exemplo: coinflip @yuki 100
+> Exemplo: coinflip 100 @yuki
 
 Simples pra até pra um bebê`)
       }
@@ -30,7 +30,7 @@ Simples pra até pra um bebê`)
         return
       }
       
-      const parametroMoney = Number(args[1].trim());
+      const parametroMoney = Number(args[0].trim());
       
       
       
@@ -63,7 +63,7 @@ Simples pra até pra um bebê`)
       
       await desafios.create({user: sender, alvo: mention, valor: parametroMoney});
       
-      await sock.sendMessage(from, {text: `@${mention.split("@")[0]}... Você acaba de ser desafiado para um cara ou coroa por @${sender.split("@")[0]}. Responda com um: *aceitarAp* ou *recusarAp*`, mentions: [mention, sender]}, {quoted: msg});
+      await sock.sendMessage(from, {text: `@${mention.split("@")[0]}... Você acaba de ser desafiado para um cara ou coroa por @${sender.split("@")[0]}. Responda com um: *aceitar* ou *recusar*`, mentions: [mention, sender]}, {quoted: msg});
       
       
     }

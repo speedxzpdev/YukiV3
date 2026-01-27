@@ -1,5 +1,6 @@
 const { users } = require("../../database/models/users.js");
 const { numberOwner } = require("../../config.js");
+const { donos } = require("../../database/models/donos.js");
 
 module.exports = {
   name: "rankmoedas",
@@ -8,11 +9,13 @@ module.exports = {
       
       const msgEspera = await bot.reply(from, "Buscando rank...");
       
-      const usersRank = await users.find().sort({dinheiro: -1}).limit(10);
+      const dono = await donos.find();
       
-      const rank = usersRank.filter(p => {
-        return p.userLid !== numberOwner
-      }).map((item, indice) => {
+      const donosIds = dono.map(i => i.userLid);
+      
+      const usersRank = await users.find({userLid: {$nin: donosIds}}).sort({dinheiro: -1}).limit(10);
+      
+      const rank = usersRank.map((item, indice) => {
         return `${indice + 1}° @${item.userLid.split("@")[0]}
 ⤷ *Moedas:* ${item.dinheiro}
 ⤷ *Quantidade de waifu:* ${item.waifus.length}`

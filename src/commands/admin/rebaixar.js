@@ -27,7 +27,7 @@ module.exports = {
   }
   
   if(!groupAdmins.includes(mention)) {
-    await sock.sendMessage(from, {text: "Esse usuário não é admin, não fode porra"}, {quoted: msg});
+    await sock.sendMessage(from, {text: "Esse usuário não é admin, porra"}, {quoted: msg});
     return
   }
   
