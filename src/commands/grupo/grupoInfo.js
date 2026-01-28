@@ -43,7 +43,8 @@ module.exports = {
 *anti-link:* ${grupoDb.configs?.antlink ? "On" : "Off"}
 *auto-resposta:* ${grupoDb?.autoReply ? "On" : "Off"}
 *Modo brincadeira:* ${grupoDb?.configs?.cmdFun ? "On" : "Off"}
-*Auto-Download:* ${grupoDb?.autoDownload ? "On" : "Off"}`
+*Auto-Download:* ${grupoDb?.autoDownload ? "On" : "Off"}
+*Anti-spam de marcação:* ${grupoDb?.antiTotag ? "On" : "Off"}`
       
       
       await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki2.jpg")}, caption: info}, {quoted: msg});

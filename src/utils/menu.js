@@ -64,6 +64,7 @@ menuAdmin: `${subMenu}
 ┆𓏲🫧֪𝆫➺ ${prefixo}autoreply
 ┆𓏲🫧֪𝆫➺ ${prefixo}welcome
 ┆𓏲🫧֪𝆫➺ ${prefixo}modobrincadeira
+┆𓏲🫧֪𝆫➺${prefixo}antimarcar
 ╰┈┈┈┈ ┄╸ʚ❅ɞ╺┈ ┈┈┈┈╯
 `,
 

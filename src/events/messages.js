@@ -286,6 +286,32 @@ Responda curto e objetivo.
   
   //pega os dados do grupo
   const groupReply = await grupos.findOne({groupId: from});
+  
+  //Caso o grupo tenha a anttotag ativa
+  if(groupReply.antiTotag) {
+    if(msg.key.fromMe) return;
+    try {
+      //pega info do grupo
+      const metadata = await sock.groupMetadata(from);
+      //Pega todos os ids do grupo
+      const todos = metadata.participants.map(p => p.id);
+      
+      //Verifica se a quantidade de mencoes é maior ou igual a quantidade de membros
+      if((Array.isArray(mentions) ? mentions : []).length >= todos.length) {
+        await bot.reply(from, "Ei!!! Detectei uso abusivo de menções. Adeus!");
+        
+        await sock.groupParticipantsUpdate(from, [sender], 'remove');
+        
+      }
+      
+    }
+    catch(err) {
+      await bot.reply(from, erros_prontos);
+      console.error(err);
+    }
+    
+  }
+  
   //caso o grupo tenha autoreply ativo
   if(groupReply && groupReply.autoReply) {
     
