@@ -1,4 +1,4 @@
-const { namoros } = require("../../database/models/namoros");
+const { clientRedis } = require("../../database/redis.js");
 const { users } = require("../../database/models/users");
 const { numberBot } = require("../../config");
 
@@ -35,30 +35,40 @@ module.exports = {
      if(!userMention) {
        await users.create({userLid: mention});
        
-       userSender = await users.findOne({userLid: mention});
+       userMention = await users.findOne({userLid: mention});
      }
      
-     if(userSender.casal.parceiro) {
+     if(userSender.casal?.parceiro) {
        await sock.sendMessage(from, {text: `Hum... Estou sentindo um pouco de traição da sua parte viu...`}, {quoted: msg});
        return
      }
      
-     if(userMention.casal.parceiro) {
+     if(userMention.casal?.parceiro) {
        await sock.sendMessage(from, {text: "Ei!!! Essa pessoa já está em um relacionamento. Sinto informar..."}, {quoted: msg});
        return
      }
      
-     if(await namoros.findOne({alvo: mention})) {
+     const pedidoExisteMention = await clientRedis.exists(`namoro:${mention}`);
+     
+     const pedidoExisteSender = await clientRedis.exists(`namoro:${sender}`);
+     
+     if(pedidoExisteMention) {
        await sock.sendMessage(from, {text: "Este usuário já possui um pedido pendente!"}, {quoted: msg});
        return
      }
      
-     if(await namoros.findOne({pedidor: sender})) {
+     if(pedidoExisteSender) {
        await sock.sendMessage(from, {text: "Você já possui um pedido pendente!"}, {quoted: msg});
        return
      }
      
-     await namoros.create({alvo: mention, pedidor: sender});
+     //await namoros.create({alvo: mention, pedidor: sender});
+     await clientRedis.hSet(`namoro:${mention}`, {
+       alvo: mention,
+       autor: sender
+     });
+     
+     await clientRedis.expire(`namoro:${mention}`, 10 * 60);
      
      await sock.sendMessage(from, {text: `O(a) @${mention.split("@")[0]} acaba de ser pedida em namoro por @${sender.split("@")[0]}💕\nResponda essa mensagem com: Aceitar ou Recusar`, mentions: [mention, sender]}, {quoted: msg});
     

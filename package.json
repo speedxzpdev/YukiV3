@@ -25,6 +25,7 @@
     "node-webpmux": "^3.2.1",
     "pino": "^10.1.0",
     "qrcode-terminal": "^0.12.0",
+    "redis": "^5.10.0",
     "sharp": "^0.34.5",
     "string-similarity": "^4.0.4",
     "telegraph-uploader": "^2.0.0",

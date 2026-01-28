@@ -8,13 +8,13 @@ const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
-const { namoros } = require("../database/models/namoros");
 require("dotenv").config();
 const axios = require("axios");
 const menu = require("../utils/menu");
 const YukiBot = require("../utils/fuc");
-const { desafios } = require("../database/models/desafios");
 const spotifyDl = require("../utils/spotify.js");
+const { clientRedis } = require("../database/redis.js");
+
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -208,34 +208,37 @@ Responda curto e objetivo.
     const args = body.slice(prefixo.length).trim().split(/ +/);
     
         //caso tenha uma aposta 
-    const desafioAtivo = await desafios.findOne({alvo: sender});
-    if(desafioAtivo) {
+    const apostaPendente = await clientRedis.exists(`aposta:${sender}`);
+    if(apostaPendente) {
+      
+      const apostaObject = await clientRedis.hGetAll(`aposta:${sender}`);
       
       if(bodyCase.includes("aceitar")) {
         try {
+          
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
           
           const caraOuCora = Math.floor(Math.random() * 100);
           
           if(caraOuCora < 50) {
-            await sock.sendMessage(from, {text: `Coroa! @${desafioAtivo.alvo.split("@")[0]} ganhou +${desafioAtivo.valor}`, mentions: [desafioAtivo.alvo], edit: msgEspera.key});
+            await sock.sendMessage(from, {text: `Coroa! @${apostaObject.alvo.split("@")[0]} ganhou +${apostaObject.valor}`, mentions: [apostaObject.alvo], edit: msgEspera.key});
             //dá o dinheiro
-            await users.updateOne({userLid: desafioAtivo.alvo}, {$inc: {dinheiro: desafioAtivo.valor}});
+            await users.updateOne({userLid: apostaObject.alvo}, {$inc: {dinheiro: apostaObject.valor}});
             //remove de quem perdeu
-            await users.updateOne({userLid: desafioAtivo.user}, {$inc: {dinheiro: -desafioAtivo.valor}})
+            await users.updateOne({userLid: apostaObject.autor}, {$inc: {dinheiro: -apostaObject.valor}})
             
             //apaga
-            await desafios.deleteOne({_id: desafioAtivo._id});
+            await clientRedis.del(`aposta:${sender}`);
           }
           else {
-            await sock.sendMessage(from, {text: `Cara! @${desafioAtivo.user.split("@")[0]} ganhou +${desafioAtivo.valor}`, mentions: [desafioAtivo.user], edit: msgEspera.key});
+            await sock.sendMessage(from, {text: `Cara! @${apostaObject.autor.split("@")[0]} ganhou +${apostaObject.valor}`, mentions: [apostaObject.autor], edit: msgEspera.key});
             //dá o valor
-            await users.updateOne({userLid: desafioAtivo.user}, {$inc: {dinheiro: desafioAtivo.valor}});
+            await users.updateOne({userLid: apostaObject.autor}, {$inc: {dinheiro: apostaObject.valor}});
             
             //remove de quem perdeu
-            await users.updateOne({userLid: desafioAtivo.alvo}, {$inc: {dinheiro: -desafioAtivo.valor}})
+            await users.updateOne({userLid: apostaObject.alvo}, {$inc: {dinheiro: -apostaObject.valor}})
             
-            await desafios.deleteOne({_id: desafioAtivo._id});
+            await clientRedis.del(`aposta:${sender}`);
           }
         }
         catch(err) {
@@ -245,33 +248,37 @@ Responda curto e objetivo.
         
       }
       if(bodyCase.includes("recusar")) {
-        await sock.sendMessage(from, {text: `Aposta de: @${desafioAtivo.user.split("@")[0]} recusada!`, mentions: [desafioAtivo.user]}, {quoted: msg});
+        await sock.sendMessage(from, {text: `Aposta de: @${apostaObject.autor.split("@")[0]} recusada!`, mentions: [apostaObject.autot]}, {quoted: msg});
       }
       
-      await desafios.deleteOne({_id: desafioAtivo._id});
+      await clientRedis.del(`aposta:${sender}`)
       return
     }
     
       //Caso tenha um user com pedido pendente
-  const alvoNamoro = await namoros.findOne({alvo: sender});
-  if(alvoNamoro) {
+  const namoroPendente = await clientRedis.exists(`namoro:${sender}`);
+  if(namoroPendente) {
+    
+    const namoroObject = await clientRedis.hGetAll(`namoro:${sender}`);
     
     if(bodyCase === "aceitar") {
       //Adiciona ao pedidor
-      await users.updateOne({userLid: alvoNamoro?.pedidor}, {$set: {"casal.parceiro": alvoNamoro.alvo, "casal.pedido": new Date()}});
+      await users.updateOne({userLid: namoroObject?.autor}, {$set: {"casal.parceiro": namoroObject.alvo, "casal.pedido": new Date()}});
       //adiciona ao alvo 
-      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": alvoNamoro?.pedidor, "casal.pedido": new Date()}});
+      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": namoroObject.autor, "casal.pedido": new Date()}});
       
       //deleta o pedido dos pendentes 
-      await namoros.deleteOne({alvo: sender});
+      await clientRedis.del(`namoro:${sender}`);
       
-      await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${alvoNamoro?.pedidor.split("@")[0]} e @${alvoNamoro?.alvo.split("@")[0]}💕`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
+      await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${namoroObject?.autor.split("@")[0]} e @${namoroObject?.alvo.split("@")[0]}💕`, mentions: [sender, namoroObject?.autor]}, {quoted: msg});
     }
     
     else if(bodyCase === "recusar") {
-      await namoros.deleteOne({alvo: sender});
       
-      await sock.sendMessage(from, {text: `Sinto muito @${alvoNamoro.pedidor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
+      await sock.sendMessage(from, {text: `Sinto muito @${namoroObject.autor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, namoroObject?.autor]}, {quoted: msg});
+      
+      //deleta dos pedidos
+      await clientRedis.del(`namoro:${sender}`);
     }
   }
 
@@ -279,6 +286,32 @@ Responda curto e objetivo.
   
   //pega os dados do grupo
   const groupReply = await grupos.findOne({groupId: from});
+  
+  //Caso o grupo tenha a anttotag ativa
+  if(groupReply.antiTotag) {
+    if(msg.key.fromMe) return;
+    try {
+      //pega info do grupo
+      const metadata = await sock.groupMetadata(from);
+      //Pega todos os ids do grupo
+      const todos = metadata.participants.map(p => p.id);
+      
+      //Verifica se a quantidade de mencoes é maior ou igual a quantidade de membros
+      if((Array.isArray(mentions) ? mentions : []).length >= todos.length) {
+        await bot.reply(from, "Ei!!! Detectei uso abusivo de menções. Adeus!");
+        
+        await sock.groupParticipantsUpdate(from, [sender], 'remove');
+        
+      }
+      
+    }
+    catch(err) {
+      await bot.reply(from, erros_prontos);
+      console.error(err);
+    }
+    
+  }
+  
   //caso o grupo tenha autoreply ativo
   if(groupReply && groupReply.autoReply) {
     

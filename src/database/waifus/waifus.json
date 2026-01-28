@@ -292,5 +292,17 @@
   "image": "../../assets/waifusImg/yoruichiShihoin.jpg",
   "raridade": "lendaria",
   "id": 48
+},
+{
+    "nome": "Hatsune Miku",
+  "image": "../../assets/waifusImg/hatsuneMiku.jpg",
+  "raridade": "mitico",
+  "id": 49
+},
+{
+    "nome": "Kasane Teto",
+  "image": "../../assets/waifusImg/kasaneTeto.jpg",
+  "raridade": "lendaria",
+  "id": 50
 }
 ]

@@ -1,5 +1,5 @@
 const { users } = require("../../database/models/users");
-const { desafios } = require("../../database/models/desafios");
+const { clientRedis } = require("../../database/redis.js");
 
 module.exports = {
   name: "coinflipbet",
@@ -54,17 +54,24 @@ Simples pra até pra um bebê`)
         return
       }
       
-      const desafiopassado = await desafios.findOne({$or: [{alvo: mention}, {user: sender}]});
+      const desafiopassado = await clientRedis.exists(`aposta:${mention}`)
       
       if(desafiopassado) {
         await bot.reply(from, "Você possui uma aposta pendente.");
         return
       }
       
-      await desafios.create({user: sender, alvo: mention, valor: parametroMoney});
+      //await desafios.create({user: sender, alvo: mention, valor: parametroMoney});
+      await clientRedis.hSet(`aposta:${mention}`, {
+        autor: sender,
+        alvo: mention,
+        valor: parametroMoney,
+        resolvida: 'false'
+      });
+      
+      await clientRedis.expire(`aposta:${mention}`, 60);
       
       await sock.sendMessage(from, {text: `@${mention.split("@")[0]}... Você acaba de ser desafiado para um cara ou coroa por @${sender.split("@")[0]}. Responda com um: *aceitar* ou *recusar*`, mentions: [mention, sender]}, {quoted: msg});
-      
       
     }
     catch(err) {
