@@ -8,7 +8,6 @@ const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
-const { namoros } = require("../database/models/namoros");
 require("dotenv").config();
 const axios = require("axios");
 const menu = require("../utils/menu");
@@ -257,25 +256,29 @@ Responda curto e objetivo.
     }
     
       //Caso tenha um user com pedido pendente
-  const alvoNamoro = await namoros.findOne({alvo: sender});
-  if(alvoNamoro) {
+  const namoroPendente = await clientRedis.exists(`namoro:${sender}`);
+  if(namoroPendente) {
+    
+    const namoroObject = await clientRedis.hGetAll(`namoro:${sender}`);
     
     if(bodyCase === "aceitar") {
       //Adiciona ao pedidor
-      await users.updateOne({userLid: alvoNamoro?.pedidor}, {$set: {"casal.parceiro": alvoNamoro.alvo, "casal.pedido": new Date()}});
+      await users.updateOne({userLid: namoroObject?.autor}, {$set: {"casal.parceiro": namoroObject.alvo, "casal.pedido": new Date()}});
       //adiciona ao alvo 
-      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": alvoNamoro?.pedidor, "casal.pedido": new Date()}});
+      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": namoroObject.autor, "casal.pedido": new Date()}});
       
       //deleta o pedido dos pendentes 
-      await namoros.deleteOne({alvo: sender});
+      await clientRedis.del(`namoro:${sender}`);
       
-      await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${alvoNamoro?.pedidor.split("@")[0]} e @${alvoNamoro?.alvo.split("@")[0]}💕`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
+      await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${namoroObject?.autor.split("@")[0]} e @${namoroObject?.alvo.split("@")[0]}💕`, mentions: [sender, namoroObject?.autor]}, {quoted: msg});
     }
     
     else if(bodyCase === "recusar") {
-      await namoros.deleteOne({alvo: sender});
       
-      await sock.sendMessage(from, {text: `Sinto muito @${alvoNamoro.pedidor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, alvoNamoro?.pedidor]}, {quoted: msg});
+      await sock.sendMessage(from, {text: `Sinto muito @${namoroObject.autor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, namoroObject?.autor]}, {quoted: msg});
+      
+      //deleta dos pedidos
+      await clientRedis.del(`namoro:${sender}`);
     }
   }
 

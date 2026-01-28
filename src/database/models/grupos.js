@@ -4,7 +4,7 @@ const schema = new mongoose.Schema({
   groupId: {type: String, required: true},
   grupoName: {type: String, required: true},
   ownerId: {type: String, required: true},
-  aluguel: {type: Date, default: null},
+  aluguel: {type: Date, default: Date.now()},
   configs: {
     events: {type: Boolean, default: true},
     prefixo: {type: String, default: "/"},
@@ -15,9 +15,10 @@ const schema = new mongoose.Schema({
   },
   lang: {type: String, default: "pt-br"},
   autoReply: {type: Boolean, default: true},
-  autoDownload: {type: Boolean, default: false},
+  autoDownload: {type: Boolean, default: true},
   cmdUsados: {type: Number, default: 0},
-  afkList: [String]
+  afkList: [String],
+  antiTotag: {type: Boolean, default: false}
   
   
   
