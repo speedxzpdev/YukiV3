@@ -30,6 +30,7 @@ return {
 ┆𓏲🫧֪𝆫➺ ${prefixo}disable-prefix - Deixa o uso do prefixo opcional.
 ┆𓏲🫧֪𝆫➺ ${prefixo}afk - silencia totags chatas!
 ┆𓏲🫧֪𝆫➺ ${prefixo}grupoinfo - Olhe as configurações do grupo
+┆𓏲🫧֪𝆫➺ ${prefixo}gerartoken - Uso web
 
 𝐎𝐮𝐭𝐫𝐨𝐬 𝐦𝐞𝐧𝐮𝐬:
 ┆𓏲🫧֪𝆫➺ ${prefixo}menuia

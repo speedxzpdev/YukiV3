@@ -1,5 +1,4 @@
 const redis = require("redis");
-require("dotenv").config();
 
 //Cria o client
 const clientRedis = redis.createClient({

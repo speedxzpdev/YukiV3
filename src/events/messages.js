@@ -1,6 +1,6 @@
 const { prefixo, numberBot, numberOwner, numberBotJid } = require("../config.js");
 const tiktokDl = require("../utils/tiktok");
-const connectDB = require("../database/index");
+const connectDB = require("../lib/mongoDB.js");
 const similarityCmd = require("../utils/similaridadeCmd");
 const { users } = require("../database/models/users");
 const { donos } = require("../database/models/donos");
@@ -8,12 +8,11 @@ const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
-require("dotenv").config();
 const axios = require("axios");
 const menu = require("../utils/menu");
 const YukiBot = require("../utils/fuc");
 const spotifyDl = require("../utils/spotify.js");
-const { clientRedis } = require("../database/redis.js");
+const { clientRedis } = require("../lib/redis.js");
 
 
     //Parte que lida com mensagens em lotes

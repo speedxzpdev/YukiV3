@@ -1,4 +1,4 @@
-const { clientRedis } = require("../../database/redis.js");
+const { clientRedis } = require("../../lib/redis.js");
 const { users } = require("../../database/models/users");
 const { numberBot } = require("../../config");
 

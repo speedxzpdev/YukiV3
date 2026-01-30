@@ -1,5 +1,4 @@
 const axios = require("axios");
-require("dotenv").config();
 
 
 async function spotifyDl(sock, msg, from, body, erros_prontos, espera_pronta, bot) {

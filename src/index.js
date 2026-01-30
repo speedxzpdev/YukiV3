@@ -8,15 +8,15 @@ const qrcode = require("qrcode-terminal");
 
 const { prefixo, botName } = require("./config");
 const tiktokDl = require("./utils/tiktok");
-const connectDB = require("./database/index");
+const connectDB = require("./lib/mongoDB.js");
 const similarityCmd = require("./utils/similaridadeCmd");
 const { users } = require("./database/models/users");
 const { donos } = require("./database/models/donos");
 const { rankativos } = require("./database/models/rankativos");
 const { grupos } = require("./database/models/grupos");
-const { redisConnect } = require("./database/redis.js");
+const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
-require("dotenv").config();
+require("dotenv").config({quiet: true});
 
 
 

@@ -1,5 +1,4 @@
 const { yukiEv } = require("../utils/events.js");
-require("dotenv").config();
 const path = require("path");
 
 module.exports = (sock) => {

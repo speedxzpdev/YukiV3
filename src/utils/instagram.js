@@ -1,6 +1,5 @@
 const axios = require("axios");
 const { users } = require("../database/models/users");
-require("dotenv").config();
 
 async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   

@@ -3,7 +3,7 @@ const { donos } = require("../../database/models/donos");
 
 
 module.exports = {
-  name: "alugar",
+  name: "addaluguel",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     try {
       
