@@ -13,7 +13,9 @@ const menu = require("../utils/menu");
 const YukiBot = require("../utils/fuc");
 const spotifyDl = require("../utils/spotify.js");
 const { clientRedis } = require("../lib/redis.js");
-
+const { clientMp, payment} = require("../lib/mercadoPago.js");
+const{ yukiEv,
+  comprarWaifu, pagamento } = require("../utils/events.js");
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -125,25 +127,31 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     const doninhos = await donos.findOne({userLid: sender});
     
-    const donosFrom = await donos.findOne({userLid: msg?.key.remoteJid});
-    
     const bot = new YukiBot({sock: sock, msg});
     
     
     
     
-    //promp base pra yuki
-    const promptBase = `
-Você é Yuki, uma bot de WhatsApp com personalidade tsundere.
-Direta, irônica às vezes, mas no fundo se importa.
-Use o nome do usuário só quando fizer sentido.
-O dono é Speed. Você é mulher.
-Responda curto e objetivo.
-`;
+
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
     let usersSender = await users.findOne({userLid: sender});
-    if(!from.endsWith("@g.us") && !donosFrom && (!usersSender.vencimentoVip|| Date.now() > usersSender.vencimentoVip.getTime())) return;
+    const Notvip = !usersSender?.vencimentoVip || Date.now() > usersSender?.vencimentoVip?.getTime();
+    
+    if(!from.endsWith("@g.us") && !doninhos && Notvip) {
+      
+      const IsMsgPV = await  clientRedis.exists(`pv:block:${sender}`);
+      
+      if(IsMsgPV === 1) return;
+      
+      await bot.reply(from, `Olá ${msg.pushName}, me adicione a um grupo para ver meu menu, caso deseja ter acesso liberado a Yuki use *${prefixo}alugar*, obrigada!`);
+      
+      await clientRedis.set(`pv:block:${sender}`, "1");
+      
+      await clientRedis.expire(`pv:block:${sender}`, 2 * 60);
+      
+      return;
+    }
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
       
@@ -206,6 +214,109 @@ Responda curto e objetivo.
     //argumentos 
     const args = body.slice(prefixo.length).trim().split(/ +/);
     
+        
+    //Caso tenha um aluguel a pagar
+    const alugarExiste = await clientRedis.exists(`aluguel:${sender}&${from}`);
+    if(alugarExiste) {
+      
+      const aluguelObj = await clientRedis.hGetAll(`aluguel:${sender}&${from}`);
+      
+      if(bodyCase === "confirmar") {
+        try {
+        await bot.reply(from, "Gerando copia e cola...");
+        
+        const paymentAluguel = await payment.create({
+      body: {
+      transaction_amount: Number(aluguelObj.valor),
+  description: "Aluguel da Yuki!",
+  payment_method_id: "pix",
+  payer: {
+    email: "yuki@gmail.com"
+  }}
+});
+        const dataPix = paymentAluguel;
+        
+        const qrCodeAluguel = dataPix.point_of_interaction.transaction_data;
+        
+        const infoAluguelPay = `⤷ *Id:* ${dataPix.id}\n⤷ *Status:* ${dataPix.status}\n⤷ *Valor:* ${aluguelObj.valor}`;
+        
+        const qrBase64 = qrCodeAluguel.qr_code_base64.replace(/^data:image\/png;base64,/, "");
+        const qrBuffer = Buffer.from(qrBase64, "base64");
+        
+        await sock.sendMessage(sender, {image: qrBuffer, caption: infoAluguelPay}, {quoted: msg});
+        
+        await bot.reply(sender, `*Aqui está seu copia e cola:*\n⤷ ${qrCodeAluguel.qr_code}`);
+        
+        await bot.reply(from, "Qr code e pix copia e cola enviado! Olhe seu privado.");
+        
+        await bot.reply(sender, "Esse pagamento vai se expirar em 10 minutos!");
+        
+        const payInterval = setInterval(async () => {
+          try {
+          const pagamentoAtual = await payment.get({ id: dataPix.id });
+          
+          const status = pagamentoAtual.status;
+          
+          if(status === "approved") {
+            await bot.reply(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
+            
+            //Emite o evento
+            pagamento({
+              ctx: {
+                user: sender,
+                from: aluguelObj.grupo,
+              valor: dataPix?.transaction_amount
+              },
+              obj: {
+                categoria: "assinaturas",
+                descricao: dataPix?.description,
+                id: dataPix?.id
+              }
+            });
+            
+            const diasEmTimestamp = 1000 * 60 * 60 * 24 * Number(aluguelObj.dias);
+            
+            await grupos.updateOne({groupId: aluguelObj.grupo}, {$set: {aluguel: diasEmTimestamp + Date.now()}}, {upsert: true});
+            
+            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
+            
+            clearInterval(payInterval);
+          }
+          
+          else if(status === "rejected") {
+            await bot.send(sender, "Pagamento recusado...");
+            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
+          }
+          }
+          catch(err) {
+            await bot.reply(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
+            console.log(err);
+            clearInterval(payInterval);
+          }
+        }, 5000);
+        
+        }
+        catch(err) {
+          await bot.reply(sender, "Erro encontrado fale com meu dono imediatamente!!\n\n⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
+          console.error(err);
+          await clientRedis.del(`aluguel:${sender}&${from}`);
+        }
+        
+        
+      }
+      
+      else if(bodyCase === "cancelar") {
+        
+        await clientRedis.del(`aluguel:${sender}&${from}`);
+        
+        await bot.reply(from, "Poxa... Que pena, qualquer coisa já sabe! Usa */alugar*");
+        
+      }
+      
+    }
+        
+        
+        
         //caso tenha uma aposta 
     const apostaPendente = await clientRedis.exists(`aposta:${sender}`);
     if(apostaPendente) {
@@ -287,7 +398,7 @@ Responda curto e objetivo.
   const groupReply = await grupos.findOne({groupId: from});
   
   //Caso o grupo tenha a anttotag ativa
-  if(groupReply.antiTotag) {
+  if(from.endsWith("@g.us") && groupReply.antiTotag) {
     if(msg.key.fromMe) return;
     try {
       //pega info do grupo
@@ -316,14 +427,19 @@ Responda curto e objetivo.
     
       //caso ouva uma mencao ou frase com a yuki
     if(bodyCase.includes("yuki")) {
-        
+            //promp base pra yuki
+    const promptBase = `
+SYSTEM: Você é a yuki, uma bot de whatsapp ironica, explicativa quando PRECISA, e as vezes carinhosa, seja direta e use no maximo 3 paragrafos. Voce deve responder o campo Message, e use o campo Nome somente se fizer sentido
+Nome: {${msg.pushName}}
+Mensagem: {${body}}
+`;
         try {
           //simula escrita
           await sock.sendPresenceUpdate("composing", from);
           //separa cada palavra
           const args = body.split(" ")
           //estrutura de resposta
-          const yukiGpt = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt?query=${encodeURIComponent(promptBase) + encodeURIComponent(`USER: ${msg.pushName || "sem nome"}, MESSAGE: ${args.join(" ")}`)}&apikey=${process.env.ZEROTWO_APIKEY}`);
+          const yukiGpt = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt4?query=${encodeURIComponent(promptBase)}&apikey=${process.env.ZEROTWO_APIKEY}`);
           //manda a mensagem
           await sock.sendMessage(from, {text: yukiGpt.data.resultado}, {quoted: msg});
           //pausa a simulacao
@@ -381,6 +497,27 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
   
   //Se existe executa
   messageQueue.get(grupoRemote).push(async () => {
+    
+            //lida com aluguel
+    const isPadrao = commandNoPrefix.categoria === "padrao";
+    if(!isPadrao && from.endsWith("@g.us")) {
+    const grupoAluguel = await grupos.findOne({groupId: from});
+    
+    if(!grupoAluguel) return;
+    const dataAtual = Date.now();
+    
+    const isDono = !!doninhos;
+    
+    const isVip = usersSender?.vencimentoVip && dataAtual > usersSender?.vencimentoVip?.getTime();
+    
+    const isAluguel = dataAtual > grupoAluguel.aluguel;
+    
+    if(isAluguel && !isVip) {
+      await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
+      return
+    }
+    }
+    
   commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot);
   });
 }
@@ -443,23 +580,8 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
 //tratamento dos comandos
   if (body.startsWith(prefixo)) {
     
-    //lida com aluguel
-    if(from.endsWith("@g.us")) {
-    const grupoAluguel = await grupos.findOne({groupId: from});
-    
-    if(!grupoAluguel) return;
-    
-    const dataAtual = Date.now();
-    
-    if(dataAtual > grupoAluguel.aluguel && !doninhos && dataAtual > usersSender?.vencimentoVip?.getTime()) {
-      await sock.sendMessage(from, {text: "Este grupo está com aluguel vencido! Fale com o dono responsável pelo o bot!\n\n⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Quero%20alugar%20a%20yuki,%20seu%20lixo!&type=phone_number&app_absent=0&wame_ctl=1"}, {quoted: msg});
-      return
-    }
-    }
-    
-    
-    
-    
+
+
 //pega o argumento digitado e deixa ele em letras minusculas
     const commandName = args.shift().toLowerCase();
   //procura no map
@@ -526,6 +648,10 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
       await bot.reply(from, frasesSpamCommand);
       return
     }
+    
+        
+    
+
     
     //executa o comando
     await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta, bot);

@@ -57,6 +57,7 @@ console.log(`NOME: ${botName}
 COMANDOS: ${commandsMap.size}
 SISTEM: ${os.type()}`);
 
+
 const jsonErros = require("./database/erros.json");
 const erros_prontos = jsonErros[Math.floor(Math.random() * jsonErros.length)]
 
@@ -117,6 +118,7 @@ async function yukibot() {
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
   require("./events/participantUp")(sock);
   require("./events/waifus.js")(sock);
+  require("./events/payments.js")(sock);
   
 }
 

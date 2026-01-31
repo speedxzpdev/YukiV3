@@ -32,10 +32,12 @@ module.exports = {
       
       const restanteDias = Math.max(0, Math.ceil(restanteMs / (24 * 60 * 60 * 1000)));
       
+      const restanteHoras = Math.max(0, Math.floor(restanteMs / (60 * 60 * 1000)));
+      
       const info = `𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝗰̧𝗼̃𝗲𝘀 𝗱𝗼 𝗴𝗿𝘂𝗽𝗼
 *Nome:* ${metadata.subject}
 *Id:* ${from.split("@")[0]}
-*Vence em:* ${grupoDb?.aluguel ? grupoDb.aluguel.toLocaleDateString("pt-BR") : "Vencido!"} - Faltam ${restanteDias || 0} dias
+*Vence em:* ${grupoDb?.aluguel.toLocaleDateString("pt-BR")} - Faltam ${restanteDias || 0} Dias e ${restanteHoras || 0} Horas
 *Comandos usados:* ${grupoDb.cmdUsados}
 𝗖𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗮𝗰̧𝗼̃𝗲𝘀
 *eventos:* ${grupoDb.configs?.events ? "On" : "Off"}
