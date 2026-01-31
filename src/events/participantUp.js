@@ -1,5 +1,4 @@
 const { grupos } = require("../database/models/grupos");
-require("dotenv").config();
 
 
 

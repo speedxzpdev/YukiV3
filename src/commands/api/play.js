@@ -1,6 +1,5 @@
 const axios = require("axios");
 const { users } = require("../../database/models/users");
-require("dotenv").config();
 
 module.exports = {
   name: "play",

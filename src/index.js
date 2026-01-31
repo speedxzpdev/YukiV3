@@ -8,15 +8,15 @@ const qrcode = require("qrcode-terminal");
 
 const { prefixo, botName } = require("./config");
 const tiktokDl = require("./utils/tiktok");
-const connectDB = require("./database/index");
+const connectDB = require("./lib/mongoDB.js");
 const similarityCmd = require("./utils/similaridadeCmd");
 const { users } = require("./database/models/users");
 const { donos } = require("./database/models/donos");
 const { rankativos } = require("./database/models/rankativos");
 const { grupos } = require("./database/models/grupos");
-const { redisConnect } = require("./database/redis.js");
+const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
-require("dotenv").config();
+require("dotenv").config({quiet: true});
 
 
 
@@ -56,6 +56,7 @@ loadCommands(path.join(__dirname, "commands"));
 console.log(`NOME: ${botName}
 COMANDOS: ${commandsMap.size}
 SISTEM: ${os.type()}`);
+
 
 const jsonErros = require("./database/erros.json");
 const erros_prontos = jsonErros[Math.floor(Math.random() * jsonErros.length)]
@@ -117,6 +118,7 @@ async function yukibot() {
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
   require("./events/participantUp")(sock);
   require("./events/waifus.js")(sock);
+  require("./events/payments.js")(sock);
   
 }
 

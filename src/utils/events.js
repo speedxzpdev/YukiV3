@@ -18,7 +18,19 @@ function comprarWaifu({ctx, waifu}) {
   yukiEv.emit("waifu:acquired", eventReturn);
 }
 
+
+function pagamento({ctx, obj}) {
+  const eventReturn = {
+    payer: ctx,
+    obj,
+    timestamp: Date.now()
+  };
+  
+  yukiEv.emit("payment:completed", eventReturn)
+}
+
 module.exports = {
   yukiEv,
-  comprarWaifu
+  comprarWaifu,
+  pagamento
 }
