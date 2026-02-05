@@ -650,7 +650,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     }
     
               //lida com aluguel
-    const isPadrao = commandNoPrefix.categoria === "padrao";
+    const isPadrao = commandGet.categoria === "padrao";
     if(!isPadrao && from.endsWith("@g.us")) {
     const grupoAluguel = await grupos.findOne({groupId: from});
     
@@ -668,6 +668,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
       return
     }
     }
+    
     
 
     
