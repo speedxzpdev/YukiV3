@@ -663,7 +663,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     
     const isAluguel = dataAtual > grupoAluguel.aluguel;
     
-    if(isAluguel && !isVip) {
+    if(isAluguel && isVip && !isDono) {
       await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
       return
     }
