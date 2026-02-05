@@ -56,7 +56,7 @@ menuAdmin: `${subMenu}
 ┆𓏲🫧֪𝆫➺ ${prefixo}totag
 ┆𓏲🫧֪𝆫➺ ${prefixo}d
 ┆𓏲🫧֪𝆫➺ ${prefixo}mute
-┆𓏲🫧֪𝆫➺ ${prefixo}desmute
+┆𓏲🫧֪𝆫➺ ${prefixo}unmute
 ┆𓏲🫧֪𝆫➺ ${prefixo}adv
 ┆𓏲🫧֪𝆫➺ ${prefixo}rmadv
 ┆𓏲🫧֪𝆫➺ ${prefixo}roletarussa
