@@ -650,7 +650,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     }
     
               //lida com aluguel
-    const isPadrao = commandNoPrefix.categoria === "padrao";
+    const isPadrao = commandGet.categoria === "padrao";
     if(!isPadrao && from.endsWith("@g.us")) {
     const grupoAluguel = await grupos.findOne({groupId: from});
     
@@ -663,11 +663,12 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     
     const isAluguel = dataAtual > grupoAluguel.aluguel;
     
-    if(isAluguel && !isVip) {
+    if(isAluguel && isVip && !isDono) {
       await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
       return
     }
     }
+    
     
 
     
