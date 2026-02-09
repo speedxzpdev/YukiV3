@@ -589,6 +589,8 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
 
 //se nao existir
     if (!commandGet) {
+    
+      
       
       //Cria um array de chaves pra verificar
       const commandNameList = Array.from(commandsMap.keys());
@@ -651,7 +653,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     
               //lida com aluguel
     const isPadrao = commandGet.categoria === "padrao";
-    if(!isPadrao && from.endsWith("@g.us")) {
+    if(!isPadrao && from.endsWith("@g.us") && process.env.DEV_AMBIENT === "false") {
     const grupoAluguel = await grupos.findOne({groupId: from});
     
     if(!grupoAluguel) return;
@@ -664,16 +666,20 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     const isAluguel = dataAtual > grupoAluguel.aluguel;
     
     if(isAluguel && isVip && !isDono) {
-      await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
+      //await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
       return
     }
     }
     
     
-
+    //Simula escrita
+    await sock.sendPresenceUpdate('composing', from);
     
     //executa o comando
     await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta, bot);
+    
+    //pausa a simulacao
+    await sock.sendPresenceUpdate('paused', from);
 //adiciona no contador de comandos
     await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
 //adiciona no contador do grupo
