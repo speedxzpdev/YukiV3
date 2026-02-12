@@ -93,6 +93,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0];
     
+    
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     
     if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
@@ -122,6 +123,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
    const mentions =
   msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || ctx?.participant || [];
+  
+  
 
     const sender = msg.key.participant || msg.key.remoteJid
 

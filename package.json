@@ -20,7 +20,6 @@
     "cheerio": "^1.1.2",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
-    "jimp": "^1.6.0",
     "mercadopago": "^2.12.0",
     "mongoose": "^8.19.3",
     "node-webpmux": "^3.2.1",
