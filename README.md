@@ -1,6 +1,6 @@
 # Yuki bot🌨❄️
 
-![Yuki banner](./src/assets/images/yukiBanner.jpg)
+![Yuki banner](./src/assets/images/yukiBanner3.png)
 
 Yuki é um bot de WhatsApp que oferece downloads, comandos de administração e funções de entretenimento para grupos. Rápido, confiável e fácil de usar!
 

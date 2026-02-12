@@ -18,7 +18,7 @@ const schema = new mongoose.Schema({
   autoDownload: {type: Boolean, default: true},
   cmdUsados: {type: Number, default: 0},
   afkList: [String],
-  antiTotag: {type: Boolean, default: false}
+  antiTotag: {type: Boolean, default: false},
   
   
   
