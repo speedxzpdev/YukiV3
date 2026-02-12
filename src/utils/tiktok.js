@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { users } = require("../database/models/users");
+const path = require("path");
 
 async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   try {
@@ -7,7 +8,7 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     await sock.sendMessage(from, {text: "Falta o parametro link!"});*/
 
     await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
-
+    await sock.sendMessage(from, {sticker: {url: path.join(__dirname, "../assets/images/stickers/chibiConfiante.webp")}}, {quoted: msg});
 
     const url = `https://zero-two-apis.com.br/api/download/tiktok?url=${body}&apikey=${process.env.ZEROTWO_APIKEY}`
 

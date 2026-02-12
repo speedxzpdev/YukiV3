@@ -304,5 +304,17 @@
   "image": "../../assets/waifusImg/kasaneTeto.jpg",
   "raridade": "lendaria",
   "id": 50
+},
+{
+   "nome": "Agnes Tachyon",
+  "image": "../../assets/waifusImg/agnestachyon.jpg",
+  "raridade": "mitico",
+  "id": 51
+},
+{
+   "nome": "Albedo(overlord)",
+  "image": "../../assets/waifusImg/albedo.jpg",
+  "raridade": "lendaria",
+  "id": 52
 }
 ]
