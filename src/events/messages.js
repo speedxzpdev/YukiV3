@@ -459,6 +459,27 @@ Mensagem: {${body}}
       }
     
   }
+  
+      //Caso um grupo tenha auto download
+  const groupDonwload = await grupos.findOne({groupId: from});
+  
+  if((groupDonwload && groupDonwload.autoDownload) || from.endsWith("@lid")) {
+  //caso tenha um link de tiktok
+  if (body.startsWith("https://vt.tiktok.com/")) {
+
+    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
+
+  }
+  
+  if(body.includes("https://open.spotify.com/track/")) {
+    spotifyDl(sock, msg, from, body, erros_prontos, espera_pronta, bot)
+  }
+  
+  if(body.startsWith("https://www.instagram.com/reel")) {
+    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
+  }
+  
+  }
     
     //caso nao tenha mensagens
     if(!msg) return;
@@ -485,8 +506,8 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
   
   
   
-  //se nao existir
-  if(!commandNoPrefix) return;
+  //se existir
+  if(commandNoPrefix) {
   
       //Verifica se tem spam no comando
     if(spamCommand(sender, commandNamePrefix)) {
@@ -523,6 +544,8 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     
   commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot);
   });
+    
+  }
 }
     
     //PROCESSAMENTO DE MENSAGENS
@@ -544,26 +567,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     return sock.sendMessage(from, { text: String(e) }, { quoted: msg });
   }
 }
-    //Caso um grupo tenha auto download
-  const groupDonwload = await grupos.findOne({groupId: from});
-  
-  if(groupDonwload && groupDonwload.autoDownload || from.endsWith("@lid")) {
-  //caso tenha um link de tiktok
-  if (body.startsWith("https://vt.tiktok.com/")) {
 
-    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
-
-  }
-  
-  if(body.includes("https://open.spotify.com/track/")) {
-    spotifyDl(sock, msg, from, body, erros_prontos, espera_pronta, bot)
-  }
-  
-  if(body.startsWith("https://www.instagram.com/reel")) {
-    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
-  }
-  
-  }
 
   //Caso uma mensagem comece com prefixo
   if(body.startsWith("prefixo")) {
@@ -579,12 +583,9 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
   let userFind = await users.findOne({userLid: sender});
 
 
-
 //tratamento dos comandos
   if (body.startsWith(prefixo)) {
     
-
-
 //pega o argumento digitado e deixa ele em letras minusculas
     const commandName = args.shift().toLowerCase();
   //procura no map

@@ -49,7 +49,7 @@ module.exports = {
 *Anti-spam de marcação:* ${grupoDb?.antiTotag ? "On" : "Off"}`
       
       
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki2.jpg")}, caption: info}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yukipfp/yukiOclin2.jpg")}, caption: info}, {quoted: msg});
       
     }
     catch(err) {

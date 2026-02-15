@@ -19,6 +19,7 @@ const schema = new mongoose.Schema({
   cmdUsados: {type: Number, default: 0},
   afkList: [String],
   antiTotag: {type: Boolean, default: false},
+  multiprefixo: {type: Boolean, default: false}
   
   
   
