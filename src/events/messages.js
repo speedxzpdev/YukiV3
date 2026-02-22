@@ -113,10 +113,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         //lê todas mensagens
     await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    if(process.env.DEV_AMBIENT === "false") {
-    if (msg.key.fromMe) return
+    //if(process.env.DEV_AMBIENT === "false") {
+    //if (msg.key.fromMe) return
       
-    }
+    //}
     
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
