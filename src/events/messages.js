@@ -133,7 +133,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const bot = new YukiBot({sock: sock, msg});
     
-    
+    await clientRedis.incr("metrics:message:min");
+    await clientRedis.expire("metrics:message:min", 60);
     
     
 
@@ -646,6 +647,10 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     }
     
   commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot);
+  
+  //Adiciona nas metricas
+  await clientRedis.incr("metrics:commands:min");
+  await clientRedis.incr("metrics:commands:min", 60);
   });
     
   }
@@ -797,6 +802,9 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
 //adiciona no contador de user
    await users.updateOne({userLid: sender}, {$inc: {cmdCount: 1}});
    
+     //Adiciona nas metricas
+  await clientRedis.incr("metrics:commands:min");
+  await clientRedis.incr("metrics:commands:min", 60);
   }
     });
     
