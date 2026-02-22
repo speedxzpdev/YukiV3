@@ -113,10 +113,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         //lê todas mensagens
     await sock.readMessages([msg.key]);
     //ignora mensagens de si mesmo
-    //if(process.env.DEV_AMBIENT === "false") {
-    //if (msg.key.fromMe) return
+    if(process.env.DEV_AMBIENT === "false") {
+    if (msg.key.fromMe) return
       
-    //}
+    }
     
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
@@ -220,9 +220,65 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         
     //Caso tenha um aluguel a pagar
     const alugarExiste = await clientRedis.exists(`aluguel:${sender}&${from}`);
+    
+    const aluguelObj = await clientRedis.hGetAll(`aluguel:${sender}&${from}`);
+    
+    
+    //Caso exista um aluguel interrompido
+    const alguelInterrompido = await clientRedis.exists(`payment:${sender}`);
+    
+    if(alguelInterrompido) {
+      const payInterval = setInterval(async () => {
+          try {
+            
+            const aluguel = await clientRedis.hGetAll(`payment:${sender}`);
+            
+          const dataPix = await payment.get({ id: aluguel.id });
+          
+          const status = pagamentoAtual.status;
+          
+          if(status === "approved") {
+            await bot.reply(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
+            
+            //Emite o evento
+            pagamento({
+              ctx: {
+                user: sender,
+                from: aluguelObj.grupo,
+              valor: dataPix?.transaction_amount
+              },
+              obj: {
+                categoria: "assinaturas",
+                descricao: dataPix?.description,
+                id: dataPix?.id
+              }
+            });
+            
+            const diasEmTimestamp = 1000 * 60 * 60 * 24 * Number(aluguelObj.dias);
+            
+            await grupos.updateOne({groupId: aluguelObj.grupo}, {$set: {aluguel: diasEmTimestamp + Date.now()}}, {upsert: true});
+            
+            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
+            
+            clearInterval(payInterval);
+          }
+          
+          else if(status === "rejected") {
+            await bot.send(sender, "Pagamento recusado...");
+            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
+          }
+          }
+          catch(err) {
+            await bot.reply(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
+            console.log(err);
+            clearInterval(payInterval);
+          }
+        }, 5000);
+    }
+    
     if(alugarExiste) {
       
-      const aluguelObj = await clientRedis.hGetAll(`aluguel:${sender}&${from}`);
+      
       
       if(bodyCase === "confirmar") {
         try {
@@ -238,6 +294,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   }}
 });
         const dataPix = paymentAluguel;
+        
+        await clientRedis.hSet(`payment:${sender}`, dataPix);
         
         const qrCodeAluguel = dataPix.point_of_interaction.transaction_data;
         
