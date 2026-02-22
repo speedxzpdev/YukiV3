@@ -16,6 +16,7 @@ const { clientRedis } = require("../lib/redis.js");
 const { clientMp, payment} = require("../lib/mercadoPago.js");
 const{ yukiEv,
   comprarWaifu, pagamento } = require("../utils/events.js");
+const { advertidos } = require("../database/models/adverts.js");
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -233,12 +234,12 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
             
             const aluguel = await clientRedis.hGetAll(`payment:${sender}`);
             
-          const dataPix = await payment.get({ id: aluguel.id });
+          const dataPix = await payment.get({ id: Number(aluguel.id) });
           
-          const status = pagamentoAtual.status;
+          const status = dataPix.status;
           
           if(status === "approved") {
-            await bot.reply(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
+            await bot.send(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
             
             //Emite o evento
             pagamento({
@@ -260,16 +261,20 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
             
             await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
             
+            await clientRedis.del(`payment:${sender}`);
+            
             clearInterval(payInterval);
           }
           
           else if(status === "rejected") {
             await bot.send(sender, "Pagamento recusado...");
             await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
+            
+            await clientRedis.del(`payment:${sender}`);
           }
           }
           catch(err) {
-            await bot.reply(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
+            await bot.send(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
             console.log(err);
             clearInterval(payInterval);
           }
@@ -295,7 +300,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 });
         const dataPix = paymentAluguel;
         
-        await clientRedis.hSet(`payment:${sender}`, dataPix);
+        await clientRedis.hSet(`payment:${sender}`, {id: dataPix.id});
         
         const qrCodeAluguel = dataPix.point_of_interaction.transaction_data;
         
@@ -310,7 +315,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         
         await bot.reply(from, "Qr code e pix copia e cola enviado! Olhe seu privado.");
         
-        await bot.reply(sender, "Esse pagamento vai se expirar em 10 minutos!");
+        await bot.reply(sender, "Esse pagamento vai se expirar em 10 minutos! Ao efetuar pagamento envie uma mensagem pro grupo que alugou e espere 5 segundos.");
         
         const payInterval = setInterval(async () => {
           try {
@@ -319,7 +324,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
           const status = pagamentoAtual.status;
           
           if(status === "approved") {
-            await bot.reply(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
+            await bot.send(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
             
             //Emite o evento
             pagamento({
@@ -350,7 +355,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
           }
           }
           catch(err) {
-            await bot.reply(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
+            await bot.send(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
             console.log(err);
             clearInterval(payInterval);
           }
@@ -358,7 +363,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         
         }
         catch(err) {
-          await bot.reply(sender, "Erro encontrado fale com meu dono imediatamente!!\n\n⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
+          await bot.send(sender, "Erro encontrado fale com meu dono imediatamente!!\n\n⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
           console.error(err);
           await clientRedis.del(`aluguel:${sender}&${from}`);
         }
@@ -483,6 +488,46 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
   }
   
+  //Caso tenha o antilink ativo
+  if((groupReply && groupReply.configs.antlink) && (bodyCase.includes("https://") || bodyCase.includes("http://"))) {
+    try {
+      
+      const metadata = await sock.groupMetadata(from);
+    const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
+    
+    if(admins.includes(sender) || msg.key.fromMe) return;
+    
+    await sock.sendMessage(from, {delete: msg.key});
+    
+    await advertidos.updateOne({grupo: from, userLid: sender}, {$inc: {adv: 1}}, {upsert: true});
+    
+    
+    let advs = await advertidos.findOne({userLid: sender, grupo: from});
+    
+    if(advs.adv >= 3) {
+      await bot.reply(from, "Você teve 3 chances.");
+      try {
+      await sock.groupParticipantsUpdate(from, [sender], "remove");
+      
+      await advertidos.deleteOne({grupo: from, userLid: sender})
+      }
+      catch(err) {
+        await bot.reply(from, "Talvez eu não tenha admin...");
+        
+        console.log(err);
+      }
+      return
+    }
+    
+    await bot.reply(from, `Link detectado!!! Cuidado agora possui ${advs.adv} advertências. Se chegar em 3 será banido!`);
+    }
+    catch(err) {
+      await bot.reply(from, erros_prontos);
+      console.error(err);
+    }
+    return
+    
+  }
   //caso o grupo tenha autoreply ativo
   if(groupReply && groupReply.autoReply) {
     
