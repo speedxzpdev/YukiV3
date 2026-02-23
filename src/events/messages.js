@@ -650,7 +650,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
   
   //Adiciona nas metricas
   await clientRedis.incr("metrics:commands:min");
-  await clientRedis.incr("metrics:commands:min", 60);
+  await clientRedis.expire("metrics:commands:min", 60);
   });
     
   }
@@ -778,7 +778,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     const isAluguel = dataAtual > grupoAluguel.aluguel;
     
     if(isAluguel && isVip && !isDono) {
-      //await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
+      await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
       return
     }
     }
@@ -804,7 +804,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
    
      //Adiciona nas metricas
   await clientRedis.incr("metrics:commands:min");
-  await clientRedis.incr("metrics:commands:min", 60);
+  await clientRedis.expire("metrics:commands:min", 60);
   }
     });
     
