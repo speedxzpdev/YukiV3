@@ -1,4 +1,5 @@
 const { grupos } = require("../../database/models/grupos.js");
+const { clientRedis } = require("../../lib/redis.js");
 const path = require("path");
 
 module.exports = {
@@ -25,6 +26,9 @@ module.exports = {
       
       const ownerLink = `https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1`
       
+      const msgMinuto = await clientRedis.get("metrics:message:min");
+      
+      const cmdMinuto = await clientRedis.get("metrics:commands:min");
       
       const processoNode = process.uptime();
       
@@ -38,8 +42,11 @@ module.exports = {
       const info = `*Informações da bot:*
 *Nome:* Yuki
 *Dono:* Speed
+> métricas
 *Processo:* ${horasProcess}h ${MinProcess}m ${segundosProcesso}s 
 *Grupos ativos:* ${gruposAtivos.length}
+*mensagens por minuto:* ${Number(msgMinuto) + 1}
+*Comandos por minuto*: ${Number(cmdMinuto) + 1}
 > Links
 *Canal:* https://whatsapp.com/channel/0029Vb6vMaL1t90h3jHDBC1M
 *Repositório:* https://github.com/speedxzpdev/YukiV3
