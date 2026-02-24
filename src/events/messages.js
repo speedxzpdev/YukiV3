@@ -24,6 +24,9 @@ const { advertidos } = require("../database/models/adverts.js");
     //flag pra evitar que seja rodado 2 msg ao mesmo tempo por grupo
     let flagMessage = new Map();
     
+    //Mapa de intervslos
+    const activeInterval = new Map();
+    
     //parte que lida com cada mensagem
     async function processMessage(groupId) {
       //caso já estiver true um processamento
@@ -226,10 +229,14 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const aluguelObj = await clientRedis.hGetAll(`aluguel:${sender}&${from}`);
     
     
+    
     //Caso exista um aluguel interrompido
     const alguelInterrompido = await clientRedis.exists(`payment:${sender}`);
     
-    if(alguelInterrompido) {
+    if(alguelInterrompido && !activeInterval.has(sender, true)) {
+      
+      
+      
       const payInterval = setInterval(async () => {
           try {
             
@@ -264,6 +271,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
             
             await clientRedis.del(`payment:${sender}`);
             
+            activeInterval.delete(sender)
+            
             clearInterval(payInterval);
           }
           
@@ -272,14 +281,21 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
             await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
             
             await clientRedis.del(`payment:${sender}`);
+            
+            activeInterval.delete(sender);
+            clearInterval(payInterval);
           }
           }
           catch(err) {
             await bot.send(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
             console.log(err);
+            
             clearInterval(payInterval);
+            
+            activeInterval.delete(sender);
           }
         }, 5000);
+        activeInterval.set(sender, true);
     }
     
     if(alugarExiste) {
