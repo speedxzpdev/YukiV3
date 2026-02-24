@@ -64,6 +64,8 @@ const erros_prontos = jsonErros[Math.floor(Math.random() * jsonErros.length)]
 const jsonEspera = require("./database/espera.json");
 const espera_pronta = jsonEspera[Math.floor(Math.random() * jsonEspera.length)]
 
+
+
 async function yukibot() {
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "/assets/auth"));
   //sock do bot
@@ -75,6 +77,13 @@ async function yukibot() {
     }
   });
   
+          //conecta o mongo
+    try {await connectDB();}
+    catch(err){console.log("Nao foi possivel se conectar ao mongoDB\n\n", err); process.exit()}
+  
+    //Conecta o redis
+    await redisConnect();
+  
   sock.ev.on("creds.update", saveCreds);
   
   if(!state.creds.registered) {
@@ -84,12 +93,7 @@ async function yukibot() {
     }, 2000);
   }
   
-      //conecta o mongo
-    try {await connectDB();}
-    catch(err){console.log("Nao foi possivel se conectar ao mongoDB\n\n", err); process.exit()}
-  
-    //Conecta o redis
-    await redisConnect();
+
   
   
   sock.ev.on("connection.update", async (update) => {
@@ -100,7 +104,7 @@ async function yukibot() {
     const shouldReconnect =
       lastDisconnect?.error?.output?.statusCode !== 401
 
-    if (shouldReconnect) {
+    if(shouldReconnect) {
       console.log("Reconectando seu merda…")
       yukibot()
     } else {
@@ -112,7 +116,7 @@ async function yukibot() {
     
     
     
-  })
+  });
   
 //importacoes de eventos
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);

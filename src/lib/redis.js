@@ -13,8 +13,12 @@ const clientRedis = redis.createClient({
 //Faz a conexão
 async function redisConnect() {
   try {
+    
+    if(!clientRedis.isOpen) {
+    
     await clientRedis.connect();
     console.log("Redis conectado!");
+    }
   }
   catch(err) {
     console.error("erro ao conectar redis:\n", err);
