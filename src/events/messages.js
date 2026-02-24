@@ -233,7 +233,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     //Caso exista um aluguel interrompido
     const alguelInterrompido = await clientRedis.exists(`payment:${sender}`);
     
-    if(alguelInterrompido && !activeInterval.has(sender, true)) {
+    /*if(alguelInterrompido && !activeInterval.has(sender, true)) {
       
       
       
@@ -296,10 +296,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
           }
         }, 5000);
         activeInterval.set(sender, true);
-    }
+    }*/
     
     if(alugarExiste) {
-      
       
       
       if(bodyCase === "confirmar") {
