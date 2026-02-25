@@ -31,7 +31,7 @@ module.exports = async function server(sock) {
         
         const foipago = await clientRedis.exists(`id:${body.data.id}`);
         
-        if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor) && !foipago) {
+        if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor) && foipago === 0) {
           
           
           
@@ -48,7 +48,7 @@ module.exports = async function server(sock) {
           
           await sock.sendMessage(numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]});
           
-          await clientRedis.hSet(`id:${body.data.id}`, {obj: 1});
+          await clientRedis.set(`id:${body.data.id}`, 1);
           await clientRedis.expire(`id:${body.data.id}`, 20);
           
         }
