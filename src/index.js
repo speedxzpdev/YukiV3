@@ -21,7 +21,7 @@ const server = require("./server.js");
 
 
 //chama o backend da bot
-server();
+server(sock);
 
 const commandDir = fs.readdirSync(path.join(__dirname, "commands")).filter(cmd => cmd.endsWith(".js"));
 

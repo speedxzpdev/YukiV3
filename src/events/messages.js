@@ -228,76 +228,6 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const aluguelObj = await clientRedis.hGetAll(`aluguel:${sender}&${from}`);
     
-    
-    
-    //Caso exista um aluguel interrompido
-    const alguelInterrompido = await clientRedis.exists(`payment:${sender}`);
-    
-    /*if(alguelInterrompido && !activeInterval.has(sender, true)) {
-      
-      
-      
-      const payInterval = setInterval(async () => {
-          try {
-            
-            const aluguel = await clientRedis.hGetAll(`payment:${sender}`);
-            
-          const dataPix = await payment.get({ id: Number(aluguel.id) });
-          
-          const status = dataPix.status;
-          
-          if(status === "approved") {
-            await bot.send(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
-            
-            //Emite o evento
-            pagamento({
-              ctx: {
-                user: sender,
-                from: aluguelObj.grupo,
-              valor: dataPix?.transaction_amount
-              },
-              obj: {
-                categoria: "assinaturas",
-                descricao: dataPix?.description,
-                id: dataPix?.id
-              }
-            });
-            
-            const diasEmTimestamp = 1000 * 60 * 60 * 24 * Number(aluguelObj.dias);
-            
-            await grupos.updateOne({groupId: aluguelObj.grupo}, {$set: {aluguel: diasEmTimestamp + Date.now()}}, {upsert: true});
-            
-            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
-            
-            await clientRedis.del(`payment:${sender}`);
-            
-            activeInterval.delete(sender)
-            
-            clearInterval(payInterval);
-          }
-          
-          else if(status === "rejected") {
-            await bot.send(sender, "Pagamento recusado...");
-            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
-            
-            await clientRedis.del(`payment:${sender}`);
-            
-            activeInterval.delete(sender);
-            clearInterval(payInterval);
-          }
-          }
-          catch(err) {
-            await bot.send(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
-            console.log(err);
-            
-            clearInterval(payInterval);
-            
-            activeInterval.delete(sender);
-          }
-        }, 5000);
-        activeInterval.set(sender, true);
-    }*/
-    
     if(alugarExiste) {
       
       
@@ -316,7 +246,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 });
         const dataPix = paymentAluguel;
         
-        await clientRedis.hSet(`payment:${sender}`, {id: dataPix.id});
+        await clientRedis.hSet(`payment:${dataPix.id}`, {user: sender, groupId: from, dias: aluguelObj.dias, valor: aluguelObj.valor});
         
         const qrCodeAluguel = dataPix.point_of_interaction.transaction_data;
         
@@ -332,50 +262,6 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         await bot.reply(from, "Qr code e pix copia e cola enviado! Olhe seu privado.");
         
         await bot.reply(sender, "Esse pagamento vai se expirar em 10 minutos! Ao efetuar pagamento envie uma mensagem pro grupo que alugou e espere 5 segundos.");
-        
-        const payInterval = setInterval(async () => {
-          try {
-          const pagamentoAtual = await payment.get({ id: dataPix.id });
-          
-          const status = pagamentoAtual.status;
-          
-          if(status === "approved") {
-            await bot.send(sender, `Pagamento concluido🎉 ${aluguelObj.dias} dias serão adicionados ao seu grupo!`);
-            
-            //Emite o evento
-            pagamento({
-              ctx: {
-                user: sender,
-                from: aluguelObj.grupo,
-              valor: dataPix?.transaction_amount
-              },
-              obj: {
-                categoria: "assinaturas",
-                descricao: dataPix?.description,
-                id: dataPix?.id
-              }
-            });
-            
-            const diasEmTimestamp = 1000 * 60 * 60 * 24 * Number(aluguelObj.dias);
-            
-            await grupos.updateOne({groupId: aluguelObj.grupo}, {$set: {aluguel: diasEmTimestamp + Date.now()}}, {upsert: true});
-            
-            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
-            
-            clearInterval(payInterval);
-          }
-          
-          else if(status === "rejected") {
-            await bot.send(sender, "Pagamento recusado...");
-            await clientRedis.del(`aluguel:${sender}&${aluguelObj.grupo}`);
-          }
-          }
-          catch(err) {
-            await bot.send(sender, "Erro ao verificar pagamento, fale com meu dono imediatamente!\n\⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
-            console.log(err);
-            clearInterval(payInterval);
-          }
-        }, 5000);
         
         }
         catch(err) {
