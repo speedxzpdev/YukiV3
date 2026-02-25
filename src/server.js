@@ -1,6 +1,6 @@
 const express = require("express");
 const { clientRedis } = require("./lib/redis.js");
-const { clientMp } = require("./lib/mercadoPago.js");
+const { payment } = require("./lib/mercadoPago.js");
 const { grupos } = require("./database/models/grupos.js");
 
 
@@ -20,10 +20,12 @@ module.exports = async function server(sock) {
   
   app.post("/webhook", async (req, res) => {
     try {
+      console.log("Post recebida!!");
+      console.log(req.body)
       const body = req.body;
       
       if(body.type === "payment" && body.data?.id) {
-        const status = await clientMp.payment.byId(body.data.id);
+        const status = await payment.get(body.data.id);
         
         const aluguel = await clientRedis.hGetAll(`payment:${body.data.id}`);
         
