@@ -46,7 +46,7 @@ module.exports = async function server(sock) {
           
           await sock.sendMessage(aluguel.groupId, {text: `O ${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
           
-          await sock.sendMessage({numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]}});
+          await sock.sendMessage(numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]});
           
           await clientRedis.hSet(`id:${body.data.id}`, {obj: true});
           await clientRedis.expire(`id:${body.data.id}`, 20);
