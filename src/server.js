@@ -25,7 +25,7 @@ module.exports = async function server(sock) {
       const body = req.body;
       
       if(body.type === "payment" && body.data?.id) {
-        const status = await payment.get(body.data.id);
+        //const status = await payment.get(body.data.id);
         
         const aluguel = await clientRedis.hGetAll(`payment:${body.data.id}`);
         
@@ -49,7 +49,7 @@ module.exports = async function server(sock) {
     }
     catch(e) {
       console.log(e);
-      await res.sendStatus(200);
+      await res.sendStatus(500);
     }
     
   });
