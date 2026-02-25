@@ -44,11 +44,11 @@ module.exports = async function server(sock) {
           //adiciona os dias;
           await grupos.updateOne({groupId: aluguel.groupId}, {$set: {aluguel: Date.now() + diasTimestamp}}, {upsert: true});
           
-          await sock.sendMessage(aluguel.groupId, {text: `O ${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
+          await sock.sendMessage(aluguel.groupId, {text: `O @${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
           
           await sock.sendMessage(numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]});
           
-          await clientRedis.hSet(`id:${body.data.id}`, {obj: true});
+          await clientRedis.hSet(`id:${body.data.id}`, {obj: 1});
           await clientRedis.expire(`id:${body.data.id}`, 20);
           
         }
