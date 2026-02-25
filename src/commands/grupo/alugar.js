@@ -18,7 +18,7 @@ module.exports = {
     
     try {
       
-      const diaValor = 0.05;
+      const diaValor = 0.01;
       
       const sender = msg.key.participant;
       
