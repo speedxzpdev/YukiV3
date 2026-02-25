@@ -17,7 +17,7 @@ module.exports = {
     }
     
     try {
-      
+      //valor de alugel
       const diaValor = 0.50;
       
       const sender = msg.key.participant;
