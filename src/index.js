@@ -17,8 +17,11 @@ const { grupos } = require("./database/models/grupos");
 const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
 require("dotenv").config({quiet: true});
+const server = require("./server.js");
 
 
+//chama o backend da bot
+server();
 
 const commandDir = fs.readdirSync(path.join(__dirname, "commands")).filter(cmd => cmd.endsWith(".js"));
 
