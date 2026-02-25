@@ -31,7 +31,7 @@ module.exports = async function server(sock) {
         
         const foipago = await clientRedis.exists(`id:${body.data.id}`);
         
-        if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor) && foipago) {
+        if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor) && !foipago) {
           
           
           
