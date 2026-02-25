@@ -20,8 +20,7 @@ require("dotenv").config({quiet: true});
 const server = require("./server.js");
 
 
-//chama o backend da bot
-server(sock);
+
 
 const commandDir = fs.readdirSync(path.join(__dirname, "commands")).filter(cmd => cmd.endsWith(".js"));
 
@@ -120,7 +119,10 @@ async function yukibot() {
     
     
   });
-  
+
+//chama o backend da bot
+server(sock);
+
 //importacoes de eventos
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
   require("./events/participantUp")(sock);
