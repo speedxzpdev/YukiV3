@@ -2,7 +2,7 @@ const express = require("express");
 const { clientRedis } = require("./lib/redis.js");
 const { payment } = require("./lib/mercadoPago.js");
 const { grupos } = require("./database/models/grupos.js");
-
+const { numberOwner } = require("./config.js");
 
 module.exports = async function server(sock) {
   
@@ -29,18 +29,28 @@ module.exports = async function server(sock) {
         
         const aluguel = await clientRedis.hGetAll(`payment:${body.data.id}`);
         
-        if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor)) {
+        const foipago = await clientRedis.exists(`id:${body.data.id}`);
+        
+        if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor) && foipago) {
           
           
           
           const metadataGroup = await sock.groupMetadata(aluguel.groupId);
           
-          await sock.sendMessage(aluguel.user, {text: `Pagamento concluído! ${aluguel.dias} dias serão adicionando ao grupo: ${metadataGroup.subject}`});
+          await sock.sendMessage(aluguel.user, {text: `🥳Pagamento concluído! ${aluguel.dias} dias serão adicionando ao grupo: ${metadataGroup.subject} 🎉`});
           
           const diasTimestamp = 1000 * 24 * 60 * 60 * Number(aluguel.dias);
           
           //adiciona os dias;
           await grupos.updateOne({groupId: aluguel.groupId}, {$set: {aluguel: Date.now() + diasTimestamp}}, {upsert: true});
+          
+          await sock.sendMessage(aluguel.groupId, {text: `O ${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
+          
+          await sock.sendMessage({numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]}});
+          
+          await clientRedis.hSet(`id:${body.data.id}`, {obj: true});
+          await clientRedis.expire(`id:${body.data.id}`, 20);
+          
         }
         
       }
