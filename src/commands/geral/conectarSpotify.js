@@ -13,6 +13,8 @@ module.exports = {
       
       await clientRedis.hSet(`idUser:${state}`, {userLid: sender});
       
+      await clientRedis.expire(`idUser:${state}`, 300);
+      
       await bot.reply(sender, process.env.URL_BACKEND + `/spotifyLogin?idUser=${state}`);
       
       await bot.reply(from, "Abra a url enviada no seu privado.");

@@ -6,6 +6,23 @@ const { numberOwner } = require("./config.js");
 const axios = require("axios");
 const { users } = require("./database/models/users.js");
 
+async function refreshToken(token, user) {
+  try {
+    
+    const response = await axios.post("https://accounts.spotify.com/api/token", new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: token
+    }), {headers:
+      {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": "Basic " + Buffer.from(process.env.CLIENT_SPOTIFY + ":" + process.env.SPOTIFY_KEY).toString("base64")}});
+        
+        await users.updateOne({userLid: user}, {$set: {spotifyToken: {token: response.data.access_token}}}, {upsert: true});
+      }
+  catch(err) {
+    console.error(err);
+  }
+}
 
 module.exports = async function server(sock) {
   
@@ -134,7 +151,7 @@ module.exports = async function server(sock) {
         return
       }
       
-      const token = userDb?.spotifyToken?.access_token;
+      const token = userDb?.spotifyToken?.token;
       
       let response;
        
@@ -148,7 +165,8 @@ module.exports = async function server(sock) {
        }
        catch(e) {
          if(e?.response?.status === 401) {
-           return res.send(undefined);
+           await refreshToken(token, user);
+           return
          }
          throw e
        }
