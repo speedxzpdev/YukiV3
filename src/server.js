@@ -165,7 +165,7 @@ module.exports = async function server(sock) {
        }
        catch(e) {
          if(e?.response?.status === 401) {
-           await refreshToken(token, user);
+           res.send(undefined);
            return
          }
          throw e
