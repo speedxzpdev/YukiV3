@@ -139,6 +139,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     await clientRedis.incr("metrics:message:min");
     await clientRedis.expire("metrics:message:min", 60);
     
+    await clientRedis.incr(`message:min:${from}`);
+    await clientRedis.expire(`message:min:${from}`, 60)
+    
     
 
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
