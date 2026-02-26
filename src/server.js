@@ -136,12 +136,22 @@ module.exports = async function server(sock) {
       
       const token = userDb?.spotifyToken?.access_token;
       
-      const response = await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {headers:
+      let response;
+       
+       try {
+       response = await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {headers:
         {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         }
       });
+       }
+       catch(e) {
+         if(e?.response?.status === 401) {
+           return res.send(undefined);
+         }
+         throw e
+       }
       
       const data = response?.data;
       
@@ -149,7 +159,7 @@ module.exports = async function server(sock) {
         res.status(200).json({
           nome: data.item.name,
           artistas: data.item.artists.map(a => a.name),
-          album: data.item.album
+          album: data.item.album.name
         });
       }
       else {
@@ -159,6 +169,7 @@ module.exports = async function server(sock) {
     }
     catch(err) {
       res.status(500).send(err);
+      console.error(err);
     }
     
     
