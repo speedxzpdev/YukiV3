@@ -53,7 +53,7 @@ module.exports = {
       const infos = `*User:* @${userSender.userLid.split("@")[0]}
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
-*Status*: ${`Ouvindo ${dataStatus.name} - ${dataStatus.artistas.join(" ")}` || "Usando a Yuki!"}
+*Status*: ${`Ouvindo ${dataStatus?.name ?? "nada"} - ${dataStatus.artistas?.join(" ") ?? ""}` || "Usando a Yuki!"}
 *Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + userSender.vencimentoVip.toLocaleDateString("pt-BR") : "Vencido!"}
 *Modo sem prefixo:* ${userSender?.prefixo ? "Desativado" : "Ativado"}
 *Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
