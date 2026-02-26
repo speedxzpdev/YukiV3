@@ -3,6 +3,8 @@ const { clientRedis } = require("./lib/redis.js");
 const { payment } = require("./lib/mercadoPago.js");
 const { grupos } = require("./database/models/grupos.js");
 const { numberOwner } = require("./config.js");
+const axios = require("axios");
+
 
 module.exports = async function server(sock) {
   
@@ -11,7 +13,7 @@ module.exports = async function server(sock) {
   //ouvi json 
   app.use(express.json());
   
-  const port = 80;
+  const port = process.env.PORT;
   
   
   app.get("/", async (req, res) => {
@@ -62,6 +64,26 @@ module.exports = async function server(sock) {
       await res.sendStatus(500);
     }
     
+  });
+  
+  app.get("/spotifyLogin", (req, res) => {
+    try {
+      const scope = "user-read-currently-playing"
+      
+      //monto a url
+      const urlAuth = "https://accounts.spotify.com/authorize" + "?response_type=code" + "&client_id=" + process.env.CLIENT_SPOTIFY + "&scope=" + encodeURIComponent(scope) + "&redirect_uri=" + encodeURIComponent(process.env.URL_BACKEND + "/callback");
+      
+      res.redirect(urlAuth);
+      
+      
+    }
+    catch(err) {
+      res.send(err);
+    }
+  });
+  
+  app.get("/callback", async (req, res) => {
+    res.status(200).send("ok");
   });
   
   

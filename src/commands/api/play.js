@@ -48,7 +48,7 @@ module.exports = {
     await sock.sendPresenceUpdate("recording", from);
     
     //audio
-    const audio = `https://zero-two-apis.com.br/api/dl/ytaudio?url=${encodeURIComponent(url)}&apikey=${process.env.ZEROTWO_APIKEY}`;
+    const audio = `https://zero-two-apis.com.br/api/dl/ytaudio2?url=${encodeURIComponent(url)}&apikey=${process.env.ZEROTWO_APIKEY}`;
     
     await sock.sendMessage(from, {audio: {url: audio}, mimetype: "audio/mpeg", ptt: false}, {quoted: msg});
     
