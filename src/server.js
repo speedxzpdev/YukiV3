@@ -4,6 +4,7 @@ const { payment } = require("./lib/mercadoPago.js");
 const { grupos } = require("./database/models/grupos.js");
 const { numberOwner } = require("./config.js");
 const axios = require("axios");
+const { users } = require("./database/models/users.js");
 
 
 module.exports = async function server(sock) {
@@ -68,10 +69,13 @@ module.exports = async function server(sock) {
   
   app.get("/spotifyLogin", (req, res) => {
     try {
+      
+      const id = req?.query?.idUser;
+      
       const scope = "user-read-currently-playing"
       
       //monto a url
-      const urlAuth = "https://accounts.spotify.com/authorize" + "?response_type=code" + "&client_id=" + process.env.CLIENT_SPOTIFY + "&scope=" + encodeURIComponent(scope) + "&redirect_uri=" + encodeURIComponent(process.env.URL_BACKEND + "/callback");
+      const urlAuth = "https://accounts.spotify.com/authorize" + "?response_type=code" + "&client_id=" + process.env.CLIENT_SPOTIFY + "&scope=" + encodeURIComponent(scope) + "&redirect_uri=" + encodeURIComponent(process.env.URL_BACKEND + "/callback") + "&state=" + id
       
       res.redirect(urlAuth);
       
@@ -83,7 +87,35 @@ module.exports = async function server(sock) {
   });
   
   app.get("/callback", async (req, res) => {
-    res.status(200).send("ok");
+    const code = req?.query?.code;
+    const state = req?.query.state;
+    try {
+    
+    if(!code || !state) {
+      res.status(400).send("Code ausente.");
+      return
+    }
+    
+    const user = await clientRedis.hGetAll(`idUser:${state}`);
+    
+    const response = await axios.post("https://accounts.spotify.com/api/token", new URLSearchParams({
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: process.env.URL_BACKEND + "/callback"
+    }), {headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: "Basic " + Buffer.from(process.env.CLIENT_SPOTIFY + ":" + process.env.SPOTIFY_KEY).toString("base64")
+    }});
+    
+    await users.updateOne({userLid: user.userLid}, {$set: {spotifyToken: {refresh: response.data.refresh_token, token: response.data.access_token}}}, {upsert: true});
+    
+    res.status(200).send("ok, pode voltar para o whatsapp.");
+    
+    }
+    catch(err) {
+      res.status(500).send(err);
+    }
+    
   });
   
   
