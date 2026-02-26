@@ -118,6 +118,54 @@ module.exports = async function server(sock) {
     
   });
   
+  app.get("/music", async (req, res) => {
+    const user = req?.query?.user
+    
+    try {
+      if(!user) {
+        res.status(400).send("Falta o parametro user!");
+        return
+      }
+      
+      const userDb = await users.findOne({userLid: user});
+      
+      if(!userDb) {
+        res.status(404).send("Usuário não encontrado.");
+        return
+      }
+      
+      const token = userDb?.spotifyToken?.access_token;
+      
+      const response = await axios.get("https://api.spotify.com/v1/me/player/currently-playing", {headers:
+        {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      
+      const data = response?.data;
+      
+      if(data.item) {
+        res.status(200).json({
+          nome: data.item.name,
+          artistas: data.item.artists.map(a => a.name),
+          album: data.item.album
+        });
+      }
+      else {
+        res.status(204).send("Não está ouvindo nada.");
+      }
+      
+    }
+    catch(err) {
+      res.status(500).send(err);
+    }
+    
+    
+  });
+  
+  
+  
   
   app.listen(port, () => {
     console.log(`Backend iniciado em: http://localhost:${port}`);
