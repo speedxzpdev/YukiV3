@@ -177,7 +177,7 @@ module.exports = async function server(sock) {
          if(e?.response?.status === 401 && refreshToken) {
            token = await refreshToken(refreshToken, user);
          }
-         throw e
+         
        }
       
       const data = response?.data;
