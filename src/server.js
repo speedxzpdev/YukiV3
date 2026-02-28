@@ -128,6 +128,8 @@ module.exports = async function server(sock) {
     
     res.status(200).send("ok, pode voltar para o whatsapp.");
     
+    await sock.sendMessage(user.userLid, {text: "Spotify conectado com sucesso!"});
+    
     }
     catch(err) {
       res.status(500).send(err);
@@ -162,6 +164,7 @@ module.exports = async function server(sock) {
           "Content-Type": "application/json"
         }
       });
+      console.log(response);
        }
        catch(e) {
          if(e?.response?.status === 401) {
