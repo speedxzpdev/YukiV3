@@ -17,7 +17,11 @@ async function refreshToken(token, user) {
         "Content-Type": "application/x-www-form-urlencoded",
         "Authorization": "Basic " + Buffer.from(process.env.CLIENT_SPOTIFY + ":" + process.env.SPOTIFY_KEY).toString("base64")}});
         
-        await users.updateOne({userLid: user}, {$set: {spotifyToken: {token: response.data.access_token}}}, {upsert: true});
+        await users.updateOne({userLid: user}, {$set: {"spotifyToken.token": response.data.access_token}}, {upsert: true});
+        
+        console.log(`token resetado para: ${response.data.access_token}`);
+        
+        return response.data.access_token
       }
   catch(err) {
     console.error(err);
@@ -100,6 +104,7 @@ module.exports = async function server(sock) {
     }
     catch(err) {
       res.send(err);
+      console.error(err)
     }
   });
   
@@ -153,7 +158,9 @@ module.exports = async function server(sock) {
         return
       }
       
-      const token = userDb?.spotifyToken?.token;
+      let token = userDb?.spotifyToken?.token;
+      
+      const refresh = userDb?.spotifyToken?.refresh_token;
       
       let response;
        
@@ -167,9 +174,8 @@ module.exports = async function server(sock) {
       console.log(response);
        }
        catch(e) {
-         if(e?.response?.status === 401) {
-           res.send(undefined);
-           return
+         if(e?.response?.status === 401 && refreshToken) {
+           token = await refreshToken(refreshToken, user);
          }
          throw e
        }
