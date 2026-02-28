@@ -15,6 +15,8 @@ module.exports = {
       
       const status = await axios.get(process.env.URL_BACKEND + `/music?user=${sender}`);
       
+      console.log(status);
+      
       const dataStatus = status.data;
       
       if(!Isuser) {
