@@ -36,11 +36,14 @@ const { advertidos } = require("../database/models/adverts.js");
       
       const queue = messageQueue.get(groupId);
       
-      //Decide um delay aleatorio entre 1 e 2
-      const delayRandom = Math.max(1000, Math.floor(Math.random() * 2000));
+      try {
       
       //enquanto messageQueue for maior que zero
       while(queue.length > 0) {
+        
+        //Decide um delay aleatorio entre 1 e 2
+      const delayRandom = Math.max(1000, Math.floor(Math.random() * 2000));
+        
         //pega a primeira mensagem
         const messageFuc = queue.shift();
         
@@ -55,9 +58,15 @@ const { advertidos } = require("../database/models/adverts.js");
               //cria uma nova promise
       await new Promise(resolve => setTimeout(resolve, delayRandom * 2));
       }
-      console.log(`Mensagem duplicada. Esperando ${delayRandom}`);
+      
+      }
+      catch(err) {
+        console.error(err)
+      }
+      finally {
       //Depois dos 2 segundos ele seta pra false
       flagMessage.set(groupId, false);
+      }
     }
     
     //map de usos de comando

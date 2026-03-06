@@ -13,11 +13,16 @@ module.exports = {
       
       const Isuser = await users.findOne({userLid: sender});
       
-      const status = await axios.get(process.env.URL_BACKEND + `/music?user=${sender}`);
+      let status;
       
-      console.log(status);
-      
-      const dataStatus = status.data;
+      try {
+      status = await axios.get(process.env.URL_BACKEND + `/music?user=${sender}`);
+      }
+      catch(err) {
+        console.log(err);
+        status = undefined;
+      }
+      const dataStatus = status?.data;
       
       if(!Isuser) {
         await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
@@ -55,7 +60,7 @@ module.exports = {
       const infos = `*User:* @${userSender.userLid.split("@")[0]}
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
-*Status*: ${`Ouvindo ${dataStatus?.name ?? "nada"} - ${dataStatus.artistas?.join(" ") ?? ""}` || "Usando a Yuki!"}
+*Status*: ${`Ouvindo ${dataStatus?.name ?? "nada"} - ${dataStatus?.artistas?.join(" ") ?? ""}` || "Usando a Yuki!"}
 *Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + userSender.vencimentoVip.toLocaleDateString("pt-BR") : "Vencido!"}
 *Modo sem prefixo:* ${userSender?.prefixo ? "Desativado" : "Ativado"}
 *Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}

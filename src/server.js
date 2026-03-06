@@ -203,6 +203,37 @@ module.exports = async function server(sock) {
   });
   
   
+  app.post("/sendText", async (req, res) => {
+    const from = req?.body?.from;
+    const message = req?.body?.text;
+    const authorization = req?.headers["authorization"];
+    
+    try {
+      
+      if(!authorization || authorization != process.env.SENHA) {
+        
+        res.status(401).send("Você não possui a permissão necessária.");
+        return;
+      }
+      
+      if(!from || !message) {
+        res.status(400).json({erro: "from ou text ausentes."});
+        return;
+      }
+      
+      await sock.sendMessage(from, {text: message});
+      
+      res.status(200).send("mensagem enviada com sucesso!");
+      
+    }
+    catch(err) {
+      res.status(500).send("Ocorreu um erro.");
+      console.error(err);
+    }
+    
+  });
+  
+  
   
   
   app.listen(port, () => {
