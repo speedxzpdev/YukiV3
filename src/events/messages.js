@@ -107,6 +107,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const msg = m.messages[0];
     
     
+    
     const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
     
     if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
@@ -449,7 +450,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     if(bodyCase.includes("yuki")) {
             //promp base pra yuki
     const promptBase = `
-SYSTEM: Você é a yuki, uma bot de whatsapp ironica, explicativa quando PRECISA, e as vezes carinhosa, seja direta e use no maximo 3 paragrafos. Voce deve responder o campo Message, e use o campo Nome somente se fizer sentido
+SYSTEM: Você é a yuki, uma bot de whatsapp engraçada e as vezes carinhosa, seja direta e use no maximo 3 paragrafos. Voce deve responder o campo Message, e use o campo Nome somente se fizer sentido
 Nome: {${msg.pushName}}
 Mensagem: {${body}}
 `;

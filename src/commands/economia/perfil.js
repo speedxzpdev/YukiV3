@@ -30,20 +30,6 @@ module.exports = {
       
       const userSender = await users.findOne({userLid: sender});
       
-      const waifuRepetidas = new Set();
-      
-      const waifusInv = userSender.waifus.sort((a, b) => {
-        return b.preco - a.preco
-      }).filter(f => {
-        if (waifuRepetidas.has(f.nome)) return false;
-        
-        waifuRepetidas.add(f.nome);
-        return true;
-      }).map((item, indice) => {
-        return `${indice + 1}° ${item.nome}
-⤷ *Raridade:* ${item.raridade}
-⤷ *Preço:* ${item.preco} moedas`
-      });
       
       let senderProfile;
       
@@ -70,9 +56,6 @@ module.exports = {
 *Comandos usados:* ${userSender.cmdCount}
 *Downloads:* ${userSender.donwloads}
 *Figurinhas:* ${userSender.figurinhas}
-
-*Inventário de waifus:*
-${waifusInv.join("\n\n")}
 `
 
     
