@@ -45,7 +45,7 @@ module.exports = {
 }
   const pushname = msg.pushName || msg?.notifyName || 'Sem nome';
   const jid = msg.key.remoteJid;
-  let groupName = null;
+  let groupName = "Privado";
 
 
 if (jid.endsWith("@g.us")) {
@@ -118,12 +118,11 @@ const directMedia =
       
       
 const time = new Date()      
-const dadosfig = `🍷⃟  Yᴜᴋɪ ʙᴏᴛ 
-⤷ Dᴏɴᴏ: Speed
-⤷ Cʜᴀᴛ: ${groupName}
-⤷ Usᴇʀ: ${pushname}`
+const dadosfig = `💖⃟ 𝒀𝒖𝒌𝒊𝑩𝒐𝒕🍰 
+⤷ 🔥𝑫𝒐𝒏𝒐: Speed
+⤷ 💬𝑪𝒉𝒂𝒕: ${groupName}`
       
-const subdados = `↦ ⏱ ${time.toLocaleDateString('pt-BR')} • ${version}`
+const subdados = `↦ ✨𝑭𝒆𝒊𝒕𝒐 𝒑𝒐𝒓: ${pushname} • ${time.toLocaleDateString()}` 
       
       const finalPath = await addExif(outputPath, dadosfig, subdados);
 

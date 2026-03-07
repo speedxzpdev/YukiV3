@@ -13,11 +13,16 @@ module.exports = {
       
       const Isuser = await users.findOne({userLid: sender});
       
-      const status = await axios.get(process.env.URL_BACKEND + `/music?user=${sender}`);
+      let status;
       
-      console.log(status);
-      
-      const dataStatus = status.data;
+      try {
+      status = await axios.get(process.env.URL_BACKEND + `/music?user=${sender}`);
+      }
+      catch(err) {
+        console.log(err);
+        status = undefined;
+      }
+      const dataStatus = status?.data;
       
       if(!Isuser) {
         await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
@@ -25,20 +30,6 @@ module.exports = {
       
       const userSender = await users.findOne({userLid: sender});
       
-      const waifuRepetidas = new Set();
-      
-      const waifusInv = userSender.waifus.sort((a, b) => {
-        return b.preco - a.preco
-      }).filter(f => {
-        if (waifuRepetidas.has(f.nome)) return false;
-        
-        waifuRepetidas.add(f.nome);
-        return true;
-      }).map((item, indice) => {
-        return `${indice + 1}° ${item.nome}
-⤷ *Raridade:* ${item.raridade}
-⤷ *Preço:* ${item.preco} moedas`
-      });
       
       let senderProfile;
       
@@ -55,7 +46,7 @@ module.exports = {
       const infos = `*User:* @${userSender.userLid.split("@")[0]}
 *Criado em:* ${userSender.registro.toLocaleDateString("pt-BR")}
 *Bio:* ${userSender.bio}
-*Status*: ${`Ouvindo ${dataStatus?.name ?? "nada"} - ${dataStatus.artistas?.join(" ") ?? ""}` || "Usando a Yuki!"}
+*Status*: ${`Ouvindo ${dataStatus?.name ?? "nada"} - ${dataStatus?.artistas?.join(" ") ?? ""}` || "Usando a Yuki!"}
 *Vip:* ${vencimentoDias || 0} dias - ${userSender?.vencimentoVip ? "Vence em " + userSender.vencimentoVip.toLocaleDateString("pt-BR") : "Vencido!"}
 *Modo sem prefixo:* ${userSender?.prefixo ? "Desativado" : "Ativado"}
 *Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
@@ -65,9 +56,6 @@ module.exports = {
 *Comandos usados:* ${userSender.cmdCount}
 *Downloads:* ${userSender.donwloads}
 *Figurinhas:* ${userSender.figurinhas}
-
-*Inventário de waifus:*
-${waifusInv.join("\n\n")}
 `
 
     
