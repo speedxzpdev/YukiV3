@@ -33,6 +33,7 @@ const infoPing = `⚡𝗣𝗶𝗻𝗴:${ping}ms
 
 ❄️𝗨𝘀𝘂𝗮́𝗿𝗶𝗼𝘀: ${usersFind.length}
 🩵𝗚𝗿𝘂𝗽𝗼𝘀: ${gruposFind.length}
+*Grupo:* https://chat.whatsapp.com/IbVzNXRCH2X8Oim6B4wKnP?mode=gi_t
 `
 
 await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki.jpg")}, caption: infoPing}, {quoted: msg});
