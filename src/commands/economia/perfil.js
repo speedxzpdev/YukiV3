@@ -25,7 +25,7 @@ module.exports = {
       const dataStatus = status?.data;
       
       if(!Isuser) {
-        await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
+        await users.create({userLid: sender, name: msg.pushName || "Sem nome"});
       }
       
       const userSender = await users.findOne({userLid: sender});
