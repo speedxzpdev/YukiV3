@@ -134,7 +134,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       
     }
     
-    console.log(msg);
+//console.log(msg);
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
     
@@ -534,7 +534,7 @@ Mensagem: {${body}}
       }
     
     //Caso o users tenha o modo sem prefixo
-if(!usersSender.prefixo && !body.startsWith(prefixo)) {
+if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
   
   const argsNoPrefix = body.trim().split(" ");
   
