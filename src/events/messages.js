@@ -27,7 +27,7 @@ const { advertidos } = require("../database/models/adverts.js");
     //Mapa de intervslos
     const activeInterval = new Map();
     
-    let sender;
+    
     
     //parte que lida com cada mensagem
     async function processMessage(groupId) {
@@ -108,9 +108,11 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0];
     
-    
+    const sender = msg.key.participantLid || msg.key.remoteJid;
     
     const from = msg?.key.remoteJid || msg?.key?.participantLid
+    
+    console.log(msg, from, sender);
     
     if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
     //console.log(msg)
@@ -143,7 +145,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   
   
 
-    sender = msg.key.participantLid || msg.key.remoteJid
+    
 
     const doninhos = await donos.findOne({userLid: sender});
     

@@ -12,7 +12,7 @@ module.exports = {
     let userFind = await users.findOne({userLid: senderLid});
     
     if(!userFind) {
-      await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
+      await users.create({userLid: senderLid, name: msg.pushName || "Sem nome"});
     }
   
   await sock.sendMessage(from, {text: `${msg.pushName || "sem nome"}, você tem ${userFind.dinheiro} de saldo.`}, {quoted: msg});
