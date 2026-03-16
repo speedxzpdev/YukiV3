@@ -7,15 +7,19 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   /*if(args === 0) {
     await sock.sendMessage(from, {text: "Falta o parametro link!"});*/
 
-    await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
-    await sock.sendMessage(from, {sticker: {url: path.join(__dirname, "../assets/images/stickers/chibiConfiante.webp")}}, {quoted: msg});
-
+    
     const url = `https://zero-two-apis.com.br/api/download/tiktok?url=${body}&apikey=${process.env.ZEROTWO_APIKEY}`
 
     const response = await axios.get(url);
     const result = response.data.resultado
     const infovd = result.statistics
+    
+    async function baixar() {
+    
+    await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
+    await sock.sendMessage(from, {sticker: {url: path.join(__dirname, "../assets/images/stickers/chibiConfiante.webp")}}, {quoted: msg});
 
+    
     const legenda = `𝗬𝘂𝗸𝗶 𝗧𝗶𝗸𝘁𝗼𝗸!
 ⤷ *Nick*: ${result.author.nickname}
 ⤷ *User*: ${result.author.username}
@@ -66,6 +70,17 @@ await sock.sendMessage(from, {video: {url: result.video.playAddr[0]}, caption: l
 await sock.sendMessage(from, {text: "Baixando o melhor áudio!"}, {quoted: msg});
 
 await sock.sendMessage(from, {audio: {url: result.music.playUrl[0]}, mimetype: "audio/mp4"}, {quoted: msg});
+
+}
+
+return {
+  baixarDl: baixar,
+  audio: result.music.playUrl[0],
+  nome: result.author.nickname,
+  duracao: result.video?.duration? result.video.duration : 'indefinido',
+  titulo: result.desc.replace(/#[^\s]+/g, '').trim(),
+  avatar: result.author.avatarMedium
+}
 
 }
 catch(err) {

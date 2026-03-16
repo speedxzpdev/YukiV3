@@ -2,13 +2,13 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "roletarussa",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       const metadata = await sock.groupMetadata(from);
       
       const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.id);
     
-      const sender = msg.key.participant
+      
       
       const donosSender = await donos.findOne({userLid: sender})
       

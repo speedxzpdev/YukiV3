@@ -5,7 +5,7 @@ module.exports = {
   
   name: "shinigami",
   categoria: "diversao",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     try {
       

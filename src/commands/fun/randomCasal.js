@@ -3,7 +3,7 @@
 module.exports = {
   name: "casal",
   categoria: "diversao",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       await sock.sendMessage(from, {react: {text: "💕", key: msg.key}});

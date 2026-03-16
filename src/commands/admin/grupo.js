@@ -2,7 +2,7 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "grupo",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     async function sendHelp() {
       await sock.sendMessage(from, {text: `*Como mudar estados de um grupo com a Yuki:*
@@ -21,7 +21,7 @@ Fácil de usar, né? Não? Então você possui algum tipo de deficiência mental
       
       const admin = metadata.participants.filter(p => p.admin).map(p => p.id);
       
-      const sender = msg.key.participant
+      
       
       const donoSender = await donos.findOne({userLid: sender});
       

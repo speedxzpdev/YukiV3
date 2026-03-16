@@ -11,7 +11,9 @@ module.exports = {
       return
     }
     
-    tiktokDl(sock, msg, from, texto, erros_prontos, espera_pronta);
+    const data = await tiktokDl(sock, msg, from, texto, erros_prontos, espera_pronta);
+    
+    await data.baixarDl();
     
     
   }

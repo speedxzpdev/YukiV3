@@ -5,12 +5,12 @@ const { numberBot } = require("../../config");
 
 module.exports = {
  name: "namorar",
- async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+ async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
    try {
      
      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
      
-     const sender = msg.key.participant
+     
      
      if(!mention) {
        await sock.sendMessage(from, {text: "Menciona alguém, seu jumento(a) inseguro!"}, {quoted: msg});
@@ -70,7 +70,12 @@ module.exports = {
      
      await clientRedis.expire(`namoro:${mention}`, 10 * 60);
      
-     await sock.sendMessage(from, {text: `O(a) @${mention.split("@")[0]} acaba de ser pedida em namoro por @${sender.split("@")[0]}💕\nResponda essa mensagem com: Aceitar ou Recusar`, mentions: [mention, sender]}, {quoted: msg});
+     const buttons = [
+       {buttonId: "aceitar", buttonText: {displayText: "𝐀𝐜𝐞𝐢𝐭𝐨😍💖"}, type: 1},
+       {buttonId: "recusar", buttonText: {displayText: "𝐑𝐞𝐜𝐮𝐬𝐚𝐫😒"}}
+       ];
+     
+     await sock.sendMessage(from, {text: `O(a) @${mention.split("@")[0]} acaba de ser pedida em namoro por @${sender.split("@")[0]}💕\nResponda essa mensagem com: Aceitar ou Recusar`, buttons: buttons, mentions: [mention, sender]}, {quoted: msg});
     
    }
    catch(err) {

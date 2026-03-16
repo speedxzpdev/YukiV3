@@ -16,8 +16,11 @@ module.exports = {
       
       const assetsPast = assetsList[Math.floor(Math.random() * assetsList.length)];
       
+      const buttons = [
+        {buttonId: `${process.env.PREFIXO}ping`, buttonText: {displayText: "⚡️𝐏𝐢𝐧𝐠"}, type: 1}
+        ];
       
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, assetsPast)}, caption: menu(msg).menuPrincipal, mentions: [sender]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, assetsPast)}, caption: menu(msg).menuPrincipal, footer: "Menu feito por ⤷ Morgana\nCapa por ⤷ Vivy", buttons: buttons, mentions: [sender]}, {quoted: msg});
       
       
     }

@@ -2,12 +2,12 @@ const { users } = require("../../database/models/users");
 
 module.exports = {
   name: "saldo",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
     
     await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
     
-    const senderLid = msg.key.participant || msg.key.remoteJidAlt
+    const senderLid = sender
     
     let userFind = await users.findOne({userLid: senderLid});
     

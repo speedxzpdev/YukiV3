@@ -1,7 +1,7 @@
 module.exports = {
   name: "gostosa",
   categoria: "diversao",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       let frase;
@@ -24,7 +24,7 @@ module.exports = {
         frase = `Nem eu tô me resistindo...`;
       }
       
-      const sender = msg.key.participant
+      
       
       await sock.sendMessage(from, {image: {url: "https://files.catbox.moe/9boo46.jpg"}, caption: `O @${sender.split("@")[0]} é... 😳${porcentagem}% Gostosona. ${frase}`, mentions: [sender]}, {quoted: msg});
 

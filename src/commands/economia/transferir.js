@@ -2,7 +2,7 @@ const { users } = require("../../database/models/users.js");
 
 module.exports = {
   name: "transferir",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     async function sendHelp() {
         await bot.reply(from, `*Como usar comandos de economia*
@@ -17,7 +17,7 @@ Simples pra até pra um bebê`)
       
       const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
       
-      const sender = msg.key.participant || msg.key.remoteJid;
+      
       
       const parametro = Number(args[0]);
       

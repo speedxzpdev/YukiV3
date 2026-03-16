@@ -3,10 +3,10 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "addgroup",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       //https://chat.whatsapp.com/EFySUUAtKCOBkYhkb7ytJY?mode=wwt
-      const sender = msg.key.participant || msg.key.remoteJid
+      
       
       if(!await donos.findOne({userLid: sender})) {
         await sock.sendMessage(from, {text: "Comando exclusivo para SubDonos."}, {quoted: msg});

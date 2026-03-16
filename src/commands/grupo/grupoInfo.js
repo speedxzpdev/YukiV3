@@ -4,7 +4,7 @@ const { clientRedis } = require("../../lib/redis.js");
 
 module.exports = {
   name: "grupoinfo",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     try {
       

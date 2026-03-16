@@ -57,24 +57,29 @@ module.exports = async function server(sock) {
         
         if(status.status === "approved" && status.transaction_amount=== Number(aluguel.valor) && foipago === 0) {
           
-          
-          
-          const metadataGroup = await sock.groupMetadata(aluguel.groupId);
-          
-          await sock.sendMessage(aluguel.user, {text: `🥳Pagamento concluído! ${aluguel.dias} dias serão adicionando ao grupo: ${metadataGroup.subject} 🎉`});
+          await clientRedis.set(`id:${body.data.id}`, 1);
+          await clientRedis.expire(`id:${body.data.id}`, 86400);
           
           const diasTimestamp = 1000 * 24 * 60 * 60 * Number(aluguel.dias);
           
           //adiciona os dias;
           await grupos.updateOne({groupId: aluguel.groupId}, {$set: {aluguel: Date.now() + diasTimestamp}}, {upsert: true});
           
+          
+          try {
+          const metadataGroup = await sock.groupMetadata(aluguel.groupId);
+          
+          await sock.sendMessage(aluguel.user, {text: `🥳Pagamento concluído! ${aluguel.dias} dias serão adicionando ao grupo: ${metadataGroup.subject} 🎉`});
+          
+            
           await sock.sendMessage(aluguel.groupId, {text: `O @${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
           
           await sock.sendMessage(numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]});
           
-          await clientRedis.set(`id:${body.data.id}`, 1);
-          await clientRedis.expire(`id:${body.data.id}`, 20);
-          
+          }
+          catch(err) {
+            console.error("Ocorreu um bug mais o pagamento foi confirmado")
+          }
         }
         
       }
