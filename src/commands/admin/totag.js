@@ -1,4 +1,4 @@
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { downloadMediaMessage } = require('whaileys');
 const { donos } = require("../../database/models/donos");
 const { grupos } = require("../../database/models/grupos.js");
 

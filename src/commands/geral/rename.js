@@ -2,7 +2,7 @@ const { tmpdir } = require('os');
 const path = require('path');
 const Crypto = require('crypto');
 const webp = require('node-webpmux');
-const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+const { downloadMediaMessage } = require('whaileys');
 const fs = require('fs');
 
 

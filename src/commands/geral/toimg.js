@@ -1,5 +1,5 @@
 // commands/toimg.js
-const { downloadMediaMessage } = require("@whiskeysockets/baileys");
+const { downloadMediaMessage } = require("whaileys");
 const { exec } = require("child_process");
 const util = require("util");
 const execP = util.promisify(exec);
