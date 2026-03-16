@@ -193,8 +193,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     
 
-    if(!await users.findOne({userLid: msg.key.participant})) {
-      await users.create({userLid: msg.key.participant || msg.key.remoteJid, name: msg.pushName || "Sem nome"});
+    if(!await users.findOne({userLid: sender})) {
+      await users.create({userLid: sender, name: msg.pushName || "Sem nome"});
       
       usersSender = await users.findOne({userLid: sender})
     }
