@@ -5,7 +5,7 @@ const { grupos } = require("../../database/models/grupos.js");
 module.exports = {
 
 name: "totag",
-async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
   
   const texto = args.slice(0).join(" ")?.trim();
   
@@ -13,7 +13,11 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
   
   const Admins = metadados.participants.filter(p => p.admin)
   const groupAdmins = Admins.map(m => m.id)
-  const sender = msg.key.participant
+  
+  
+  const button = [
+    {buttonId: `${process.env.PREFIXO}afkmode 1`, buttonText: {displayText: "😴𝐒𝐢𝐥𝐞𝐧𝐜𝐢𝐚𝐫"}, type: 1}
+    ];
 
 
   if (!groupAdmins.includes(msg.key.participant) && !await donos.findOne({userLid: sender})) {
@@ -29,7 +33,7 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
       fromMe: false,
       participant: msg.key.participant},
       message: {
-        extendedTextMessage: {text: `⤷ ❄️ Mᴀʀᴄᴀᴄ̧ᴀ̃ᴏ ᴅᴏ ᴀᴅᴍɪɴ: ${msg.pushName}\n• Caso não queira ser marcado use: */afkmode 1*`}
+        extendedTextMessage: {text: `⤷ ❄️ Mᴀʀᴄᴀᴄ̧ᴀ̃ᴏ ᴅᴏ ᴀᴅᴍɪɴ: ${msg.pushName}`}
         
       }
     }
@@ -60,14 +64,14 @@ const todos = metadata.participants.map(p => p.id).filter(p => {
   
   if (foto) {
     const imgDl = await downloadMediaMessage({message: {imageMessage: foto}}, 'buffer', {})
-    await sock.sendMessage(from, { image: imgDl, caption: foto.caption, mentions: todos}, { quoted: seloTotag })
+    await sock.sendMessage(from, { image: imgDl, caption: foto.caption, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag })
     return
   }
   
   if (video) {
   const videoDl = await downloadMediaMessage({message: {videoMessage: video}}, 'buffer', {})
   
-  await sock.sendMessage(from, { video: videoDl, caption: video.caption, mentions: todos}, { quoted: seloTotag })
+  await sock.sendMessage(from, { video: videoDl, caption: video.caption, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag })
   return
   }
   
@@ -79,12 +83,12 @@ const todos = metadata.participants.map(p => p.id).filter(p => {
   }
   if (msg_quoted) {
     
-    await sock.sendMessage(from, { text: msg_quoted, mentions: todos}, { quoted: seloTotag})
+    await sock.sendMessage(from, { text: msg_quoted, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag})
     return
   }
   
   if (!msg_quoted) {
-    await sock.sendMessage(from, { text: texto, mentions: todos}, { quoted: seloTotag })
+    await sock.sendMessage(from, { text: texto, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag })
     return
   }
 

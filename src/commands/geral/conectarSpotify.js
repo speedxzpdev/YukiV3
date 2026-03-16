@@ -4,10 +4,10 @@ const crypto = require("crypto");
 
 module.exports = {
   name: "conectarspotify",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const sender = msg?.key?.participant || msg?.key?.remoteJid;
+      
       
       const state = crypto.randomBytes(32).toString("hex");
       

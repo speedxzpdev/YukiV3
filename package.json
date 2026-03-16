@@ -15,12 +15,16 @@
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "axios": "^1.13.2",
+    "baileys-mod": "^6.8.5",
+    "baileys-xpro": "^8.4.3",
     "canvacord": "^6.0.4",
     "catbox.moe": "^1.0.2",
     "cheerio": "^1.1.2",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "jimp": "^1.6.0",
+    "libsignal-xeuka": "^1.0.0",
     "mercadopago": "^2.12.0",
     "mongoose": "^8.19.3",
     "node-webpmux": "^3.2.1",
@@ -30,6 +34,7 @@
     "sharp": "^0.34.5",
     "string-similarity": "^4.0.4",
     "telegraph-uploader": "^2.0.0",
+    "whaileys": "^6.4.10",
     "ytdl-core": "^4.11.5"
   }
 }

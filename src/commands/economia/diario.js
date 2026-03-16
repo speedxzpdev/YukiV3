@@ -2,10 +2,10 @@ const { users } = require("../../database/models/users");
 
 module.exports = {
   name: "diario",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const sender = msg.key.participant
+      
       
       const userSender = await users.findOne({userLid: sender});
       

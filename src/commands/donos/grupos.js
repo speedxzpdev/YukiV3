@@ -3,10 +3,9 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "listargrupos",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const sender = msg.key.participant
       
       const donoSender = await donos.findOne({userLid: sender});
       

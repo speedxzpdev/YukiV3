@@ -7,7 +7,7 @@ const { comprarWaifu } = require("../../utils/events.js");
 
 module.exports = {
   name: "comprarwaifu",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       async function sendHelp() {
@@ -41,7 +41,7 @@ Caso tenha o valor que custa a waifu ela será adicionada ao seu inventário.`)
           preco: preco[waifuFind.raridade]
         }
       
-      const sender = msg.key.participant || msg.key.remoteJid
+      
       
       const userSender = await users.findOne({userLid: sender});
       

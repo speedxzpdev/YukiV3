@@ -6,7 +6,7 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "welcome",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     async function sendHelp() {
   await sock.sendMessage(from, {
@@ -25,7 +25,7 @@ module.exports = {
       
       const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.id);
       
-      const sender = msg.key.participant
+      
       
       const donim = await donos.findOne({userLid: sender});
       

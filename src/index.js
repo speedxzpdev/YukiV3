@@ -1,4 +1,4 @@
-const { useMultiFileAuthState, makeWASocket, makeCacheableSignalKeyStore, requestPairingCode, baileys } = require("@whiskeysockets/baileys");
+const { default: makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, requestPairingCode, baileys, fetchLatestBaileysVersion, Browsers} = require("whaileys");
 const { Boom } = require("@hapi/boom");
 const P = require("pino");
 const fs = require("fs");
@@ -70,14 +70,24 @@ const espera_pronta = jsonEspera[Math.floor(Math.random() * jsonEspera.length)]
 
 async function yukibot() {
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "/assets/auth"));
+  
+  //Pega a ultima versao da baileys 
+  const { version } = await fetchLatestBaileysVersion();
+  
   //sock do bot
   const sock = makeWASocket({
-    logger: P({level: "error"}),
-    auth: {
-      creds: state.creds,
-      keys: makeCacheableSignalKeyStore(state.keys, P({level: "error"}))
-    }
-  });
+        version,
+        logger: P({ level: 'silent' }),
+        auth: state,
+        browser: Browsers.ubuntu('firefox'),
+        connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 0,
+        keepAliveIntervalMs: 10000,
+        emitOwnEvents: true,
+        fireInitQueries: true,
+        generateHighQualityLinkPreview: true,
+        markOnlineOnConnect: true
+    });
   
           //conecta o mongo
     try {await connectDB();}

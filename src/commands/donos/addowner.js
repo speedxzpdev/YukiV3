@@ -3,7 +3,7 @@ const { numberOwner } = require("../../config");
 
 module.exports = {
   name: "adddono",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
     
     const context = msg.message?.extendedTextMessage.contextInfo || msg.message?.conversationContextInfo || msg.message?.contextInfo
@@ -11,7 +11,7 @@ module.exports = {
    const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
   || msg.message?.extendedTextMessage?.contextInfo?.participant
    
-    const sender = msg.key.participant
+    
     
     if(!sender.includes("188123996786820@lid")) {
       await sock.sendMessage(from, {text: "Só o Speed pode usar este comando."}, {quoted: msg});

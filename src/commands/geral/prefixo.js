@@ -3,7 +3,7 @@ const { users } = require("../../database/models/users.js");
 
 module.exports = {
   name: "disable-prefix",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     async function sendHelp() {
       await bot.reply(from, `*Como ativar o modo sem prefixo da Yuki:*
@@ -16,7 +16,7 @@ module.exports = {
     
     try {
       
-      const sender = msg.key.participant || msg.key.remoteJid;
+      
       
       const user = await users.findOne({userLid: sender});
       

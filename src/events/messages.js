@@ -27,6 +27,8 @@ const { advertidos } = require("../database/models/adverts.js");
     //Mapa de intervslos
     const activeInterval = new Map();
     
+    let sender;
+    
     //parte que lida com cada mensagem
     async function processMessage(groupId) {
       //caso já estiver true um processamento
@@ -108,7 +110,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     
     
-    const from = msg?.key.remoteJid || msg?.key.remoteJidAlt
+    const from = msg?.key.remoteJid || msg?.key?.participantLid
     
     if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
     //console.log(msg)
@@ -132,6 +134,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       
     }
     
+    console.log(msg);
     
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
     
@@ -140,7 +143,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   
   
 
-    const sender = msg.key.participant || msg.key.remoteJid
+    sender = msg.key.participantLid || msg.key.remoteJid
 
     const doninhos = await donos.findOne({userLid: sender});
     
@@ -228,7 +231,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const body = (msg.message?.conversation) ||
     (msg.message?.extendedTextMessage?.text) ||
     (msg.message?.imageMessage?.caption) ||
-    (msg.message?.documentMessage?.caption) || "Msg estranha...";
+    (msg.message?.documentMessage?.caption) || msg?.message?.buttonsResponseMessage?.selectedButtonId || "Msg estranha...";
     
     const bodyCase = body.toLowerCase();
     
@@ -484,8 +487,19 @@ Mensagem: {${body}}
   if((groupDonwload && groupDonwload.autoDownload) || from.endsWith("@lid")) {
   //caso tenha um link de tiktok
   if (body.startsWith("https://vt.tiktok.com/")) {
-
-    tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
+    
+    const tiktokDlInfo = await tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
+    
+    const infoTiktok = `Video de ⤷ ${tiktokDlInfo.nome}
+⤷ Duração: ${tiktokDlInfo.duracao}
+⤷ Título: ${tiktokDlInfo.titulo}`
+    
+    const buttonsTiktok = [
+      {buttonId: `${prefixo}tiktok ${body}`, buttonText: {displayText: "𝐁𝐚𝐢𝐱𝐚𝐫 𝐦𝐩𝟒👻"}},
+      {buttonId: `${prefixo}tiktokmp3 ${body}`, buttonText: {displayText: "𝐁𝐚𝐢𝐱𝐚𝐫 𝐦𝐩𝟑💖"}}
+      ];
+    
+    await sock.sendMessage(from, {image: {url: tiktokDlInfo.avatar}, caption: "Video do tiktok detectado! Deseja baixar?", buttons: buttonsTiktok, footer: infoTiktok}, {quoted: msg});
 
   }
   
@@ -494,7 +508,14 @@ Mensagem: {${body}}
   }
   
   if(body.startsWith("https://www.instagram.com/reel")) {
-    instaDl(sock, msg, from, body, erros_prontos, espera_pronta)
+    
+    const buttonInsta = [
+      {buttonId: `${prefixo}reels ${body}`, buttonText: {displayText: "𝐁𝐚𝐢𝐱𝐚𝐫 𝐯𝐢𝐝𝐞𝐨⚡️"}, type: 1}
+      ];
+      
+      await sock.sendMessage(from, {text: "Link do instagram detectado! Deseja baixar?", buttons: buttonInsta}, {quoted: msg});
+    
+    
   }
   
   }
@@ -560,7 +581,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     }
     }
     
-  commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot);
+  commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot, sender);
   
   //Adiciona nas metricas
   await clientRedis.incr("metrics:commands:min");
@@ -640,8 +661,12 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
   `${msg.pushName}, inventando comando agora? Quer programar no meu lugar?`];
 //escolhe uma mensagem aleatoriamente
         const cmdInvalidMsg = mensagensCmdInvalido[Math.floor(Math.random() * mensagensCmdInvalido.length)];
+        
+        const cmdInvalidoButtons = [
+          {buttonId: `${prefixo}menu`, buttonText: {displayText: "👻𝐌𝐞𝐧𝐮"}, type: 1}
+          ];
 
-        await sock.sendMessage(from, {text: cmdInvalidMsg}, {quoted: msg});
+        await sock.sendMessage(from, {text: cmdInvalidMsg, footer: "Por favor, não tire comando do cu🥰", buttons: cmdInvalidoButtons}, {quoted: msg});
         return
       }
 
@@ -652,7 +677,11 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
       
       const similarCmdRandom = ListMsgSimilarCmd[Math.floor(Math.random() * ListMsgSimilarCmd.length)];
       
-      sock.sendMessage(from, {text: `${similarCmdRandom}\n\n⤷ Similaridade: ${similarity.similarity}%`}, {quoted: msg});
+      const similarCmdButton = [
+        {buttonId: `${prefixo}${similarity.sugest}`, buttonText: {displayText: similarity.sugest}, type: 1}
+        ];
+      
+      sock.sendMessage(from, {text: similarCmdRandom, footer: `⤷ Similaridade: ${similarity.similarity}%`, buttons: similarCmdButton}, {quoted: msg});
       return
     }
     
@@ -702,7 +731,7 @@ if(!usersSender.prefixo && !body.startsWith(prefixo)) {
     await sock.sendPresenceUpdate('composing', from);
     
     //executa o comando
-    await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta, bot);
+    await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender);
     
     //pausa a simulacao
     await sock.sendPresenceUpdate('paused', from);

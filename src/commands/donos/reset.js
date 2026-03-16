@@ -3,10 +3,11 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "reset",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const sender = msg.key.participant || msg.key.remoteJid
+      
+      
       
       const donoSender = await donos.findOne({userLid: sender});
       

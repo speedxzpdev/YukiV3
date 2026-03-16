@@ -4,7 +4,7 @@ const { numberBot } = require("../../config");
 
 module.exports = {
   name: "mute",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     async function reply(texto) {
       await sock.sendMessage(from, {text: texto}, {quoted: msg});
     }
@@ -16,7 +16,6 @@ module.exports = {
       
       const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
       
-      const sender = msg.key.participant
       
       const donoSender = await donos.findOne({userLid: sender});
       

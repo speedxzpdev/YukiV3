@@ -2,7 +2,7 @@
 module.exports = {
   name: "meulid",
 
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       const mention = msg.message?.textExtendedMessage?.contextInfo?.mentionedJid[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
@@ -15,7 +15,7 @@ module.exports = {
       }
       
       
-      const rawSender = msg.key.participant || msg.key.remoteJid;
+      const rawSender = msg.key.participantLid || msg.key.remoteJid;
 
       await sock.sendMessage(
         from,

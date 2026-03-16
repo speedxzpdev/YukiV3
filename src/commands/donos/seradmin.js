@@ -2,9 +2,9 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "seradmin",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
-      const sender = msg.key.participant
+      
       const dono = await donos.findOne({userLid: sender});
       
       if(!dono) {

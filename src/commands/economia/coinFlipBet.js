@@ -3,7 +3,7 @@ const { clientRedis } = require("../../lib/redis.js");
 
 module.exports = {
   name: "coinflipbet",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       async function sendHelp() {
         await bot.reply(from, `*Como usar comandos de economia*
@@ -19,7 +19,7 @@ Simples pra até pra um bebê`)
       const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
   || msg.message?.extendedTextMessage?.contextInfo?.participant
       
-      const sender = msg?.key?.participant;
+      
       
       const userSender = await users.findOne({userLid: sender});
       

@@ -2,17 +2,22 @@ const os = require("os");
 const path = require("path");
 const { grupos } = require("../../database/models/grupos");
 const { users } = require("../../database/models/users");
+const { apikey } = require("../../config.js");
+
 
 
 module.exports = {
   name: "ping",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
     try {
+      
     const antes = Date.now();
-    await sock.sendMessage(from, {text: "Pong!"});
+    await sock.sendMessage(from, {text: "Pong!"}, {quoted: msg});
     const depois = Date.now();
     
     const ping = depois - antes
+    
+    const canva = `https://zero-two-apis.com.br/api/pingcanvas?title=YUKIBOT&nome=%C2%BB%200.${ping}%20%C2%AB&hex=%FF005D&hex2=%23ffffff&perfil=https://files.catbox.moe/0ug48m&message=${encodeURIComponent("Lembre-se as pessoas só se abrem para portas abertas!")}&fundo=https://files.catbox.moe/b05qkn&apikey=${apikey || process.env.ZEROTWO_APIKEY}`
     
     const processador = os.cpus()[0]
     
@@ -31,12 +36,18 @@ const infoPing = `⚡𝗣𝗶𝗻𝗴:${ping}ms
 
 𝗕𝗼𝘁 𝗶𝗻𝗳𝗼:
 
-❄️𝗨𝘀𝘂𝗮́𝗿𝗶𝗼𝘀: ${usersFind.length}
-🩵𝗚𝗿𝘂𝗽𝗼𝘀: ${gruposFind.length}
+👻𝗨𝘀𝘂𝗮́𝗿𝗶𝗼𝘀: ${usersFind.length}
+💖𝗚𝗿𝘂𝗽𝗼𝘀: ${gruposFind.length}
 *Grupo:* https://chat.whatsapp.com/IbVzNXRCH2X8Oim6B4wKnP?mode=gi_t
 `
 
-await sock.sendMessage(from, {image: {url: path.join(__dirname, "../../assets/images/yuki.jpg")}, caption: infoPing}, {quoted: msg});
+const templateButtons = [
+  {buttonId: `${process.env.PREFIXO}menu`, buttonText: {displayText: "menu", type: 1}}
+  ];
+  
+
+
+await sock.sendMessage(from, {image: {url: canva}, caption: infoPing, footer: "Oi porra", buttons: templateButtons}, {quoted: msg});
 }
 catch(err) {
   sock.sendMessage(from, {text: erros_prontos}, {quoted: msg});

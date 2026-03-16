@@ -3,7 +3,7 @@ const { grupos } = require("../../database/models/grupos.js");
 
 module.exports = {
   name: "afkmode",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     async function sendHelp() {
   await sock.sendMessage(from, {
     text: `*Como usar comandos de opção:*\n0 - Desativado | Desligado\n>\nExemplo: "/welcome 0"\n1 - Ativado | Ligado\n> Exemplo: "/welcome 1"`
@@ -16,7 +16,7 @@ module.exports = {
         return
       }
       
-      const sender = msg.key.participant
+      
       
       const grupo = await grupos.findOne({groupId: from});
       

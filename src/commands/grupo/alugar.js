@@ -3,7 +3,7 @@ const { clientRedis } = require("../../lib/redis.js");
 module.exports = {
   name: "alugar",
   categoria: "padrao",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     async function sendHelp() {
       await bot.reply(from, `*Como alugar a Yuki para o seu grupo:*
@@ -20,7 +20,7 @@ module.exports = {
       //valor de alugel 
       const diaValor = 0.50;
       
-      const sender = msg.key.participant;
+      
       
       if(!from.endsWith("@g.us")) {
         await bot.reply(from, "Use esse comando em um grupo. Seu porra");
@@ -67,7 +67,12 @@ module.exports = {
         maximumFractionDigits: 2
       });
       
-      await bot.reply(from, `Hum... Verifiquei aqui e ${dias} dias custam ${valorFormatado}R$, digite *confirmar* para ir para o pagamento. Caso contrário digite cancelar`);
+      const button = [
+        {buttonId: "confirmar", buttonText: {displayText: "𝐂𝐨𝐧𝐟𝐢𝐫𝐦𝐚𝐫💖"}, type: 1},
+        {buttonId: "cancelar", buttonText: {displayText: "𝐂𝐚𝐧𝐜𝐞𝐥𝐚𝐫🥀"}, type: 1}
+        ];
+      
+      await sock.sendMessage(from, {text: `Hum... Verifiquei aqui e ${dias} dias custam ${valorFormatado}R$, digite *confirmar* para ir para o pagamento. Caso contrário digite cancelar`, buttons: button}, {quoted: msg});
       
     }
     catch(err) {

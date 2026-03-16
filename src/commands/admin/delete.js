@@ -2,12 +2,12 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "d",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       const msgquoted = msg.message.extendedTextMessage.contextInfo
       
-      const sender = msg.key.participant
+      
       
       const metadata = await sock.groupMetadata(from);
       

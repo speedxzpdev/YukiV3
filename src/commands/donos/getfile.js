@@ -5,11 +5,11 @@ const { donos } = require("../../database/models/donos.js");
 
 module.exports = {
   name: "getfile",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
     const caminho = args[0]
     const proibidos = [".env", ".json", ".sh"]
-    const sender = msg.key.participant || msg.key.remoteJid
+    
     const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
     
     const donoSender = await donos.findOne({userLid: sender});

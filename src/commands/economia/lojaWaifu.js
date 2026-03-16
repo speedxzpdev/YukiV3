@@ -3,7 +3,7 @@ const preco = require("../../database/waifus/raridadePreço.json");
 
 module.exports = {
   name: "loja",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       const msgAwait = await bot.reply(from, "Buscando loja de waifus...");

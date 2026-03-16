@@ -3,10 +3,10 @@ const crypto = require("crypto");
 
 module.exports = {
   name: "gerartoken",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const sender = msg.key.participant || msg.key.remoteJid;
+      
       
       const existeToken = await clientRedis.exists(`userToken:${sender}`);
       

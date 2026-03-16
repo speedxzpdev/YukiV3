@@ -4,12 +4,12 @@ const path = require("path");
 
 module.exports = {
   name: "perfil",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
       await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
       
-      const sender = msg.key.participant ||  msg.key.remoteJid
+      
       
       const Isuser = await users.findOne({userLid: sender});
       

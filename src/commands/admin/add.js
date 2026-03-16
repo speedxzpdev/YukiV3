@@ -3,10 +3,10 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "add",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const sender = msg.key.participant
+      
       const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
   
      const metadados = await sock.groupMetadata(from);

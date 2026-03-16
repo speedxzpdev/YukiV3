@@ -11,9 +11,9 @@ function chunk(arr, size) {
 module.exports = {
   name: "aqv",
 
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
-      const rawSender = msg.key.participant || msg.key.remoteJid;
+      const rawSender = sender
       const dono = await donos.findOne({ userLid: rawSender });
 
       if (!dono) {

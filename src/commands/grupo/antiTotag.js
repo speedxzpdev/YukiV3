@@ -3,7 +3,7 @@ const { donos } = require("../../database/models/donos");
 
 module.exports = {
   name: "antimarcar",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     async function sendHelp() {
   await sock.sendMessage(from, {
     text: `*Como usar comandos de opção:*\n/antimarcar 0\n> Desativado\n/antimarcar 1\n> Ativado`
@@ -21,7 +21,7 @@ module.exports = {
       
       const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.id);
       
-      const sender = msg.key.participant
+      
       
       const donim = await donos.findOne({userLid: sender});
       
