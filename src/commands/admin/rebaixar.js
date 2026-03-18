@@ -12,7 +12,7 @@ module.exports = {
       const metadados = await sock.groupMetadata(from);
      
      const Admins = metadados.participants.filter(p => p.admin);
-  const groupAdmins = Admins.map(m => m.id);
+  const groupAdmins = Admins.map(m => m.lid);
   
   const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
   

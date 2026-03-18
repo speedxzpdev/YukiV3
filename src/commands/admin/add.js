@@ -12,7 +12,7 @@ module.exports = {
      const metadados = await sock.groupMetadata(from);
      
      const Admins = metadados.participants.filter(p => p.admin);
-  const groupAdmins = Admins.map(m => m.id);
+  const groupAdmins = Admins.map(m => m.lid);
   const donin = await donos.findOne({userLid: sender});
   
   

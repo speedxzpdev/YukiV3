@@ -19,7 +19,7 @@ Fácil de usar, né? Não? Então você possui algum tipo de deficiência mental
       
       const metadata = await sock.groupMetadata(from);
       
-      const admin = metadata.participants.filter(p => p.admin).map(p => p.id);
+      const admin = metadata.participants.filter(p => p.admin).map(p => p.lid);
       
       
       

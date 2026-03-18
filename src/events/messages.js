@@ -17,6 +17,7 @@ const { clientMp, payment} = require("../lib/mercadoPago.js");
 const{ yukiEv,
   comprarWaifu, pagamento } = require("../utils/events.js");
 const { advertidos } = require("../database/models/adverts.js");
+const addXp = require("../utils/xp.js");
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -107,12 +108,13 @@ const { advertidos } = require("../database/models/adverts.js");
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m.messages[0];
+    if (msg.key.fromMe) return
     
     const sender = msg?.key?.participantLid || msg.key.remoteJid;
     
     const from = msg?.key.remoteJid || msg?.key?.participantLid
     
-    console.log(JSON.stringify(msg, null, 2));
+    
     
     if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
     //console.log(msg)
@@ -229,6 +231,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       }
       return
     }
+    
+    addXp(sender, 1, sock, from, msg);
 
     const body = (msg.message?.conversation) ||
     (msg.message?.extendedTextMessage?.text) ||

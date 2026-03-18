@@ -11,7 +11,7 @@ module.exports = {
       
       const metadata = await sock.groupMetadata(from);
       
-      const ListAdmins = metadata.participants.filter(p => p.admin).map(p => p.id);
+      const ListAdmins = metadata.participants.filter(p => p.admin).map(p => p.lid);
       
       const donoo = await donos.findOne({userLid: sender})
       

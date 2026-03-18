@@ -22,7 +22,8 @@ const userSchema = new mongoose.Schema({
   figurinhas: {type: Number, default: 0},
   cmdCount: {type: Number, default: 0},
   level: {type: Number, default: 0},
-  xp: {type: Number, default: 0}
+  xp: {type: Number, default: 0},
+  proximolevel: {type: Number, default: 100}
 });
 
 const users = mongoose.model("User", userSchema);

@@ -9,7 +9,9 @@ module.exports = {
       
       await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
       
-      
+      const buttons = [
+        {buttonId: `${process.env.PREFIXO}xp`, buttonText: {displayText: "𝐕𝐄𝐑 𝐗𝐏💖"}, type: 1}
+        ];
       
       const Isuser = await users.findOne({userLid: sender});
       
@@ -51,6 +53,9 @@ module.exports = {
 *Modo sem prefixo:* ${userSender?.prefixo ? "Desativado" : "Ativado"}
 *Namorado(a):* ${ userSender?.casal?.parceiro ? `@${userSender?.casal?.parceiro?.split("@")[0]}
 *Desde:* ${userSender?.casal?.pedido.toLocaleDateString("pt-BR")}💕` : "nenhum"}
+*Level:* ${userSender?.level}
+*Xp:* ${userSender?.xp}
+*Xp para o próximo nivel:* ${userSender?.proximolevel}
 *Dinheiro:* ${userSender.dinheiro}
 *Quantidade waifus:* ${userSender.waifus.length}
 *Comandos usados:* ${userSender.cmdCount}
@@ -66,7 +71,7 @@ module.exports = {
       const imgsRandom = icons[Math.floor(Math.random() * icons.length)];
     
     
-      await sock.sendMessage(from, {image: {url: senderProfile ? senderProfile : path.join(__dirname ,imgsRandom)}, caption: infos, mentions: [sender, ...(userSender?.casal?.parceiro ? [userSender.casal.parceiro] : [])]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: senderProfile ? senderProfile : path.join(__dirname ,imgsRandom)}, caption: infos, mentions: [sender, ...(userSender?.casal?.parceiro ? [userSender.casal.parceiro] : [])], buttons: buttons}, {quoted: msg});
       
       
       
