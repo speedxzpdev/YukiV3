@@ -69,6 +69,12 @@ const espera_pronta = jsonEspera[Math.floor(Math.random() * jsonEspera.length)]
 
 
 async function yukibot() {
+  
+  const logo = `█▄█ █░█ █▄▀ █ █▄▄ █▀█ ▀█▀
+░█░ █▄█ █░█ █ █▄█ █▄█ ░█░`
+  
+  console.log(logo)
+  
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "/assets/auth"));
   
   //Pega a ultima versao da baileys 

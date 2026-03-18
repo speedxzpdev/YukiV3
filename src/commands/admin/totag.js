@@ -9,10 +9,10 @@ async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) 
   
   const texto = args.slice(0).join(" ")?.trim();
   
-  const metadados = await sock.groupMetadata(from)
+  const metadados = await sock.groupMetadata(from);
   
   const Admins = metadados.participants.filter(p => p.admin)
-  const groupAdmins = Admins.map(m => m.id)
+  const groupAdmins = Admins.map(m => m.lid)
   
   
   const button = [
