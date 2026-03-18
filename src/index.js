@@ -76,7 +76,7 @@ async function yukibot() {
   
   //sock do bot
   const sock = makeWASocket({
-        version,
+        version: [2, 3000, 1034740716],
         logger: P({ level: 'silent' }),
         auth: state,
         browser: Browsers.ubuntu('firefox'),

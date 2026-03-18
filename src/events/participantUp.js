@@ -5,6 +5,9 @@ const { grupos } = require("../database/models/grupos");
 module.exports = (sock) => {
   
   sock.ev.on("group-participants.update", async(update) => {
+    
+    console.log(update);
+    
     if(process.env.DEV_AMBIENT === "true") return
     
     const from = update.id
