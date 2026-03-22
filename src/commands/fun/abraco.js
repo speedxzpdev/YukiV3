@@ -1,6 +1,7 @@
 const { text } = require('express');
 const { number_bot } = require('../../config');
 const { execute } = require('./beijo');
+const { jidToSignalSenderKeyName } = require('whaileys');
 
 
 module.exports = {
@@ -17,7 +18,7 @@ module.exports = {
 
             const autor = sender.split('@')[0];
             
-            const msgbeijo = [`Ohhm, ${autor} abraçou ${alvo} que fofinho!`, `Que bonitinho! ${autor} deu um abraço no ${alvo}`];
+            const msgbeijo = [`Ohhm, @${autor} abraçou @${alvo} que fofinho!`, `Que bonitinho! @${autor} deu um abraço no @${alvo}`];
 
             const msgRandom = msgbeijo[Math.floor(Math.random() * msgbeijo.length)];
 
@@ -25,7 +26,7 @@ module.exports = {
 
             const gifsRandom = gifsLink[Math.floor(Math.random() * gifsLink.length)];
 
-            await sock.sendMessage(from, {video: {url: gifsRandom}, caption: msgRandom, gifPlayback: true}, {quoted: msg});
+            await sock.sendMessage(from, {video: {url: gifsRandom}, caption: msgRandom, gifPlayback: true, mentions: [mention, sender]}, {quoted: msg});
 
         }
         catch(err) {
