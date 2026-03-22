@@ -19,7 +19,7 @@ module.exports = {
       
       const metadata = await sock.groupMetadata(from);
       
-      const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.id);
+      const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.lid);
       
       
       

@@ -35,7 +35,7 @@ class YukiBot {
     
     const sender = this.msg.key.participant
     
-    const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
+    const admins = metadata.participants.filter(p => p.admin).map(p => p.lid);
     
     return admins.includes(sender);
     
