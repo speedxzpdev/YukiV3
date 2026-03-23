@@ -33,7 +33,7 @@ class YukiBot {
     
     const metadata = await this.sock.groupMetadata(from);
     
-    const sender = this.msg.key.participant
+    const sender = this.msg.key.participantLid
     
     const admins = metadata.participants.filter(p => p.admin).map(p => p.lid);
     
