@@ -110,7 +110,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const msg = m.messages[0];
     if (msg.key.fromMe) return
     
-    const sender = msg?.key?.participantLid || msg.key.remoteJid;
+    const sender = msg?.key?.participantLid || msg.key.sender;
     
     const from = msg?.key.remoteJid || msg?.key?.participantLid
     
