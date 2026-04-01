@@ -166,7 +166,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     let usersSender = await users.findOne({userLid: sender});
     const Notvip = !usersSender?.vencimentoVip || Date.now() > usersSender?.vencimentoVip?.getTime();
     
-    if(!from.endsWith("@g.us") && !doninhos && Notvip) {
+    if(from.endsWith("@lid") && !doninhos && Notvip) {
       
       const IsMsgPV = await  clientRedis.exists(`pv:block:${sender}`);
       

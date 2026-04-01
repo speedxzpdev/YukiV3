@@ -10,7 +10,8 @@ module.exports = {
       await sock.sendMessage(from, {text: espera_pronta}, {quoted: msg});
       
       const buttons = [
-        {buttonId: `${process.env.PREFIXO}xp`, buttonText: {displayText: "𝐕𝐄𝐑 𝐗𝐏💖"}, type: 1}
+        {buttonId: `${process.env.PREFIXO}xp`, buttonText: {displayText: "𝐕𝐄𝐑 𝐗𝐏💖"}, type: 1},
+        {buttonId: `${process.env.PREFIXO}waifus`, buttonText: {displayText: "𝐯𝐞𝐫 𝐰𝐚𝐢𝐟𝐮𝐬"}, type: 1}
         ];
       
       const Isuser = await users.findOne({userLid: sender});
@@ -66,6 +67,8 @@ module.exports = {
     
     const assetsPast = '../../assets/images'
       
+    
+
       const icons = [`${assetsPast}/yuki.jpg`, `${assetsPast}/yuki2.jpg`, `${assetsPast}/yuki3.jpg`, `${assetsPast}/yuki4.jpg`, `${assetsPast}/yuki5.jpg`];
       
       const imgsRandom = icons[Math.floor(Math.random() * icons.length)];

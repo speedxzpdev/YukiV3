@@ -28,6 +28,7 @@
     "redis": "^5.10.0",
     "string-similarity": "^4.0.4",
     "telegraph-uploader": "^2.0.0",
+    "typescript": "^6.0.2",
     "whaileys": "^6.4.10",
     "ytdl-core": "^4.11.5"
   }
