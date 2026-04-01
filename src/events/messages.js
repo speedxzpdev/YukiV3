@@ -182,8 +182,23 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     //se uma mensagem for de um grupo registra.
     if(from.endsWith("@g.us")) {
+
+      const grupoDBInfo = await grupos.findOne({groupId: from})
+      //verifica se é adm
+      const isAdminSender = bot.isAdmin(from);
+
+      const isAdmRegistrado = usersSender?.grupos?.some(grupo => grupo.id === from);
+
+      if(isAdminSender && (!isAdmRegistrado)) {
+        
+const groupDados = await sock.groupMetadata(from);
+
+await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: groupDados.subject}}}, {upsert: true})
+
+        
+}
       
-      if(!await grupos.findOne({groupId: from})) {
+      if(!grupoDBInfo) {
         
         const groupDados = await sock.groupMetadata(from);
         

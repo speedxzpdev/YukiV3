@@ -17,7 +17,7 @@ const { grupos } = require("./database/models/grupos");
 const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
 require("dotenv").config({quiet: true});
-const server = require("./server.js");
+const server = require("./backend/server.js");
 
 
 

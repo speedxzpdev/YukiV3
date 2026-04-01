@@ -1,10 +1,11 @@
 const express = require("express");
-const { clientRedis } = require("./lib/redis.js");
-const { payment } = require("./lib/mercadoPago.js");
-const { grupos } = require("./database/models/grupos.js");
-const { numberOwner } = require("./config.js");
+const { clientRedis } = require("../lib/redis.js");
+const { payment } = require("../lib/mercadoPago.js");
+const { grupos } = require("../database/models/grupos.js");
+const { numberOwner } = require("../config.js");
 const axios = require("axios");
-const { users } = require("./database/models/users.js");
+const { users } = require("../database/models/users.js");
+const userRouter = require("./routes/user.js");
 
 async function refreshToken(token, user) {
   try {
@@ -42,6 +43,8 @@ module.exports = async function server(sock) {
     await res.status(200).json({res: "ok!"});
   });
   
+  app.use("/user", userRouter);
+
   app.post("/webhook", async (req, res) => {
     try {
       console.log("Post recebida!!");
