@@ -25,7 +25,7 @@ module.exports = {
       
       const msgToken = await bot.reply(sender, token);
       
-      await bot.reply(sender, "Use esse token para criar sua conta no site da yuki, esse token expira em 5 minutos, *não passe pra ninguém.*", msgToken);
+      await bot.reply(sender, "Use esse token para criar sua conta em https://yuki-bot.online, esse token expira em 5 minutos, *não passe pra ninguém.*", msgToken);
       
       await bot.editReply(from, msgEspera.key, "Token enviado no seu privado!");
       
