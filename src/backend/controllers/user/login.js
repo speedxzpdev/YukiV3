@@ -25,10 +25,13 @@ try {
 
  const tokenJwt = jwt.sign({sender: sender}, process.env.SECRET);
 
+const isProd = process.env.DEV_AMBIENT === "false";
+
  res.cookie('user', tokenJwt, {
    httpOnly: true,
-   secure: false,
-   maxAge: 1000 * 60 * 60 * 24
+   secure: isProd,
+   sameSite: isProd ? "None" : "Lax",
+   maxAge: 1000 * 60 * 60 * 24 * 30
 });
 
  res.status(200).json({token: tokenJwt, message: "sucesso!"});
