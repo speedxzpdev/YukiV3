@@ -45,6 +45,14 @@ credentials: true
   
   app.use(cookieParser());
 
+  app.use((req, res, next) => {
+
+console.log("req recebida!");
+
+next()
+
+});
+
   const port = process.env.PORT;
   
   
