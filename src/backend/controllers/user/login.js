@@ -21,7 +21,7 @@ try {
 
 }
 
- const sender = await clientRedis.hGetAll(body?.token);
+ const sender = await clientRedis.get(`token:${body?.token}`);
 
  const tokenJwt = jwt.sign({sender: sender}, process.env.SECRET);
 
@@ -31,7 +31,8 @@ try {
    maxAge: 1000 * 60 * 60 * 24
 });
 
- res.status(200).json({token: tokenJwt});
+ res.status(200).json({token: tokenJwt, message: "sucesso!"});
+
 
 }
  
