@@ -60,7 +60,7 @@ next()
     await res.status(200).json({res: "ok!"});
   });
   
-  app.use("/user", userRouter);
+  app.use("/auth", userRouter);
 
   app.post("/webhook", async (req, res) => {
     try {

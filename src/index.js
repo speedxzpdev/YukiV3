@@ -1,11 +1,11 @@
 const { default: makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, requestPairingCode, baileys, fetchLatestBaileysVersion, Browsers} = require("whaileys");
 const { Boom } = require("@hapi/boom");
+const SockBot = require("./sock.js");
 const P = require("pino");
 const fs = require("fs");
 const path = require("path")
 const commandsMap = new Map();
 const qrcode = require("qrcode-terminal");
-
 const { prefixo, botName } = require("./config");
 const tiktokDl = require("./utils/tiktok");
 const connectDB = require("./lib/mongoDB.js");
@@ -75,25 +75,7 @@ async function yukibot() {
   
   console.log(logo)
   
-  const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "/assets/auth"));
-  
-  //Pega a ultima versao da baileys 
-  const { version } = await fetchLatestBaileysVersion();
-  
-  //sock do bot
-  const sock = makeWASocket({
-        version: [2, 3000, 1034740716],
-        logger: P({ level: 'silent' }),
-        auth: state,
-        browser: Browsers.ubuntu('firefox'),
-        connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: 0,
-        keepAliveIntervalMs: 10000,
-        emitOwnEvents: true,
-        fireInitQueries: true,
-        generateHighQualityLinkPreview: true,
-        markOnlineOnConnect: true
-    });
+  const sock = await SockBot.init();
   
           //conecta o mongo
     try {await connectDB();}
@@ -102,21 +84,18 @@ async function yukibot() {
     //Conecta o redis
     await redisConnect();
   
-  sock.ev.on("creds.update", saveCreds);
-  
-  if(!state.creds.registered) {
-    setTimeout(async () => {
-      const code = await sock.requestPairingCode(process.env.NUMBER);
-    console.log("Codigo: ", code);
-    }, 2000);
-  }
-  
 
   
   
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, disconnectReason, qr } = update
     
+    if(SockBot.QRcode && qr) {
+
+      console.log("qrcode:");
+      console.log(qr);
+    } 
+
     
     if (connection === "close") {
     const shouldReconnect =
