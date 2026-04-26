@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
 
 
 
-        const token_response = axios.get("https://discord.com/api/oauth2/token", new URLSearchParams({
+        const token_response = await axios.post("https://discord.com/api/oauth2/token", new URLSearchParams({
             client_id: process.env.CLIENT_SHIZUKU,
             client_secret: process.env.CLIENT_SECRET_SHIZUKU,
             grant_type: "authorization_code",
@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
             redirect_uri: process.env.REDIRECT_DISCORD
         }), {
             headers: {
-                "Content-type": "application/x-www-form-"
+                "Content-Type": "application/x-www-form-urlencoded"
             }
         });
 
@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
 
         const user_response = await axios.get("https://discord.com/api/users/@me", {
             headers: {
-                Authorization: `Bearer ${user.userLid}`
+                Authorization: `Bearer ${token}`
             }
         });
 
@@ -49,13 +49,14 @@ module.exports = async (req, res) => {
             
             const sock = socket.getSock();
 
-            await sock.sendMessage(user.userLid, {text: `A Shizuku acabou de me avisar que você logou sua conta em ${user_response.data.username}!`});
+            await sock.sendMessage(user.userLid, {text: `A Shizuku acabou de me avisar que você logou sua conta em *${user_response.data.username}*!`});
 
         } catch (error) {
             console.warn("ocorreu um erro ao enviar mensagem\n\n", error);
         }
 
-        res.status(200).json({message: "autentificação feita!"});
+        res.status(200);
+        res.redirect(process.env.SERVER_URL)
 
     } catch (err) {
         console.error(err);
