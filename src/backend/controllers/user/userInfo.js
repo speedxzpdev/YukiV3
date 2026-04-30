@@ -2,7 +2,7 @@ const { users } = require("../../../database/models/users.js");
 const jwt = require("jsonwebtoken");
 
 const info = async (req, res) => {
-const user = req?.cookies?.user;
+const user = req?.query?.user;
 
 try {
 
@@ -11,9 +11,7 @@ res.status(404).json({error: "usuario nao registrado ou encontrado."});
 return;
 }
 
-const token = jwt.verify(user, process.env.SECRET);
-
-const userdb = await users.findOne({userLid: token.sender});
+const userdb = await users.findOne({discord_id: token.sender});
 
 res.status(200).json({userdb});
 
