@@ -18,6 +18,7 @@ const{ yukiEv,
   comprarWaifu, pagamento } = require("../utils/events.js");
 const { advertidos } = require("../database/models/adverts.js");
 const addXp = require("../utils/xp.js");
+const YukiAI = require("../ai.js");
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -27,6 +28,8 @@ const addXp = require("../utils/xp.js");
     
     //Mapa de intervslos
     const activeInterval = new Map();
+
+    const yukiIA = new YukiAI(process.env.AI_KEY);
     
     
     
@@ -472,21 +475,18 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
     
       //caso ouva uma mencao ou frase com a yuki
     if(bodyCase.includes("yuki")) {
-            //promp base pra yuki
-    const promptBase = `
-SYSTEM: Você é a yuki, uma bot de whatsapp engraçada e as vezes carinhosa, seja direta e use no maximo 3 paragrafos. Voce deve responder o campo Message, e use o campo Nome somente se fizer sentido
-Nome: {${msg.pushName}}
-Mensagem: {${body}}
-`;
         try {
           //simula escrita
           await sock.sendPresenceUpdate("composing", from);
           //separa cada palavra
           const args = body.split(" ")
           //estrutura de resposta
-          const yukiGpt = await axios.get(`https://zero-two-apis.com.br/api/ia/gpt4?query=${encodeURIComponent(promptBase)}&apikey=${process.env.ZEROTWO_APIKEY}`);
+          const response = await yukiIA.falar({text: body, chat: from, user: msg?.pushName || "sem nome"});
           //manda a mensagem
-          await sock.sendMessage(from, {text: yukiGpt.data.resultado}, {quoted: msg});
+          await sock.sendMessage(from, {text: response}, {quoted: msg});
+
+          //salva na memoria
+          await yukiIA.memoria(body, response, { user: msg?.pushName || "sem nome", chat: from});
           //pausa a simulacao
           await sock.sendPresenceUpdate("paused", from);
           

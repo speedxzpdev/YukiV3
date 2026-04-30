@@ -20,7 +20,7 @@ class SockBot {
         version: [2, 3000, 1034740716],
         logger: P({ level: 'silent' }),
         auth: state,
-        browser: Browsers.ubuntu('firefox'),
+        browser: Browsers.ubuntu('chrome'),
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 0,
         keepAliveIntervalMs: 10000,

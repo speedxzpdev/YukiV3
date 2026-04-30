@@ -22,6 +22,7 @@ const server = require("./backend/server.js");
 
 
 
+
 const commandDir = fs.readdirSync(path.join(__dirname, "commands")).filter(cmd => cmd.endsWith(".js"));
 
 //funcao que carrega os comandos de forma recursiva
@@ -122,7 +123,6 @@ server(sock);
   require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
   require("./events/participantUp")(sock);
   require("./events/waifus.js")(sock);
-  require("./events/payments.js")(sock);
   
 }
 
