@@ -4,10 +4,10 @@ module.exports = {
   name: "saldo",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
-
       await sock.sendMessage(from, { text: espera_pronta }, { quoted: msg });
 
-      let senderLid = sender;
+      let senderLid = sender?.split(":")[0];
+
       if (!senderLid.includes("@")) {
         senderLid = `${senderLid}@s.whatsapp.net`;
       }
