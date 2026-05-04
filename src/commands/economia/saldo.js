@@ -1,4 +1,5 @@
 const { users } = require("../../database/models/users");
+const { normalizeUserLid } = require("../../utils/normalizeUserLid");
 
 module.exports = {
   name: "saldo",
@@ -6,11 +7,7 @@ module.exports = {
     try {
       await sock.sendMessage(from, { text: espera_pronta }, { quoted: msg });
 
-      let senderLid = sender?.split(":")[0];
-
-      if (!senderLid.includes("@")) {
-        senderLid = `${senderLid}@s.whatsapp.net`;
-      }
+      const senderLid = normalizeUserLid(sender);
 
       let userFind = await users.findOne({ userLid: senderLid });
 

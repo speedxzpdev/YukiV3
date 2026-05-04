@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { users } = require("../database/models/users");
 const path = require("path");
+const { normalizeUserLid } = require("./normalizeUserLid");
 
 async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   try {
@@ -48,7 +49,14 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta) {
 ⤷ *Comercial?* ${result.music.isOriginalSound ? 'Sim' : 'Não'}
 ⤷ *Som original?* ${result.music.isOriginalSound ? 'Sim' : 'Não'}`
 
-await users.updateOne({userLid: msg.key.participant}, {$inc: {donwloads: 1}});
+const sender = normalizeUserLid(
+  msg?.key?.participantLid ||
+  msg?.key?.senderLid ||
+  msg?.key?.participant ||
+  msg?.key?.remoteJid
+);
+
+await users.updateOne({userLid: sender}, {$inc: {donwloads: 1}});
 
 if(result.type === 'image') {
   const images = result.images

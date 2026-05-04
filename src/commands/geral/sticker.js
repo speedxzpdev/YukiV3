@@ -7,11 +7,12 @@ const fs = require('fs')
 const { exec } = require('child_process')
 const { version } = require("../../config");
 const { users } = require("../../database/models/users");
+const { normalizeUserLid } = require("../../utils/normalizeUserLid");
 
 
 module.exports = {
   name: "s",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     async function addExif(webpPath, packname = 'Yukizinha', author = 'Speed') {
   const img = new webp.Image();
@@ -130,7 +131,7 @@ const subdados = `↦ ✨𝑭𝒆𝒊𝒕𝒐 𝒑𝒐𝒓: ${pushname} • ${ti
       
       await sock.sendMessage(jid, { sticker: stickerBuffer }, { quoted: msg });
       
-      await users.updateOne({userLid: msg.key.participant}, {$inc: {figurinhas: 1}});
+      await users.updateOne({userLid: normalizeUserLid(sender)}, {$inc: {figurinhas: 1}});
 
       await fs.unlinkSync(inputPath);
       await fs.unlinkSync(outputPath);
