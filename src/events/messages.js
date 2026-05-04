@@ -19,6 +19,7 @@ const{ yukiEv,
 const { advertidos } = require("../database/models/adverts.js");
 const addXp = require("../utils/xp.js");
 const YukiAI = require("../ai.js");
+const { normalizeUserLid } = require("../utils/normalizeUserLid");
 
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
@@ -113,7 +114,13 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const msg = m.messages[0];
     if (msg.key.fromMe) return
     
-    const sender = msg?.key?.participantLid || msg.key.senderLid;
+    const senderRaw =
+      msg?.key?.participantLid ||
+      msg?.key?.senderLid ||
+      msg?.key?.participant ||
+      msg?.key?.remoteJid;
+
+    const sender = normalizeUserLid(senderRaw);
     
     const from = msg?.key.remoteJid || msg?.key?.participantLid
     
@@ -221,16 +228,16 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
       usersSender = await users.findOne({userLid: sender})
     }
 
-    await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {msg: 1}}, {upsert: true})
+    await rankativos.updateOne({userLid: sender, from: from}, {$inc: {msg: 1}}, {upsert: true})
 
      //se estiver alguem mutado
-    if(await mutados.findOne({userLid: msg.key.participant, grupo: from})) {
+    if(await mutados.findOne({userLid: sender, grupo: from})) {
       try {
-      const userMutado = await mutados.findOne({userLid: msg.key.participant, grupo: from});
+      const userMutado = await mutados.findOne({userLid: sender, grupo: from});
       //apaga todas as msg
       await sock.sendMessage(userMutado.grupo, {delete: msg.key})
       
-      const muteTentativa = await mutados.findOneAndUpdate({userLid: msg.key.participant, grupo: from}, {$inc: {tentativasMsg: 1}}, {new: true});
+      const muteTentativa = await mutados.findOneAndUpdate({userLid: sender, grupo: from}, {$inc: {tentativasMsg: 1}}, {new: true});
       //se a pessoa for desmutada antes
       if(!muteTentativa) return;
       //se ela tentar mandar mais de 3 mensagens
@@ -238,7 +245,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
         //remove ela do grupo
         await sock.groupParticipantsUpdate(muteTentativa.grupo, [muteTentativa.userLid], 'remove');
         //apaga ela da colessao
-        await mutados.deleteOne({userLid: msg.key.participant, grupo: from});
+        await mutados.deleteOne({userLid: sender, grupo: from});
         
       }
       
@@ -757,7 +764,7 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     //pausa a simulacao
     await sock.sendPresenceUpdate('paused', from);
 //adiciona no contador de comandos
-    await rankativos.updateOne({userLid: msg.key.participant, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
+    await rankativos.updateOne({userLid: sender, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
 //adiciona no contador do grupo
    if(from.endsWith("@g.us")) {
    await grupos.updateOne({groupId: from}, {$inc: {cmdUsados: 1}});

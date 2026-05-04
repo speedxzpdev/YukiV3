@@ -1,9 +1,10 @@
 const axios = require("axios");
 const { users } = require("../../database/models/users");
+const { normalizeUserLid } = require("../../utils/normalizeUserLid");
 
 module.exports = {
   name: "play",
-  async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     
     const texto = args.slice(0).join(" ")?.trim();
       try {
@@ -56,7 +57,7 @@ module.exports = {
     
     await sock.sendPresenceUpdate("paused", from);
     
-    await users.updateOne({userLid: msg.key.participant}, {$inc: {donwloads: 1}});
+    await users.updateOne({userLid: normalizeUserLid(sender)}, {$inc: {donwloads: 1}});
     
     
   }

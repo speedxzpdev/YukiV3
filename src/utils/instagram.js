@@ -1,5 +1,6 @@
 const axios = require("axios");
 const { users } = require("../database/models/users");
+const { normalizeUserLid } = require("./normalizeUserLid");
 
 async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   
@@ -18,7 +19,14 @@ async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
     
     await sock.sendMessage(from, {video: {url: data.resultados[0].url}, caption: "Yuki reels!"}, {quoted: msg});
     
-    await users.updateOne({userLid: msg.key.participant}, {$inc: {donwloads: 1}});
+    const sender = normalizeUserLid(
+      msg?.key?.participantLid ||
+      msg?.key?.senderLid ||
+      msg?.key?.participant ||
+      msg?.key?.remoteJid
+    );
+
+    await users.updateOne({userLid: sender}, {$inc: {donwloads: 1}});
     
     
     
