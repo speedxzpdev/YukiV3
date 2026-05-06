@@ -19,17 +19,24 @@ module.exports = {
       
       
       const grupo = await grupos.findOne({groupId: from});
+      const afkList = Array.isArray(grupo?.afkList) ? grupo.afkList : [];
+      const rawParam = args?.[0];
+
+      if(rawParam === undefined) {
+        await sendHelp();
+        return
+      }
       
-      const parametro = Number(args[0]);
+      const parametro = Number(rawParam);
       
-      if(!parametro === undefined) {
+      if(!Number.isInteger(parametro) || (parametro !== 0 && parametro !== 1)) {
         await sendHelp();
         return
       }
       
       //desativa o modo afk
       if(parametro === 0) {
-        if(!grupo.afkList.includes(sender)) {
+        if(!afkList.includes(sender)) {
           await bot.reply(from, "Você já está com o afkmode desativado!");
           return
         }
@@ -40,12 +47,12 @@ module.exports = {
       }
       
       else if(parametro === 1) {
-        if(grupo.afkList.includes(sender)) {
+        if(afkList.includes(sender)) {
           await bot.reply(from, "Você já está com o afkmode ativado!");
           return
         }
         
-        await grupos.updateOne({groupId: from}, {$push: {afkList: sender}}, {upsert: true});
+        await grupos.updateOne({groupId: from}, {$addToSet: {afkList: sender}}, {upsert: true});
         
         await bot.reply(from, "afkmode ativado! Agora as totags estaram silenciosas para você.");
         

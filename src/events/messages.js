@@ -621,11 +621,13 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     
     const isDono = !!doninhos;
     
-    const isVip = usersSender?.vencimentoVip && dataAtual > usersSender?.vencimentoVip?.getTime();
+    const vipExpireAt = usersSender?.vencimentoVip?.getTime?.();
+    
+    const hasVipAtivo = Number.isFinite(vipExpireAt) && dataAtual <= vipExpireAt;
     
     const isAluguel = dataAtual > grupoAluguel.aluguel;
     
-    if(isAluguel && !isVip) {
+    if(isAluguel && !isDono && !hasVipAtivo) {
       await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
       return
     }
@@ -766,11 +768,13 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     
     const isDono = !!doninhos;
     
-    const isVip = usersSender?.vencimentoVip && dataAtual > usersSender?.vencimentoVip?.getTime();
+    const vipExpireAt = usersSender?.vencimentoVip?.getTime?.();
+    
+    const hasVipAtivo = Number.isFinite(vipExpireAt) && dataAtual <= vipExpireAt;
     
     const isAluguel = dataAtual > grupoAluguel.aluguel;
     
-    if(isAluguel && isVip && !isDono) {
+    if(isAluguel && !isDono && !hasVipAtivo) {
       await sock.sendMessage(from, {text: `Este grupo está com aluguel vencido!\n\n⤷ Use: *${prefixo}alugar*`}, {quoted: msg});
       return
     }
