@@ -1,4 +1,4 @@
-const { prefixo, numberBot, numberOwner, numberBotJid } = require("../config.js");
+const { prefixo, numberBot, numberBotJid } = require("../config.js");
 const tiktokDl = require("../utils/tiktok");
 const connectDB = require("../lib/mongoDB.js");
 const similarityCmd = require("../utils/similaridadeCmd");
@@ -20,6 +20,7 @@ const { advertidos } = require("../database/models/adverts.js");
 const addXp = require("../utils/xp.js");
 const YukiAI = require("../ai.js");
 const { normalizeUserLid } = require("../utils/normalizeUserLid");
+const { isOwnerLid } = require("../utils/owner");
 
 async function safeRedis(action, fallback = null) {
   if (!clientRedis?.isOpen) return fallback;
@@ -649,7 +650,7 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     //Cuidado com quem permite uso disso.
     if (body.startsWith(">")) {
   try {
-    if (!numberOwner.includes(sender)) return;
+ if (!isOwnerLid(sender)) return;
 
     const result = await eval(body.slice(2));
 
