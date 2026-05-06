@@ -21,6 +21,17 @@ const addXp = require("../utils/xp.js");
 const YukiAI = require("../ai.js");
 const { normalizeUserLid } = require("../utils/normalizeUserLid");
 
+async function safeRedis(action, fallback = null) {
+  if (!clientRedis?.isOpen) return fallback;
+
+  try {
+    return await action();
+  } catch (err) {
+    console.error("Erro no Redis:", err);
+    return fallback;
+  }
+}
+
     //Parte que lida com mensagens em lotes
     //fila de mensagens de cada grupo
     let messageQueue = new Map();
@@ -42,7 +53,11 @@ const { normalizeUserLid } = require("../utils/normalizeUserLid");
       flagMessage.set(groupId, true);
       
       const queue = messageQueue.get(groupId);
-      
+      if(!queue) {
+        flagMessage.set(groupId, false);
+        return;
+      }
+
       try {
       
       //enquanto messageQueue for maior que zero
@@ -111,7 +126,8 @@ const { normalizeUserLid } = require("../utils/normalizeUserLid");
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   sock.ev.on("messages.upsert", async (m) => {
-    const msg = m.messages[0];
+    const msg = m?.messages?.[0];
+    if (!msg?.key) return;
     if (msg.key.fromMe) return
     
     const senderRaw =
@@ -122,7 +138,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     const sender = normalizeUserLid(senderRaw);
     
-    const from = msg?.key.remoteJid || msg?.key?.participantLid
+    const from = msg?.key?.remoteJid || msg?.key?.participantLid
+    if (!from || !sender) return;
     
     
     
@@ -131,7 +148,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 //escopo pra Nao vazar variaveis
      {
     //pega o ms da msg
-    const msgTime = msg.messageTimestamp * 1000
+    const msgTime = Number(msg.messageTimestamp || 0) * 1000
     //pega o ms atual
     const agora = Date.now();
     
@@ -141,7 +158,12 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     
         //lê todas mensagens
-    await sock.readMessages([msg.key]);
+    try {
+      await sock.readMessages([msg.key]);
+    }
+    catch(err) {
+      console.error("Erro ao marcar mensagem como lida", err);
+    }
     //ignora mensagens de si mesmo
     if(process.env.DEV_AMBIENT === "false") {
     if (msg.key.fromMe) return
@@ -163,11 +185,11 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const bot = new YukiBot({sock: sock, msg});
     
-    await clientRedis.incr("metrics:message:min");
-    await clientRedis.expire("metrics:message:min", 60);
+    await safeRedis(() => clientRedis.incr("metrics:message:min"));
+    await safeRedis(() => clientRedis.expire("metrics:message:min", 60));
     
-    await clientRedis.incr(`message:min:${from}`);
-    await clientRedis.expire(`message:min:${from}`, 60)
+    await safeRedis(() => clientRedis.incr(`message:min:${from}`));
+    await safeRedis(() => clientRedis.expire(`message:min:${from}`, 60))
     
     
 
@@ -178,15 +200,15 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     if(from.endsWith("@lid") && !doninhos && Notvip) {
       
-      const IsMsgPV = await  clientRedis.exists(`pv:block:${sender}`);
+      const IsMsgPV = await safeRedis(() => clientRedis.exists(`pv:block:${sender}`), 0);
       
       if(IsMsgPV === 1) return;
       
       await bot.reply(from, `Olá ${msg.pushName}, me adicione a um grupo para ver meu menu, caso deseja ter acesso liberado a Yuki use *${prefixo}alugar*, obrigada!`);
       
-      await clientRedis.set(`pv:block:${sender}`, "1");
+      await safeRedis(() => clientRedis.set(`pv:block:${sender}`, "1"));
       
-      await clientRedis.expire(`pv:block:${sender}`, 2 * 60);
+      await safeRedis(() => clientRedis.expire(`pv:block:${sender}`, 2 * 60));
       
       return;
     }
@@ -271,9 +293,9 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
     
         
     //Caso tenha um aluguel a pagar
-    const alugarExiste = await clientRedis.exists(`aluguel:${sender}&${from}`);
+    const alugarExiste = await safeRedis(() => clientRedis.exists(`aluguel:${sender}&${from}`), 0);
     
-    const aluguelObj = await clientRedis.hGetAll(`aluguel:${sender}&${from}`);
+    const aluguelObj = await safeRedis(() => clientRedis.hGetAll(`aluguel:${sender}&${from}`), {});
     
     if(alugarExiste) {
       
@@ -293,7 +315,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
 });
         const dataPix = paymentAluguel;
         
-        await clientRedis.hSet(`payment:${dataPix.id}`, {user: sender, groupId: from, dias: aluguelObj.dias, valor: aluguelObj.valor});
+        await safeRedis(() => clientRedis.hSet(`payment:${dataPix.id}`, {user: sender, groupId: from, dias: aluguelObj.dias, valor: aluguelObj.valor}));
         
         const qrCodeAluguel = dataPix.point_of_interaction.transaction_data;
         
@@ -314,7 +336,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
         catch(err) {
           await bot.send(sender, "Erro encontrado fale com meu dono imediatamente!!\n\n⤷ https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1");
           console.error(err);
-          await clientRedis.del(`aluguel:${sender}&${from}`);
+          await safeRedis(() => clientRedis.del(`aluguel:${sender}&${from}`));
         }
         
         
@@ -322,7 +344,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
       
       else if(bodyCase === "cancelar") {
         
-        await clientRedis.del(`aluguel:${sender}&${from}`);
+        await safeRedis(() => clientRedis.del(`aluguel:${sender}&${from}`));
         
         await bot.reply(from, "Poxa... Que pena, qualquer coisa já sabe! Usa */alugar*");
         
@@ -333,10 +355,10 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
         
         
         //caso tenha uma aposta 
-    const apostaPendente = await clientRedis.exists(`aposta:${sender}`);
+    const apostaPendente = await safeRedis(() => clientRedis.exists(`aposta:${sender}`), 0);
     if(apostaPendente) {
       
-      const apostaObject = await clientRedis.hGetAll(`aposta:${sender}`);
+      const apostaObject = await safeRedis(() => clientRedis.hGetAll(`aposta:${sender}`), {});
       
       if(bodyCase.includes("aceitar")) {
         try {
@@ -353,7 +375,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
             await users.updateOne({userLid: apostaObject.autor}, {$inc: {dinheiro: -apostaObject.valor}})
             
             //apaga
-            await clientRedis.del(`aposta:${sender}`);
+            await safeRedis(() => clientRedis.del(`aposta:${sender}`));
           }
           else {
             await sock.sendMessage(from, {text: `Cara! @${apostaObject.autor.split("@")[0]} ganhou +${apostaObject.valor}`, mentions: [apostaObject.autor], edit: msgEspera.key});
@@ -363,7 +385,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
             //remove de quem perdeu
             await users.updateOne({userLid: apostaObject.alvo}, {$inc: {dinheiro: -apostaObject.valor}})
             
-            await clientRedis.del(`aposta:${sender}`);
+            await safeRedis(() => clientRedis.del(`aposta:${sender}`));
           }
         }
         catch(err) {
@@ -376,15 +398,15 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
         await sock.sendMessage(from, {text: `Aposta de: @${apostaObject.autor.split("@")[0]} recusada!`, mentions: [apostaObject.autot]}, {quoted: msg});
       }
       
-      await clientRedis.del(`aposta:${sender}`)
+      await safeRedis(() => clientRedis.del(`aposta:${sender}`))
       return
     }
     
       //Caso tenha um user com pedido pendente
-  const namoroPendente = await clientRedis.exists(`namoro:${sender}`);
+  const namoroPendente = await safeRedis(() => clientRedis.exists(`namoro:${sender}`), 0);
   if(namoroPendente) {
     
-    const namoroObject = await clientRedis.hGetAll(`namoro:${sender}`);
+    const namoroObject = await safeRedis(() => clientRedis.hGetAll(`namoro:${sender}`), {});
     
     if(bodyCase === "aceitar") {
       //Adiciona ao pedidor
@@ -393,7 +415,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
       await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": namoroObject.autor, "casal.pedido": new Date()}});
       
       //deleta o pedido dos pendentes 
-      await clientRedis.del(`namoro:${sender}`);
+      await safeRedis(() => clientRedis.del(`namoro:${sender}`));
       
       await sock.sendMessage(from, {text: `💕 Um novo amor começa entre @${namoroObject?.autor.split("@")[0]} e @${namoroObject?.alvo.split("@")[0]}💕`, mentions: [sender, namoroObject?.autor]}, {quoted: msg});
     }
@@ -403,7 +425,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
       await sock.sendMessage(from, {text: `Sinto muito @${namoroObject.autor.split("@")[0]} 😔 mas @${sender.split("@")[0]} recusou seu pedido💔`, mentions: [sender, namoroObject?.autor]}, {quoted: msg});
       
       //deleta dos pedidos
-      await clientRedis.del(`namoro:${sender}`);
+      await safeRedis(() => clientRedis.del(`namoro:${sender}`));
     }
   }
 
@@ -413,7 +435,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
   const groupReply = await grupos.findOne({groupId: from});
   
   //Caso o grupo tenha a anttotag ativa
-  if(from.endsWith("@g.us") && groupReply.antiTotag) {
+  if(from.endsWith("@g.us") && groupReply?.antiTotag) {
     if(msg.key.fromMe) return;
     try {
       //pega info do grupo
@@ -438,7 +460,7 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
   }
   
   //Caso tenha o antilink ativo
-  if((groupReply && groupReply.configs.antlink) && (bodyCase.includes("https://") || bodyCase.includes("http://"))) {
+  if(groupReply?.configs?.antlink && (bodyCase.includes("https://") || bodyCase.includes("http://"))) {
     try {
       
       const metadata = await sock.groupMetadata(from);
@@ -612,8 +634,8 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
   commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot, sender);
   
   //Adiciona nas metricas
-  await clientRedis.incr("metrics:commands:min");
-  await clientRedis.expire("metrics:commands:min", 60);
+  await safeRedis(() => clientRedis.incr("metrics:commands:min"));
+  await safeRedis(() => clientRedis.expire("metrics:commands:min", 60));
   });
     
   }
@@ -645,7 +667,7 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     
     if(msg.key.fromMe) return;
     
-    await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo.configs.prefixo || "/"}\``}, {quoted: msg});
+        await sock.sendMessage(from, {text: `O prefixo atual deste grupo é: \`${groupDBInfo?.configs?.prefixo || "/"}\``}, {quoted: msg});
   }
 
 
@@ -658,7 +680,7 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
   if (body.startsWith(prefixo)) {
     
 //pega o argumento digitado e deixa ele em letras minusculas
-    const commandName = args.shift().toLowerCase();
+  const commandName = (args.shift() || "").toLowerCase();
   //procura no map
   const commandGet = commandsMap.get(commandName)
 
@@ -774,8 +796,8 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
    await users.updateOne({userLid: sender}, {$inc: {cmdCount: 1}});
    
      //Adiciona nas metricas
-  await clientRedis.incr("metrics:commands:min");
-  await clientRedis.expire("metrics:commands:min", 60);
+  await safeRedis(() => clientRedis.incr("metrics:commands:min"));
+  await safeRedis(() => clientRedis.expire("metrics:commands:min", 60));
   }
     });
     
