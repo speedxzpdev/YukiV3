@@ -41,6 +41,7 @@ async function safeRedis(action, fallback = null) {
     
     //Mapa de intervslos
     const activeInterval = new Map();
+    const aiGroupState = new Map();
 
     const yukiIA = new YukiAI(process.env.AI_KEY);
     
@@ -123,6 +124,320 @@ async function safeRedis(action, fallback = null) {
       //Retorna se usos recente for maior ou igual ao limite
       return usosRecentes.length >= LIMITE
       
+    }
+
+    const AI_HISTORY_LIMIT = 8;
+    const AI_OWNER_PATTERNS = [
+      /\bspeed\b/,
+      /\bjoao\b/,
+      /\blenoz\b/,
+      /\bluis\b/,
+      /\bluisf\b/,
+      /\bjoao guilherme\b/,
+      /\blenoz7\b/
+    ];
+    const AI_YUKI_PATTERNS = [
+      /\byuki\b/,
+      /\byuke\b/
+    ];
+    const AI_CONTEXT_PATTERNS = [
+      /\?/,
+      /\b(opina|acha|concorda|discorda|melhor|pior|qual|quem|sera|sera que|pq|por que|faz sentido|nao sei|deveria|vale a pena)\b/
+    ];
+
+    function stripAccents(value) {
+      return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function normalizeAiText(value) {
+      return stripAccents(value)
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    function shortText(value, limit = 180) {
+      const text = String(value ?? "").replace(/\s+/g, " ").trim();
+      if (!text) return "";
+      return text.length > limit ? `${text.slice(0, limit - 3)}...` : text;
+    }
+
+    function randomBetween(min, max) {
+      return min + Math.floor(Math.random() * (max - min + 1));
+    }
+
+    function getAiState(groupId) {
+      if (!aiGroupState.has(groupId)) {
+        aiGroupState.set(groupId, {
+          recent: [],
+          lastSeenAt: 0,
+          lastReplyAt: 0,
+          lastAmbientAt: 0,
+          lastActivityCount: 0,
+          lastSenderReplyAt: new Map()
+        });
+      }
+
+      return aiGroupState.get(groupId);
+    }
+
+    function getActivityProfile(activityCount = 0) {
+      if (activityCount >= 20) {
+        return {
+          level: "rush",
+          chanceScale: 0.3,
+          cooldownMs: 40 * 60 * 1000,
+          senderCooldownMs: 12 * 60 * 1000,
+          silenceMinMs: 35 * 60 * 1000,
+          silenceMaxMs: 55 * 60 * 1000,
+          ambientChance: 0.03
+        };
+      }
+
+      if (activityCount >= 10) {
+        return {
+          level: "busy",
+          chanceScale: 0.55,
+          cooldownMs: 22 * 60 * 1000,
+          senderCooldownMs: 9 * 60 * 1000,
+          silenceMinMs: 20 * 60 * 1000,
+          silenceMaxMs: 32 * 60 * 1000,
+          ambientChance: 0.06
+        };
+      }
+
+      if (activityCount >= 4) {
+        return {
+          level: "normal",
+          chanceScale: 0.9,
+          cooldownMs: 14 * 60 * 1000,
+          senderCooldownMs: 6 * 60 * 1000,
+          silenceMinMs: 12 * 60 * 1000,
+          silenceMaxMs: 20 * 60 * 1000,
+          ambientChance: 0.11
+        };
+      }
+
+      return {
+        level: "calm",
+        chanceScale: 1.2,
+        cooldownMs: 8 * 60 * 1000,
+        senderCooldownMs: 4 * 60 * 1000,
+        silenceMinMs: 8 * 60 * 1000,
+        silenceMaxMs: 14 * 60 * 1000,
+        ambientChance: 0.18
+      };
+    }
+
+    function shouldTrackAiContext(body, groupPrefix) {
+      const normalizedBody = normalizeAiText(body);
+      const normalizedPrefix = normalizeAiText(groupPrefix || prefixo);
+
+      if (!normalizedBody) return false;
+      if (normalizedPrefix && normalizedBody.startsWith(normalizedPrefix)) return false;
+      if (normalizedBody.startsWith(">")) return false;
+      if (normalizedBody.startsWith("/")) return false;
+      if (/^(https?:\/\/|www\.)/.test(normalizedBody)) return false;
+
+      return true;
+    }
+
+    function detectAiTrigger(body) {
+      const normalizedBody = normalizeAiText(body);
+
+      if (!normalizedBody) {
+        return {
+          kind: "none",
+          baseChance: 0
+        };
+      }
+
+      if (AI_OWNER_PATTERNS.some((pattern) => pattern.test(normalizedBody))) {
+        return {
+          kind: "owner",
+          baseChance: 0.85
+        };
+      }
+
+      if (AI_YUKI_PATTERNS.some((pattern) => pattern.test(normalizedBody))) {
+        return {
+          kind: "yuki",
+          baseChance: 0.7
+        };
+      }
+
+      if (AI_CONTEXT_PATTERNS.some((pattern) => pattern.test(normalizedBody))) {
+        return {
+          kind: "context",
+          baseChance: 0.35
+        };
+      }
+
+      if (normalizedBody.length >= 90) {
+        return {
+          kind: "ambient",
+          baseChance: 0.08
+        };
+      }
+
+      return {
+        kind: "ambient",
+        baseChance: 0.04
+      };
+    }
+
+    function registerAiMessage({ groupId, sender, name, body, activityCount, trackContext }) {
+      const state = getAiState(groupId);
+
+      state.lastSeenAt = Date.now();
+      state.lastActivityCount = activityCount;
+
+      if (trackContext) {
+        state.recent.push({
+          sender,
+          name: shortText(name || "sem nome", 60) || "sem nome",
+          body: shortText(body, 220)
+        });
+
+        if (state.recent.length > AI_HISTORY_LIMIT) {
+          state.recent.splice(0, state.recent.length - AI_HISTORY_LIMIT);
+        }
+      }
+
+      if (state.lastSenderReplyAt.size > 25) {
+        const now = Date.now();
+        for (const [key, timestamp] of state.lastSenderReplyAt.entries()) {
+          if (now - timestamp > 60 * 60 * 1000) {
+            state.lastSenderReplyAt.delete(key);
+          }
+        }
+      }
+
+      return state;
+    }
+
+    function buildRecentContext(state) {
+      return (state?.recent || [])
+        .slice(-6)
+        .map((item) => `${item.name}: ${item.body}`)
+        .filter(Boolean);
+    }
+
+    async function scheduleSilentReply({ sock, from }) {
+      if (activeInterval.has(from)) {
+        clearTimeout(activeInterval.get(from));
+      }
+
+      const state = getAiState(from);
+      const profile = getActivityProfile(state.lastActivityCount || 0);
+      const delay = randomBetween(profile.silenceMinMs, profile.silenceMaxMs);
+      const scheduledAt = Date.now();
+
+      const timer = setTimeout(async () => {
+        activeInterval.delete(from);
+
+        try {
+          const freshGroup = await grupos.findOne({ groupId: from });
+          if (!freshGroup?.autoReply) return;
+
+          const currentState = getAiState(from);
+          if (!currentState?.recent?.length) return;
+          if (currentState.lastSeenAt > scheduledAt) return;
+
+          const currentProfile = getActivityProfile(currentState.lastActivityCount || 0);
+          const gap = Date.now() - (currentState.lastReplyAt || 0);
+          if (gap < currentProfile.cooldownMs) return;
+          if (Math.random() > currentProfile.ambientChance) return;
+
+          const response = await yukiIA.falar({
+            text: "A conversa ficou em silencio. Comente de forma curta e natural sobre o assunto recente do grupo.",
+            chat: from,
+            user: currentState.recent.at(-1)?.name || "grupo",
+            context: currentState.recent,
+            mode: "ambient"
+          });
+
+          if (!response) return;
+
+          await sock.sendMessage(from, { text: response });
+          currentState.lastReplyAt = Date.now();
+          currentState.lastAmbientAt = currentState.lastReplyAt;
+        } catch (err) {
+          console.error("Erro ao falar sozinha:", err);
+        }
+      }, delay);
+
+      activeInterval.set(from, timer);
+    }
+
+    async function maybeHandleAiReply({ sock, msg, from, sender, body, groupReply }) {
+      if (!groupReply?.autoReply || !from.endsWith("@g.us")) return false;
+
+      const groupPrefix = groupReply?.configs?.prefixo || prefixo;
+      const trackContext = shouldTrackAiContext(body, groupPrefix);
+      const activityRaw = Number(await safeRedis(() => clientRedis.get(`message:min:${from}`), 0)) || 0;
+      const state = registerAiMessage({
+        groupId: from,
+        sender,
+        name: msg?.pushName || "sem nome",
+        body,
+        activityCount: activityRaw,
+        trackContext
+      });
+
+      await scheduleSilentReply({ sock, from });
+
+      if (!trackContext) return false;
+
+      const trigger = detectAiTrigger(body);
+      if (trigger.kind === "none") return false;
+
+      const profile = getActivityProfile(activityRaw);
+      const now = Date.now();
+      const groupGap = now - (state.lastReplyAt || 0);
+      const senderGap = now - (state.lastSenderReplyAt.get(sender) || 0);
+
+      if (groupGap < profile.cooldownMs) return false;
+      if (trigger.kind !== "owner" && senderGap < profile.senderCooldownMs) return false;
+
+      const chance = Math.min(0.96, trigger.baseChance * profile.chanceScale);
+      if (Math.random() > chance) return false;
+
+      try {
+        await sock.sendPresenceUpdate("composing", from);
+
+        const response = await yukiIA.falar({
+          text: body,
+          chat: from,
+          user: msg?.pushName || "sem nome",
+          context: state.recent,
+          mode: trigger.kind === "owner" ? "owner" : "context"
+        });
+
+        if (!response) {
+          await sock.sendPresenceUpdate("paused", from);
+          return false;
+        }
+
+        await sock.sendMessage(from, { text: response }, { quoted: msg });
+        await yukiIA.memoria(body, response, { user: msg?.pushName || "sem nome", chat: from });
+        await sock.sendPresenceUpdate("paused", from);
+
+        state.lastReplyAt = now;
+        state.lastSenderReplyAt.set(sender, now);
+        return true;
+      } catch (err) {
+        console.error("Erro na auto resposta da Yuki:", err);
+        try {
+          await sock.sendPresenceUpdate("paused", from);
+        } catch {}
+        if (err?.status === 429) {
+          await sock.sendMessage(from, { text: "Limite de requisição atingido, espere alguns instantes." }, { quoted: msg });
+        }
+        return false;
+      }
     }
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
@@ -501,7 +816,11 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
     
   }
   //caso o grupo tenha autoreply ativo
-  if(groupReply && groupReply.autoReply) {
+  if(groupReply?.autoReply && from.endsWith("@g.us")) {
+    await maybeHandleAiReply({ sock, msg, from, sender, body, groupReply });
+  }
+
+  if(false && groupReply && groupReply.autoReply) {
     
       //caso ouva uma mencao ou frase com a yuki
     if(bodyCase.includes("yuki")) {
