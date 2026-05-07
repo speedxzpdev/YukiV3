@@ -144,6 +144,8 @@ async function safeRedis(action, fallback = null) {
       /\?/,
       /\b(opina|acha|concorda|discorda|melhor|pior|qual|quem|sera|sera que|pq|por que|faz sentido|nao sei|deveria|vale a pena)\b/
     ];
+    const AI_DIRECT_GROUP_COOLDOWN_MS = 12 * 1000;
+    const AI_DIRECT_SENDER_COOLDOWN_MS = 6 * 1000;
 
     function stripAccents(value) {
       return String(value ?? "")
@@ -181,6 +183,10 @@ async function safeRedis(action, fallback = null) {
         normalizedQuotedParticipant,
         normalizedQuotedRemoteJid
       ].some((candidate) => candidate && [normalizedBotLid, normalizedBotJid].includes(candidate));
+    }
+
+    function isStrongAiTrigger(kind) {
+      return ["owner", "reply", "yuki"].includes(kind);
     }
 
     function getAiState(groupId) {
@@ -421,11 +427,14 @@ async function safeRedis(action, fallback = null) {
       const now = Date.now();
       const groupGap = now - (state.lastReplyAt || 0);
       const senderGap = now - (state.lastSenderReplyAt.get(sender) || 0);
+      const strongTrigger = isStrongAiTrigger(trigger.kind);
+      const minGroupGap = strongTrigger ? AI_DIRECT_GROUP_COOLDOWN_MS : profile.cooldownMs;
+      const minSenderGap = strongTrigger ? AI_DIRECT_SENDER_COOLDOWN_MS : profile.senderCooldownMs;
 
-      if (groupGap < profile.cooldownMs) return false;
-      if (!["owner", "reply"].includes(trigger.kind) && senderGap < profile.senderCooldownMs) return false;
+      if (groupGap < minGroupGap) return false;
+      if (senderGap < minSenderGap) return false;
 
-      const chance = Math.min(0.96, trigger.baseChance * profile.chanceScale);
+      const chance = strongTrigger ? 1 : Math.min(0.96, trigger.baseChance * profile.chanceScale);
       if (Math.random() > chance) return false;
 
       try {
@@ -436,7 +445,7 @@ async function safeRedis(action, fallback = null) {
           chat: from,
           user: msg?.pushName || "sem nome",
           context: state.recent,
-          mode: ["owner", "reply"].includes(trigger.kind) ? "owner" : "context"
+          mode: trigger.kind === "reply" ? "reply" : trigger.kind === "owner" ? "owner" : "context"
         });
 
         if (!response) {
