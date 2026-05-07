@@ -168,6 +168,21 @@ async function safeRedis(action, fallback = null) {
       return min + Math.floor(Math.random() * (max - min + 1));
     }
 
+    function isReplyingToBot(ctx) {
+      const quotedParticipant = ctx?.participant;
+      const quotedRemoteJid = ctx?.remoteJid;
+
+      const normalizedQuotedParticipant = normalizeUserLid(quotedParticipant);
+      const normalizedQuotedRemoteJid = normalizeUserLid(quotedRemoteJid);
+      const normalizedBotLid = normalizeUserLid(numberBot);
+      const normalizedBotJid = normalizeUserLid(numberBotJid);
+
+      return [
+        normalizedQuotedParticipant,
+        normalizedQuotedRemoteJid
+      ].some((candidate) => candidate && [normalizedBotLid, normalizedBotJid].includes(candidate));
+    }
+
     function getAiState(groupId) {
       if (!aiGroupState.has(groupId)) {
         aiGroupState.set(groupId, {
@@ -244,8 +259,15 @@ async function safeRedis(action, fallback = null) {
       return true;
     }
 
-    function detectAiTrigger(body) {
+    function detectAiTrigger(body, ctx) {
       const normalizedBody = normalizeAiText(body);
+
+      if (isReplyingToBot(ctx)) {
+        return {
+          kind: "reply",
+          baseChance: 0.92
+        };
+      }
 
       if (!normalizedBody) {
         return {
@@ -391,7 +413,8 @@ async function safeRedis(action, fallback = null) {
 
       if (!trackContext) return false;
 
-      const trigger = detectAiTrigger(body);
+      const ctx = msg.message?.extendedTextMessage?.contextInfo;
+      const trigger = detectAiTrigger(body, ctx);
       if (trigger.kind === "none") return false;
 
       const profile = getActivityProfile(activityRaw);
@@ -400,7 +423,7 @@ async function safeRedis(action, fallback = null) {
       const senderGap = now - (state.lastSenderReplyAt.get(sender) || 0);
 
       if (groupGap < profile.cooldownMs) return false;
-      if (trigger.kind !== "owner" && senderGap < profile.senderCooldownMs) return false;
+      if (!["owner", "reply"].includes(trigger.kind) && senderGap < profile.senderCooldownMs) return false;
 
       const chance = Math.min(0.96, trigger.baseChance * profile.chanceScale);
       if (Math.random() > chance) return false;
@@ -413,7 +436,7 @@ async function safeRedis(action, fallback = null) {
           chat: from,
           user: msg?.pushName || "sem nome",
           context: state.recent,
-          mode: trigger.kind === "owner" ? "owner" : "context"
+          mode: ["owner", "reply"].includes(trigger.kind) ? "owner" : "context"
         });
 
         if (!response) {
