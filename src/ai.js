@@ -8,7 +8,7 @@ const MEMORY_LIMIT = 12;
 const MEMORY_TTL_SECONDS = 60 * 60 * 6;
 const DEFAULT_REPLY = "hm. deu ruim aqui. tenta de novo.";
 
-function buildSystemPrompt({ isSpeed }) {
+function buildSystemPrompt({ isSpeed, mode = "context" }) {
   return `
 Você é a Yuki, uma bot de WhatsApp com personalidade forte e resposta curta.
 
@@ -31,6 +31,8 @@ RELACIONAMENTO
 - João / Speed é o dono.
 - Se o usuário for o Speed, responda com deboche leve e consistente.
 - Nunca trate o Speed com formalidade excessiva.
+${mode === "owner" ? "- O nome de um dono foi citado. Comente a conversa de forma natural, curta e com leve ironia.\n" : ""}
+${mode === "ambient" ? "- O grupo está em modo silencioso. Seja mais contida e só puxe assunto se a conversa recente permitir.\n" : ""}
 ${isSpeed ? "- O usuário atual é o Speed. Priorize a regra do Speed acima de tudo.\n" : ""}
 
 REGRAS FIXAS
@@ -46,6 +48,27 @@ FORMATO
 - Não faça discurso.
 - Se a resposta for confusa, prefira uma pergunta curta ou uma frase bem direta.
 `.trim();
+}
+
+function normalizeContext(context) {
+  if (!Array.isArray(context)) return [];
+
+  return context
+    .map((item) => {
+      if (!item) return null;
+
+      if (typeof item === "string") {
+        return normalizeText(item);
+      }
+
+      const speaker = normalizeText(item.name || item.user || item.sender || item.apelido || "sem nome");
+      const message = normalizeText(item.body || item.content || item.text || "");
+
+      if (!message) return null;
+
+      return `${speaker}: ${message}`;
+    })
+    .filter(Boolean);
 }
 
 function safeParse(message) {
@@ -93,24 +116,27 @@ class YukiAI {
     };
   }
 
-  async falar({ text, chat, user }) {
+  async falar({ text, chat, user, context = [], mode = "context" }) {
     const input = normalizeText(text);
     const speaker = normalizeText(user) || "sem nome";
+    const contextLines = normalizeContext(context).slice(-6);
 
-    if (!input) return DEFAULT_REPLY;
+    if (!input && !contextLines.length) return DEFAULT_REPLY;
 
     const isSpeed = isOwnerLid(user);
     const memory = await this.getMemory(chat);
+    const userPrompt = input || "A conversa ficou em silencio. Comente de forma curta e natural sobre o assunto recente.";
+    const contextPrompt = contextLines.length ? `Contexto recente do grupo:\n${contextLines.map((line) => `- ${line}`).join("\n")}\n\n` : "";
 
     const messages = [
       {
         role: "system",
-        content: buildSystemPrompt({ isSpeed })
+        content: buildSystemPrompt({ isSpeed, mode })
       },
       ...memory,
       {
         role: "user",
-        content: `Nome: ${speaker}\nMensagem: ${input}`
+        content: `${contextPrompt}Nome: ${speaker}\nMensagem: ${userPrompt}`
       }
     ];
 
@@ -118,8 +144,8 @@ class YukiAI {
       const response = await this.client.chat.completions.create({
         model: MODEL,
         messages,
-        temperature: 0.8,
-        max_tokens: 140
+        temperature: mode === "ambient" ? 0.9 : 0.8,
+        max_tokens: mode === "ambient" ? 110 : 140
       });
 
       const content = normalizeText(response.choices?.[0]?.message?.content);
