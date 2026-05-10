@@ -418,8 +418,8 @@ async function safeRedis(action, fallback = null) {
 
         await sock.sendMessage(from, {image: {url: ai_gen}}, {quoted: msg});
 
-        const timeImagine = (endTime - startTime).toFixed(2);
-        await sock.sendMessage(from, {text: `A Yuki pensou em ${timeImagine} segundos.`, edit: message_loading.key});
+        const timeImagine = ((endTime - startTime) / 1000).toFixed(1).replace(".", ",");
+        await sock.sendMessage(from, {text: `A Yuki pensou em *${timeImagine} segundos.*`, edit: message_loading.key});
 
 
         
@@ -453,7 +453,7 @@ async function safeRedis(action, fallback = null) {
 
       const ctx = msg.message?.extendedTextMessage?.contextInfo;
 
-      const image_gen_detect_list = ["gerar", "gere", "desenhe", "desenhar", "imagine", "imagina"];
+      const image_gen_detect_list = ["gerar", "gere", "desenhe", "desenhar", "imagine", "imagina", "faça"];
       const image_gen_detect = new RegExp(`\\b(${image_gen_detect_list.join("|")})\\b`, "i");
 
       if(image_gen_detect.test(body)) {
