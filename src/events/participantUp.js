@@ -21,7 +21,9 @@ module.exports = (sock) => {
       
       if(action === "add") {
         
-        const senderAdd = update.participants[0].id
+        const senderAdd = update.participants[0]
+
+        if(!senderAdd) return;
         
         await sock.sendMessage(from, {text: `Seja bem-Vindo, @${senderAdd.split("@")[0]}. Meu nome é Yuki, Caso queira usar meus comandos, use /menu`, mentions: [senderAdd]});
       }

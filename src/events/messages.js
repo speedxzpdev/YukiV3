@@ -400,6 +400,38 @@ async function safeRedis(action, fallback = null) {
       activeInterval.set(from, timer);
     }
 
+    async function imageGenerate(sock, msg, body, from) {
+      try {
+        const startTime = Date.now();
+        const message_loading = await sock.sendMessage(from, {text: "A Yuki está pensando..."}, {quoted: msg});
+
+        await sock.sendPresenceUpdate("composing", from);
+
+        const ai_gen = await yukiIA.imagine(body);
+
+        if(ai_gen.error) {
+          await sock.sendMessage(from, {text: ai_gen.error}, {quoted: msg});
+          return
+        }
+
+        const endTime = Date.now();
+
+        await sock.sendMessage(from, {image: {url: ai_gen}}, {quoted: msg});
+
+        const timeImagine = (endTime - startTime).toFixed(2);
+        await sock.sendMessage(from, {text: `A Yuki pensou em ${timeImagine} segundos.`, edit: message_loading.key});
+
+
+        
+      } catch (error) {
+        console.error(err);
+        await sendMessage(from, {text: "falha ao gerar imagem..."}, {quoted: msg});
+      }
+      finally {
+          await sock.sendPresenceUpdate("paused", from)
+        }
+    }
+
     async function maybeHandleAiReply({ sock, msg, from, sender, body, groupReply }) {
       if (!groupReply?.autoReply || !from.endsWith("@g.us")) return false;
 
@@ -420,6 +452,15 @@ async function safeRedis(action, fallback = null) {
       if (!trackContext) return false;
 
       const ctx = msg.message?.extendedTextMessage?.contextInfo;
+
+      const image_gen_detect_list = ["gerar", "gere", "desenhe", "desenhar", "imagine", "imagina"];
+      const image_gen_detect = new RegExp(`\\b(${image_gen_detect_list.join("|")})\\b`, "i");
+
+      if(image_gen_detect.test(body)) {
+        imageGenerate(sock, msg, body, from);
+        return;
+      }
+
       const trigger = detectAiTrigger(body, ctx);
       if (trigger.kind === "none") return false;
 
@@ -849,39 +890,11 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
   }
   //caso o grupo tenha autoreply ativo
   if(groupReply?.autoReply && from.endsWith("@g.us")) {
+
+    //geração de texto
     await maybeHandleAiReply({ sock, msg, from, sender, body, groupReply });
   }
 
-  if(false && groupReply && groupReply.autoReply) {
-    
-      //caso ouva uma mencao ou frase com a yuki
-    if(bodyCase.includes("yuki")) {
-        try {
-          //simula escrita
-          await sock.sendPresenceUpdate("composing", from);
-          //separa cada palavra
-          const args = body.split(" ")
-          //estrutura de resposta
-          const response = await yukiIA.falar({text: body, chat: from, user: msg?.pushName || "sem nome"});
-          //manda a mensagem
-          await sock.sendMessage(from, {text: response}, {quoted: msg});
-
-          //salva na memoria
-          await yukiIA.memoria(body, response, { user: msg?.pushName || "sem nome", chat: from});
-          //pausa a simulacao
-          await sock.sendPresenceUpdate("paused", from);
-          
-        }
-        catch(err) {
-          console.error(err);
-          //caso o erro for de requisicao
-          if(err.status === 429) {
-            await sock.sendMessage(from, {text: "Limite de requisição atigindo, espere alguns instantes."}, {quoted: msg})
-          }
-        }
-      }
-    
-  }
   
       //Caso um grupo tenha auto download
   const groupDonwload = await grupos.findOne({groupId: from});

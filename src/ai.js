@@ -4,6 +4,7 @@ const { clientRedis } = require("./lib/redis.js");
 const { isOwnerLid } = require("./utils/owner");
 
 const MODEL = process.env.AI_MODEL || "llama-3.1-8b-instant";
+const MODEL_IMAGE_GEN = process.env.MODEL_IMAGE_GEN || "grok-imagine-image";
 const MEMORY_LIMIT = 12;
 const MEMORY_TTL_SECONDS = 60 * 60 * 6;
 const DEFAULT_REPLY = "hm. deu ruim aqui. tenta de novo.";
@@ -182,6 +183,33 @@ class YukiAI {
     await safeRedis(() => clientRedis.lTrim(`memoria:${chat}`, -MEMORY_LIMIT, -1), null);
     await safeRedis(() => clientRedis.expire(`memoria:${chat}`, MEMORY_TTL_SECONDS), null);
   }
+
+  async imagine(input) {
+    if(!input || typeof input !== "string") return { error: DEFAULT_REPLY };
+
+    const ANTI_PORN_RAW = ["pelada", "porno", "sexo", "gore", "porn", "\\+18", "furry", "nsfw"];
+    const ANTI_PORN = new RegExp(ANTI_PORN_RAW.join("|"), "i");
+
+    if(ANTI_PORN.test(input)) return { error: "Não posso gerar isso." }
+
+    const PROMPT_IMAGINE = `# Regras:
+    1. Não gere imagens pornográficas ou explicitas.
+    
+    # Imagem
+    ${input}`;
+
+    try {
+
+      const IMAGE_OUTPUT = `https://image.pollinations.ai/prompt/${encodeURIComponent(PROMPT_IMAGINE)}`;
+
+      if(!IMAGE_OUTPUT) return { error: DEFAULT_REPLY };
+      else return IMAGE_OUTPUT;
+    } catch (error) {
+      console.error(error);
+      return { error: DEFAULT_REPLY };
+    }
+  }
 }
+
 
 module.exports = YukiAI;
