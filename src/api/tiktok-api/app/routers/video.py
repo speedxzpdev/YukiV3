@@ -30,7 +30,7 @@ TIKTOK_HEADERS = {
 def _is_likely_downloadable_quality(item: dict) -> bool:
     source = str(item.get("source") or "")
     url = str(item.get("url") or "")
-    return source.startswith("tikwm:") or "webapp-prime.tiktok.com" not in url.lower()
+    return source.startswith("tikwm:") or "webapp-prime" not in url.lower()
 
 
 def _quality_rank(item: dict) -> tuple[int, int, int]:

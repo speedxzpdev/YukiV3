@@ -29,7 +29,8 @@ module.exports = {
       await handleDownloadChoice(sock, msg, from, url, option, sender);
     } catch (err) {
       await sock.sendMessage(from, { text: erros_prontos || "Não consegui baixar esse TikTok." }, { quoted: msg });
-      console.error("Erro no comando /download:", err?.response?.data || err);
+      const errorInfo = err?.response ? `${err.response.status} ${err.response.statusText || ""}`.trim() : err?.message || err;
+      console.error("Erro no comando /download:", errorInfo);
     }
   }
 };

@@ -47,19 +47,18 @@ function formatResolution(resolution) {
 function isLikelyDownloadableQuality(item) {
   const source = String(item?.source || "");
   const url = String(item?.url || "");
-  return source.startsWith("tikwm:") || !/webapp-prime\.tiktok\.com/i.test(url);
+  return source.startsWith("tikwm:") || !/webapp-prime/i.test(url);
 }
 
-async function downloadRemoteStream(url) {
-  const response = await axios.get(url, {
+async function downloadApiStream(url, quality) {
+  await ensureTikTokApiRunning();
+
+  const response = await tiktokApi.get("/video/download", {
+    params: { url, quality },
     responseType: "stream",
     timeout: Number(process.env.TIKTOK_MEDIA_TIMEOUT || 180000),
     maxBodyLength: Infinity,
-    maxContentLength: Infinity,
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
-      Referer: "https://www.tiktok.com/"
-    }
+    maxContentLength: Infinity
   });
 
   return response.data;
@@ -176,15 +175,16 @@ async function countDownload(sender) {
   }
 }
 
-async function sendVideoDocument(sock, msg, from, data, quality, label) {
-  if (!quality?.url) {
+async function sendVideoDocument(sock, msg, from, data, url, label, apiQuality, quality) {
+  if (!url) {
     await sock.sendMessage(from, { text: "Não encontrei uma URL válida para essa opção." }, { quoted: msg });
     return;
   }
 
-  await sock.sendMessage(from, { text: `Arquivo encontrado. Enviando o vídeo como documento (${label})...` }, { quoted: msg });
+  const qualityLabel = quality?.label ? ` - ${quality.label}` : "";
+  await sock.sendMessage(from, { text: `Arquivo encontrado. Enviando o vídeo como documento (${label}${qualityLabel})...` }, { quoted: msg });
 
-  const stream = await downloadRemoteStream(quality.url);
+  const stream = await downloadApiStream(url, apiQuality);
 
   await sock.sendMessage(
     from,
@@ -198,7 +198,7 @@ async function sendVideoDocument(sock, msg, from, data, quality, label) {
   );
 }
 
-async function sendAudioDocument(sock, msg, from, data) {
+async function sendAudioDocument(sock, msg, from, data, url) {
   const sound = data.sound || {};
   if (!sound.url) {
     await sock.sendMessage(from, { text: "Não encontrei áudio separado para esse vídeo." }, { quoted: msg });
@@ -207,7 +207,7 @@ async function sendAudioDocument(sock, msg, from, data) {
 
   await sock.sendMessage(from, { text: "Arquivo encontrado. Enviando o áudio como documento..." }, { quoted: msg });
 
-  const stream = await downloadRemoteStream(sound.url);
+  const stream = await downloadApiStream(url, "audio");
 
   await sock.sendMessage(
     from,
@@ -243,18 +243,18 @@ async function handleDownloadChoice(sock, msg, from, url, option, sender) {
   const data = await getInfo(url);
 
   if (option === "audio") {
-    await sendAudioDocument(sock, msg, from, data);
+    await sendAudioDocument(sock, msg, from, data, url);
     await countDownload(sender);
     return data;
   }
 
   if (option === "original") {
-    await sendVideoDocument(sock, msg, from, data, selectOriginalQuality(data), "qualidade-original");
+    await sendVideoDocument(sock, msg, from, data, url, "qualidade-original", "original", selectOriginalQuality(data));
     await countDownload(sender);
     return data;
   }
 
-  await sendVideoDocument(sock, msg, from, data, selectNormalQuality(data), "normal");
+  await sendVideoDocument(sock, msg, from, data, url, "normal", "normal", selectNormalQuality(data));
   await countDownload(sender);
   return data;
 }
