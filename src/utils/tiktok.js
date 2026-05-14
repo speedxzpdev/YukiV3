@@ -1,6 +1,7 @@
 const axios = require("axios");
 const { users } = require("../database/models/users");
 const { normalizeUserLid } = require("./normalizeUserLid");
+const { ensureTikTokApiRunning } = require("./tiktokApiRuntime");
 
 const tiktokApi = axios.create({
   baseURL: process.env.TIKTOK_API_URL || "http://127.0.0.1:8000",
@@ -68,6 +69,8 @@ async function getInfo(url) {
   if (!isTikTokUrl(url)) {
     throw new Error("Link do TikTok inválido.");
   }
+
+  await ensureTikTokApiRunning();
 
   const response = await tiktokApi.get("/video/info", {
     params: { url }
@@ -166,7 +169,11 @@ ${(data.tags || []).map((tag) => `#${tag}`).join(" ") || "N/A"}`;
 async function countDownload(sender) {
   const userLid = normalizeUserLid(sender);
   if (!userLid) return;
-  await users.updateOne({ userLid }, { $inc: { donwloads: 1 } }, { upsert: true });
+  try {
+    await users.updateOne({ userLid }, { $inc: { donwloads: 1 } }, { upsert: true });
+  } catch (err) {
+    console.error("Falha ao atualizar contador de downloads:", err);
+  }
 }
 
 async function sendVideoDocument(sock, msg, from, data, quality, label) {
