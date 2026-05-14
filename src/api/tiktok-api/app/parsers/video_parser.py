@@ -209,6 +209,18 @@ async def _quality_item_from_format(fmt: dict, source_key: str | None = None) ->
     }
 
 
+def _quality_sort_key(item: dict) -> tuple[int, int, int]:
+    resolution = item.get("resolution") or {}
+    height = resolution.get("height") or 0
+    width = resolution.get("width") or 0
+    bitrate = item.get("bitrate") or 0
+    try:
+        return (int(height), int(width), int(bitrate))
+    except (TypeError, ValueError):
+        logger.warning("Invalid quality sort values for %s", item.get("format_id") or item.get("variant"))
+        return (0, 0, 0)
+
+
 def _tikwm_quality_items(tikwm_data: dict | None) -> list[dict]:
     if not tikwm_data:
         return []
@@ -319,27 +331,20 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
 
     variant_counts = {}
     for item in quality_items:
-        key = (item.get("access"), item.get("variant"))
+        key = f"{item.get('access') or ''}|{item.get('variant') or ''}"
         variant_counts[key] = variant_counts.get(key, 0) + 1
 
     variant_seen = {}
     for item in quality_items:
         access = item.get("access") or _quality_access_icon(item.get("url"))
         variant = item.get("variant") or "unknown"
-        key = (access, variant)
+        key = f"{access}|{variant}"
         if variant_counts.get(key, 0) > 1:
             variant_seen[key] = variant_seen.get(key, 0) + 1
             variant = f"{variant}_{variant_seen[key]}"
         item["label"] = f"{access} {variant}"
 
-    quality_items.sort(
-        key=lambda item: (
-            item["resolution"]["height"] if item.get("resolution") else 0,
-            item["resolution"]["width"] if item.get("resolution") else 0,
-            item.get("bitrate") or 0,
-        ),
-        reverse=True,
-    )
+    quality_items.sort(key=_quality_sort_key, reverse=True)
 
     source = raw.get("source") or "Soon"
     extractor = raw.get("extractor")
