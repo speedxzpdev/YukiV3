@@ -43,6 +43,27 @@ function formatResolution(resolution) {
   return `${width}x${height}`;
 }
 
+function isLikelyDownloadableQuality(item) {
+  const source = String(item?.source || "");
+  const url = String(item?.url || "");
+  return source.startsWith("tikwm:") || !/webapp-prime\.tiktok\.com/i.test(url);
+}
+
+async function downloadRemoteStream(url) {
+  const response = await axios.get(url, {
+    responseType: "stream",
+    timeout: Number(process.env.TIKTOK_MEDIA_TIMEOUT || 180000),
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
+      Referer: "https://www.tiktok.com/"
+    }
+  });
+
+  return response.data;
+}
+
 async function getInfo(url) {
   if (!isTikTokUrl(url)) {
     throw new Error("Link do TikTok inválido.");
@@ -78,7 +99,11 @@ function qualityRank(item) {
 }
 
 function selectOriginalQuality(data) {
-  return getQualities(data).reduce((best, item) => {
+  const qualities = getQualities(data);
+  const downloadable = qualities.filter(isLikelyDownloadableQuality);
+  const candidates = downloadable.length ? downloadable : qualities;
+
+  return candidates.reduce((best, item) => {
     if (!best) return item;
     const currentRank = qualityRank(item);
     const bestRank = qualityRank(best);
@@ -150,10 +175,12 @@ async function sendVideoDocument(sock, msg, from, data, quality, label) {
     return;
   }
 
+  const stream = await downloadRemoteStream(quality.url);
+
   await sock.sendMessage(
     from,
     {
-      document: { url: quality.url },
+      document: { stream },
       mimetype: "video/mp4",
       fileName: `${data.video_id || data.id || "tiktok"}-${label}.mp4`,
       caption: `Aqui está o vídeo em modo documento: ${label}.`
@@ -169,10 +196,12 @@ async function sendAudioDocument(sock, msg, from, data) {
     return;
   }
 
+  const stream = await downloadRemoteStream(sound.url);
+
   await sock.sendMessage(
     from,
     {
-      document: { url: sound.url },
+      document: { stream },
       mimetype: "audio/mpeg",
       fileName: `${data.video_id || data.id || "tiktok"}-audio.mp3`,
       caption: "Aqui está apenas o áudio em modo documento."
