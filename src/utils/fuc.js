@@ -29,15 +29,20 @@ class YukiBot {
   //verififca se admin ou n
   async isAdmin(from) {
     
-    if(!from) return;
-    
-    const metadata = await this.sock.groupMetadata(from);
-    
-    const sender = this.msg.key.participantLid
-    
-    const admins = metadata.participants.filter(p => p.admin).map(p => p.lid);
-    
-    return admins.includes(sender);
+    if(!from) return false;
+
+    try {
+      const metadata = await this.sock.groupMetadata(from);
+
+      const sender = this.msg.key.participantLid
+
+      const admins = metadata.participants.filter(p => p.admin).map(p => p.lid);
+
+      return admins.includes(sender);
+    } catch(err) {
+      console.error("Erro ao verificar admin do grupo:", err?.data || err?.message || err);
+      return false;
+    }
     
   }
   

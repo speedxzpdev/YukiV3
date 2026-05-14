@@ -605,24 +605,31 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
       const grupoDBInfo = await grupos.findOne({groupId: from})
       //verifica se é adm
-      const isAdminSender = bot.isAdmin(from);
-
       const isAdmRegistrado = usersSender?.grupos?.some(grupo => grupo.id === from);
 
-      if(isAdminSender && (!isAdmRegistrado)) {
+      if(!isAdmRegistrado) {
+        const isAdminSender = await bot.isAdmin(from);
         
-const groupDados = await sock.groupMetadata(from);
+        if(isAdminSender) {
+          try {
+            const groupDados = await sock.groupMetadata(from);
 
-await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: groupDados.subject}}}, {upsert: true})
-
-        
-}
+            await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: groupDados.subject}}}, {upsert: true})
+          } catch(err) {
+            console.error("Erro ao salvar grupo do admin:", err?.data || err?.message || err);
+          }
+        }
+      }
       
       if(!grupoDBInfo) {
         
-        const groupDados = await sock.groupMetadata(from);
+        try {
+          const groupDados = await sock.groupMetadata(from);
         
-      await grupos.create({groupId: from, grupoName: groupDados.subject, ownerId: groupDados?.owner || "Sem dono"});
+          await grupos.create({groupId: from, grupoName: groupDados.subject, ownerId: groupDados?.owner || "Sem dono"});
+        } catch(err) {
+          console.error("Erro ao registrar grupo:", err?.data || err?.message || err);
+        }
     }
       
     }
