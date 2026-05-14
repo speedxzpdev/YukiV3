@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "sh start.sh",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "sh start.sh",
     "reset": "sh reset.sh"

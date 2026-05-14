@@ -53,7 +53,8 @@ function candidatePythonExecutables() {
 function commandExists(command) {
   const result = spawnSync(command, ["--version"], {
     stdio: "ignore",
-    shell: false
+    shell: false,
+    timeout: 3000
   });
   return !result.error && result.status === 0;
 }
@@ -132,21 +133,7 @@ async function ensureTikTokApiRunning() {
     }
 
     const venvPython = resolveVenvPython();
-    let bootPython = pythonExecutable;
-
-    if (!fs.existsSync(venvPython)) {
-      const venvResult = spawnSync(pythonExecutable, ["-m", "venv", "venv"], {
-        cwd: API_DIR,
-        stdio: "ignore",
-        shell: false
-      });
-
-      if (venvResult.status === 0 && fs.existsSync(venvPython)) {
-        bootPython = venvPython;
-      }
-    } else {
-      bootPython = venvPython;
-    }
+    const bootPython = fs.existsSync(venvPython) ? venvPython : pythonExecutable;
 
     const importCheck = spawnSync(
       bootPython,
@@ -154,20 +141,13 @@ async function ensureTikTokApiRunning() {
       {
         cwd: API_DIR,
         stdio: "ignore",
-        shell: false
+        shell: false,
+        timeout: 5000
       }
     );
 
     if (importCheck.status !== 0) {
-      const pipResult = spawnSync(bootPython, ["-m", "pip", "install", "-r", "requirements.txt"], {
-        cwd: API_DIR,
-        stdio: "ignore",
-        shell: false
-      });
-
-      if (pipResult.status !== 0) {
-        throw new Error("Nao consegui instalar as dependencias da API do TikTok.");
-      }
+      throw new Error("Dependencias da API do TikTok nao estao prontas. Rode o start.sh para preparar o ambiente.");
     }
 
     if (!(await isTikTokApiHealthy())) {
