@@ -22,7 +22,8 @@ echo "Iniciando API do TikTok..."
 
   VENV_PY="venv/bin/python"
   if [ ! -x "$VENV_PY" ]; then
-    "$PYTHON_BIN" -m venv venv >/dev/null 2>&1 || {
+    echo "Criando venv da API do TikTok..."
+    "$PYTHON_BIN" -m venv venv || {
       echo "Nao consegui criar o venv da API. A Yuki vai iniciar sem ela."
       exit 0
     }
@@ -34,14 +35,15 @@ echo "Iniciando API do TikTok..."
   fi
 
   if ! "$VENV_PY" -c "import uvicorn, fastapi, yt_dlp, cachetools, aiohttp, aiofiles, pydantic" >/dev/null 2>&1; then
-    "$VENV_PY" -m pip install -r requirements.txt >/dev/null 2>&1 || {
+    echo "Instalando dependencias da API do TikTok..."
+    "$VENV_PY" -m pip install -r requirements.txt || {
       echo "Nao consegui instalar as dependencias da API. A Yuki vai iniciar sem ela."
       exit 0
     }
   fi
 
   exec "$VENV_PY" -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-) > uvicorn.log 2>&1 &
+) 2>&1 | tee src/api/tiktok-api/uvicorn.log &
 API_PID=$!
 
 trap 'if [ -n "$API_PID" ]; then kill "$API_PID" 2>/dev/null; fi' EXIT INT TERM

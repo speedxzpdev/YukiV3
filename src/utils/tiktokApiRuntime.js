@@ -82,6 +82,69 @@ function resolveVenvPython() {
     : path.join(API_DIR, "venv", "bin", "python");
 }
 
+function runPython(pythonExecutable, args, timeout, label) {
+  console.log(`[tiktok-api] ${label}...`);
+  const result = spawnSync(pythonExecutable, args, {
+    cwd: API_DIR,
+    encoding: "utf8",
+    shell: false,
+    timeout
+  });
+
+  if (result.stdout) {
+    console.log(result.stdout.trim());
+  }
+
+  if (result.stderr) {
+    console.error(result.stderr.trim());
+  }
+
+  return result;
+}
+
+function hasApiDependencies(pythonExecutable) {
+  const result = runPython(
+    pythonExecutable,
+    ["-c", "import uvicorn, fastapi, yt_dlp, cachetools, aiohttp, aiofiles, pydantic"],
+    5000,
+    "checando dependencias"
+  );
+  return result.status === 0;
+}
+
+function installApiDependencies(pythonExecutable) {
+  const install = runPython(
+    pythonExecutable,
+    ["-m", "pip", "install", "-r", "requirements.txt"],
+    Number(process.env.TIKTOK_API_PIP_TIMEOUT || 180000),
+    "instalando requirements"
+  );
+
+  if (install.status === 0) {
+    return true;
+  }
+
+  const userInstall = runPython(
+    pythonExecutable,
+    ["-m", "pip", "install", "--user", "-r", "requirements.txt"],
+    Number(process.env.TIKTOK_API_PIP_TIMEOUT || 180000),
+    "instalando requirements no usuario"
+  );
+
+  if (userInstall.status === 0) {
+    return true;
+  }
+
+  const breakSystemPackages = runPython(
+    pythonExecutable,
+    ["-m", "pip", "install", "--break-system-packages", "-r", "requirements.txt"],
+    Number(process.env.TIKTOK_API_PIP_TIMEOUT || 180000),
+    "instalando requirements com break-system-packages"
+  );
+
+  return breakSystemPackages.status === 0;
+}
+
 async function waitForHealth(deadlineMs) {
   while (Date.now() < deadlineMs) {
     if (await isTikTokApiHealthy()) {
@@ -133,21 +196,28 @@ async function ensureTikTokApiRunning() {
     }
 
     const venvPython = resolveVenvPython();
-    const bootPython = fs.existsSync(venvPython) ? venvPython : pythonExecutable;
+    let bootPython = fs.existsSync(venvPython) ? venvPython : pythonExecutable;
 
-    const importCheck = spawnSync(
-      bootPython,
-      ["-c", "import uvicorn, fastapi, yt_dlp, cachetools, aiohttp, aiofiles, pydantic"],
-      {
-        cwd: API_DIR,
-        stdio: "ignore",
-        shell: false,
-        timeout: 5000
+    if (!fs.existsSync(venvPython)) {
+      const venvResult = runPython(
+        pythonExecutable,
+        ["-m", "venv", "venv"],
+        30000,
+        "criando venv"
+      );
+
+      if (venvResult.status === 0 && fs.existsSync(venvPython)) {
+        bootPython = venvPython;
+      } else {
+        console.error("[tiktok-api] nao consegui criar venv, tentando usar python do sistema");
       }
-    );
+    }
 
-    if (importCheck.status !== 0) {
-      throw new Error("Dependencias da API do TikTok nao estao prontas. Rode o start.sh para preparar o ambiente.");
+    if (!hasApiDependencies(bootPython)) {
+      const installed = installApiDependencies(bootPython);
+      if (!installed || !hasApiDependencies(bootPython)) {
+        throw new Error("Dependencias da API do TikTok nao estao prontas. Veja o log [tiktok-api] acima.");
+      }
     }
 
     if (!(await isTikTokApiHealthy())) {
