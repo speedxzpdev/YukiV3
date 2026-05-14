@@ -1,5 +1,4 @@
 const { prefixo, numberBot, numberBotJid } = require("../config.js");
-const tiktokDl = require("../utils/tiktok");
 const connectDB = require("../lib/mongoDB.js");
 const similarityCmd = require("../utils/similaridadeCmd");
 const { users } = require("../database/models/users");
@@ -900,24 +899,6 @@ await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: g
   const groupDonwload = await grupos.findOne({groupId: from});
   
   if((groupDonwload && groupDonwload.autoDownload) || from.endsWith("@lid")) {
-  //caso tenha um link de tiktok
-  if (body.startsWith("https://vt.tiktok.com/")) {
-    
-    const tiktokDlInfo = await tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta);
-    
-    const infoTiktok = `Video de ⤷ ${tiktokDlInfo.nome}
-⤷ Duração: ${tiktokDlInfo.duracao}
-⤷ Título: ${tiktokDlInfo.titulo}`
-    
-    const buttonsTiktok = [
-      {buttonId: `${prefixo}tiktok ${body}`, buttonText: {displayText: "𝐁𝐚𝐢𝐱𝐚𝐫 𝐦𝐩𝟒👻"}},
-      {buttonId: `${prefixo}tiktokmp3 ${body}`, buttonText: {displayText: "𝐁𝐚𝐢𝐱𝐚𝐫 𝐦𝐩𝟑💖"}}
-      ];
-    
-    await sock.sendMessage(from, {image: {url: tiktokDlInfo.avatar}, caption: "Video do tiktok detectado! Deseja baixar?", buttons: buttonsTiktok, footer: infoTiktok}, {quoted: msg});
-
-  }
-  
   if(body.includes("https://open.spotify.com/track/")) {
     spotifyDl(sock, msg, from, body, erros_prontos, espera_pronta, bot)
   }
