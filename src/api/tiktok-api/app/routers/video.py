@@ -6,7 +6,6 @@ from fastapi.responses import PlainTextResponse, StreamingResponse
 
 from app.formatters.text_panel import build_text_panel
 from app.parsers.video_parser import extract_video_id, parse_raw_info
-from app.services.video_utils import get_best_format
 from app.services.ytdlp import get_raw_info
 from app.services.tikwm import get_tikwm_info
 
@@ -26,6 +25,53 @@ TIKTOK_HEADERS = {
     "Sec-Fetch-Mode": "no-cors",
     "Sec-Fetch-Site": "cross-site",
 }
+
+
+def _is_likely_downloadable_quality(item: dict) -> bool:
+    source = str(item.get("source") or "")
+    url = str(item.get("url") or "")
+    return source.startswith("tikwm:") or "webapp-prime.tiktok.com" not in url.lower()
+
+
+def _quality_rank(item: dict) -> tuple[int, int, int]:
+    resolution = item.get("resolution") or {}
+    width = int(resolution.get("width") or 0)
+    height = int(resolution.get("height") or 0)
+    bitrate = int(item.get("bitrate") or 0)
+    file_size = int(item.get("file_size") or 0)
+    return (width * height, bitrate, file_size)
+
+
+def _select_download_quality(data: dict, quality: str) -> dict | None:
+    qualities = [item for item in data.get("qualities", []) if item.get("url")]
+    if not qualities:
+        return None
+
+    lowered = quality.lower()
+    if lowered in ("highest", "original", "best"):
+        downloadable = [item for item in qualities if _is_likely_downloadable_quality(item)]
+        candidates = downloadable or qualities
+        return max(candidates, key=_quality_rank)
+
+    if lowered in ("medium", "normal"):
+        for item in qualities:
+            source = str(item.get("source") or "")
+            variant = str(item.get("variant") or "")
+            if source.startswith("tikwm:") and variant == "play_addr":
+                return item
+        downloadable = [item for item in qualities if _is_likely_downloadable_quality(item)]
+        candidates = downloadable or qualities
+        return max(candidates, key=_quality_rank)
+
+    for item in qualities:
+        if quality in {
+            str(item.get("format_id") or ""),
+            str(item.get("variant") or ""),
+            str(item.get("label") or ""),
+        }:
+            return item
+
+    return None
 
 
 def _resolve_input(url: str | None, video_id: str | None) -> str:
@@ -88,58 +134,68 @@ async def download_video(
         logger.exception("Extraction error")
         raise HTTPException(status_code=502, detail=f"Extraction failed: {exc}") from exc
 
-    formats = raw.get("formats", [])
-    selected = get_best_format(formats, quality)
-    if not selected:
-        available = [fmt.get("format_id") for fmt in formats]
-        raise HTTPException(status_code=404, detail=f"No format for {quality}. Available: {available}")
+    tikwm = await get_tikwm_info(video_input)
+    data = await parse_raw_info(raw, tikwm=tikwm)
 
-    file_url = selected.get("url")
+    media_type = "video/mp4"
+    filename = f"{vid}_video.mp4"
+    if quality.lower() == "audio":
+        file_url = (data.get("sound") or {}).get("url")
+        media_type = "audio/mpeg"
+        filename = f"{vid}_audio.mp3"
+    else:
+        selected = _select_download_quality(data, quality)
+        if not selected:
+            available = [item.get("format_id") or item.get("variant") for item in data.get("qualities", [])]
+            raise HTTPException(status_code=404, detail=f"No format for {quality}. Available: {available}")
+        file_url = selected.get("url")
+
     if not file_url:
-        raise HTTPException(status_code=404, detail="No URL for selected format")
+        raise HTTPException(status_code=404, detail="No URL for selected media")
 
     headers = TIKTOK_HEADERS.copy()
     headers["Referer"] = raw.get("webpage_url", "https://www.tiktok.com/")
 
     try:
+        probe_headers = headers.copy()
+        probe_headers["Range"] = "bytes=0-1023"
         async with aiohttp.ClientSession() as session:
-            async with session.head(
+            async with session.get(
                 file_url,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as head_resp:
-                logger.info("CDN HEAD status: %s", head_resp.status)
-                if head_resp.status == 404:
+                headers=probe_headers,
+                timeout=aiohttp.ClientTimeout(total=15),
+            ) as probe_resp:
+                logger.info("CDN probe status: %s", probe_resp.status)
+                if probe_resp.status == 404:
                     raise HTTPException(status_code=404, detail="Video no longer available on CDN")
-                if head_resp.status not in (200, 206, 403):
-                    raise HTTPException(status_code=502, detail=f"CDN returned status {head_resp.status}")
+                if probe_resp.status not in (200, 206):
+                    error_body = await probe_resp.text()
+                    logger.error("CDN probe failed: %s - %s", probe_resp.status, error_body[:200])
+                    raise HTTPException(status_code=502, detail=f"CDN returned status {probe_resp.status}")
 
-            filename = f"{vid}_video.mp4"
-            if quality == "audio":
-                filename = f"{vid}_audio.mp3"
-
-            async def stream_file():
+        async def stream_file():
+            async with aiohttp.ClientSession() as session:
                 async with session.get(
                     file_url,
                     headers=headers,
-                    timeout=aiohttp.ClientTimeout(total=60),
+                    timeout=aiohttp.ClientTimeout(total=None, sock_connect=20, sock_read=120),
                 ) as resp:
                     if resp.status not in (200, 206):
                         error_body = await resp.text()
                         logger.error("CDN GET failed: %s - %s", resp.status, error_body[:200])
-                        raise HTTPException(status_code=502, detail=f"CDN GET failed: {resp.status}")
+                        return
 
                     async for chunk in resp.content.iter_chunked(1024 * 1024):
                         yield chunk
 
-            return StreamingResponse(
-                stream_file(),
-                media_type="video/mp4" if quality != "audio" else "audio/mpeg",
-                headers={
-                    "Content-Disposition": f"attachment; filename={filename}",
-                    "Accept-Ranges": "bytes",
-                },
-            )
+        return StreamingResponse(
+            stream_file(),
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Accept-Ranges": "bytes",
+            },
+        )
     except aiohttp.ClientError as exc:
         logger.error("Download error: %s", exc)
         raise HTTPException(status_code=502, detail=f"Failed to fetch from CDN: {exc}") from exc
