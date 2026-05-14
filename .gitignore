@@ -2,3 +2,9 @@ node_modules/
 .env
 auth/
 temp/
+*.log
+src/api/tiktok-api/venv/
+src/api/tiktok-api/**/__pycache__/
+src/api/tiktok-api/**/*.py[cod]
+src/api/tiktok-api/*.log
+src/api/tiktok-api/.env
