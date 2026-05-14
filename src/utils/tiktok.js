@@ -5,7 +5,7 @@ const { ensureTikTokApiRunning } = require("./tiktokApiRuntime");
 
 const tiktokApi = axios.create({
   baseURL: process.env.TIKTOK_API_URL || "http://127.0.0.1:8000",
-  timeout: Number(process.env.TIKTOK_API_TIMEOUT || 120000)
+  timeout: Number(process.env.TIKTOK_API_TIMEOUT || 30000)
 });
 
 function isTikTokUrl(value) {
@@ -182,6 +182,8 @@ async function sendVideoDocument(sock, msg, from, data, quality, label) {
     return;
   }
 
+  await sock.sendMessage(from, { text: `Arquivo encontrado. Enviando o vídeo como documento (${label})...` }, { quoted: msg });
+
   const stream = await downloadRemoteStream(quality.url);
 
   await sock.sendMessage(
@@ -202,6 +204,8 @@ async function sendAudioDocument(sock, msg, from, data) {
     await sock.sendMessage(from, { text: "Não encontrei áudio separado para esse vídeo." }, { quoted: msg });
     return;
   }
+
+  await sock.sendMessage(from, { text: "Arquivo encontrado. Enviando o áudio como documento..." }, { quoted: msg });
 
   const stream = await downloadRemoteStream(sound.url);
 

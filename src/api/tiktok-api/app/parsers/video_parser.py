@@ -4,8 +4,6 @@ import re
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from app.services.video_utils import get_fps_from_url
-
 logger = logging.getLogger("video_parser")
 
 try:
@@ -183,9 +181,9 @@ async def _quality_item_from_format(fmt: dict, source_key: str | None = None) ->
     if not url:
         return None
 
+    # FPS probing used to make /check and /download slow on the host.
+    # Keep it only when yt-dlp already provides the value.
     fps = fmt.get("fps")
-    if fps is None:
-        fps = await get_fps_from_url(url)
 
     resolution = {
         "width": fmt.get("width"),
@@ -309,15 +307,11 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
 
     formats = raw.get("formats") or []
     quality_items = []
-    fps_cache = {}
 
     async def build_quality_item(fmt: dict):
         item = await _quality_item_from_format(fmt)
         if not item:
             return
-        url = item["url"]
-        if url not in fps_cache:
-            fps_cache[url] = item["fps"]
         quality_items.append(item)
 
     await asyncio.gather(*(build_quality_item(fmt) for fmt in formats))

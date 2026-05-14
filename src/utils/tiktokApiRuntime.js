@@ -5,7 +5,7 @@ const { spawn, spawnSync } = require("child_process");
 
 const API_BASE_URL = process.env.TIKTOK_API_URL || "http://127.0.0.1:8000";
 const API_DIR = path.join(__dirname, "..", "api", "tiktok-api");
-const HEALTHCHECK_TIMEOUT = Number(process.env.TIKTOK_API_BOOT_TIMEOUT || 120000);
+const HEALTHCHECK_TIMEOUT = Number(process.env.TIKTOK_API_BOOT_TIMEOUT || 30000);
 
 const healthClient = axios.create({
   baseURL: API_BASE_URL,
