@@ -1,4 +1,4 @@
-const tiktokDl = require("../../utils/tiktok.js");
+const { handleDownloadChoice, isTikTokUrl } = require("../../utils/tiktok.js");
 
 
 module.exports = {
@@ -8,14 +8,13 @@ module.exports = {
       
       const texto = args.slice(0).join(" ").trim();
     
-    if(!texto) {
-      await sock.sendMessage(from, {text: 'Use "/tiktokmp3 <link"'}, {quoted: msg});
+    if(!texto || !isTikTokUrl(texto)) {
+      await sock.sendMessage(from, {text: 'Use "/tiktokmp3 <link do TikTok>"'}, {quoted: msg});
       return
     }
     
-    const video = await tiktokDl(sock, msg, from, texto, erros_prontos, espera_pronta);
-    
-    await sock.sendMessage(from, {audio: {url: video.audio}, ptt: false, mimetype: "audio/mp4"}, {quoted: msg});
+    await sock.sendMessage(from, {text: espera_pronta || "Baixando áudio do TikTok..."}, {quoted: msg});
+    await handleDownloadChoice(sock, msg, from, texto, "audio", sender);
       
     }
     catch(err) {
