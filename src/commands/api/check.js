@@ -21,10 +21,14 @@ module.exports = {
       const analyticsText = buildAnalyticsText(data);
 
       try {
-        await sock.sendMessage(from, { text: analyticsText, edit: waitMessage.key });
+        await sock.sendMessage(from, {
+          text: analyticsText,
+          edit: waitMessage.key,
+          linkPreview: null
+        });
       } catch (editErr) {
         console.error("Erro ao editar resposta do /check, enviando nova mensagem:", editErr);
-        await sock.sendMessage(from, { text: analyticsText }, { quoted: msg });
+        await sock.sendMessage(from, { text: analyticsText, linkPreview: null }, { quoted: msg });
       }
     } catch (err) {
       await sock.sendMessage(from, { text: erros_prontos || "Não consegui analisar esse TikTok." }, { quoted: msg });
