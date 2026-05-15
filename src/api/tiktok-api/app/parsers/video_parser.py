@@ -5,6 +5,10 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 logger = logging.getLogger("video_parser")
+SHORT_TIKTOK_RE = re.compile(
+    r"^https?://(?:www\.)?(?:vm|vt)\.tiktok\.com/[A-Za-z0-9_-]+/?(?:[?#].*)?$",
+    re.IGNORECASE,
+)
 
 try:
     SAO_PAULO_TZ = ZoneInfo("America/Sao_Paulo")
@@ -25,6 +29,10 @@ def extract_video_id(url_or_id: str) -> str:
     if url_or_id.isdigit():
         return url_or_id
     raise ValueError(f"Could not extract id from '{url_or_id}'")
+
+
+def is_tiktok_short_url(url_or_id: str | None) -> bool:
+    return bool(SHORT_TIKTOK_RE.match(str(url_or_id or "").strip()))
 
 
 def _unique(values):

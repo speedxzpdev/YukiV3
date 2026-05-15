@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from starlette.background import BackgroundTask
 
 from app.formatters.text_panel import build_text_panel
-from app.parsers.video_parser import extract_video_id, parse_raw_info
+from app.parsers.video_parser import extract_video_id, is_tiktok_short_url, parse_raw_info
 from app.services.ytdlp import download_format, get_raw_info
 from app.services.tikwm import get_tikwm_info
 
@@ -104,14 +104,27 @@ def _select_download_candidates(data: dict, quality: str) -> list[dict]:
 
 
 def _resolve_input(url: str | None, video_id: str | None) -> str:
-    video_input = url or video_id
+    video_input = str(url or video_id or "").strip()
     if not video_input:
         raise HTTPException(status_code=400, detail="Missing 'url' or 'id'")
+    if is_tiktok_short_url(video_input):
+        return video_input
     try:
         extract_video_id(video_input)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return video_input
+
+
+def _resolved_video_id(raw: dict, fallback_input: str) -> str:
+    raw_id = str(raw.get("id") or "").strip()
+    if raw_id:
+        return raw_id
+
+    try:
+        return extract_video_id(raw.get("webpage_url") or fallback_input)
+    except ValueError:
+        return "tiktok"
 
 
 async def _stream_remote_url(file_url: str, media_type: str, filename: str, headers: dict) -> StreamingResponse:
@@ -156,6 +169,10 @@ async def _stream_remote_url(file_url: str, media_type: str, filename: str, head
     )
 
 
+def _resolved_tiktok_url(raw: dict, fallback_input: str) -> str:
+    return raw.get("webpage_url") or raw.get("original_url") or fallback_input
+
+
 @router.get("/info")
 async def video_info(
     url: str | None = Query(default=None, description="TikTok video URL"),
@@ -180,7 +197,7 @@ async def video_info(
         or (data.get("stats") or {}).get("downloads") is None
     )
     if needs_fallback:
-        tikwm = await get_tikwm_info(video_input)
+        tikwm = await get_tikwm_info(_resolved_tiktok_url(raw, video_input))
         if tikwm:
             data = await parse_raw_info(raw, tikwm=tikwm)
     if format == "text":
@@ -195,7 +212,6 @@ async def download_video(
     quality: str = Query(default="highest", description="highest, medium, audio or format_id"),
 ):
     video_input = _resolve_input(url, id)
-    vid = extract_video_id(video_input)
 
     try:
         raw = await get_raw_info(video_input)
@@ -205,8 +221,9 @@ async def download_video(
         logger.exception("Extraction error")
         raise HTTPException(status_code=502, detail=f"Extraction failed: {exc}") from exc
 
-    tikwm = await get_tikwm_info(video_input)
+    tikwm = await get_tikwm_info(_resolved_tiktok_url(raw, video_input))
     data = await parse_raw_info(raw, tikwm=tikwm)
+    vid = _resolved_video_id(raw, video_input)
 
     media_type = "video/mp4"
     filename = f"{vid}_video.mp4"

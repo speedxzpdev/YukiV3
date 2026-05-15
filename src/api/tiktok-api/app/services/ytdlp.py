@@ -41,6 +41,22 @@ def extract_info_sync(video_id_or_url: str) -> dict:
     with YoutubeDL(YDL_OPTS) as ydl:
         return ydl.extract_info(video_id_or_url, download=False)
 
+def _cache_key(video_id_or_url: str) -> str:
+    from app.parsers.video_parser import extract_video_id
+
+    value = str(video_id_or_url or "").strip()
+    try:
+        return extract_video_id(value)
+    except ValueError:
+        return value
+
+def _store_cache(primary_key: str, info: dict) -> None:
+    cache[primary_key] = info
+
+    resolved_id = str(info.get("id") or "").strip()
+    if resolved_id and resolved_id != primary_key:
+        cache[resolved_id] = info
+
 def download_format_sync(video_id_or_url: str, format_id: str | None) -> dict:
     temp_dir = tempfile.mkdtemp(prefix="tiktok-api-")
     output_template = os.path.join(temp_dir, "%(id)s-%(format_id)s.%(ext)s")
@@ -75,19 +91,18 @@ def download_format_sync(video_id_or_url: str, format_id: str | None) -> dict:
         raise
 
 async def get_raw_info(video_id_or_url: str) -> dict:
-    from app.parsers.video_parser import extract_video_id
-    vid = extract_video_id(video_id_or_url)
-    if vid in cache:
-        logger.debug(f"Cache hit for {vid}")
-        return cache[vid]
+    key = _cache_key(video_id_or_url)
+    if key in cache:
+        logger.debug(f"Cache hit for {key}")
+        return cache[key]
 
-    logger.info(f"Extracting {vid}")
+    logger.info(f"Extracting {key}")
     try:
         info = await asyncio.wait_for(
             asyncio.to_thread(extract_info_sync, video_id_or_url),
             timeout=settings.YTDLP_TIMEOUT
         )
-        cache[vid] = info
+        _store_cache(key, info)
         return info
     except asyncio.TimeoutError:
         logger.error(f"Timeout for {video_id_or_url}")
