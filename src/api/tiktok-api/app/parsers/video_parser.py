@@ -189,11 +189,14 @@ async def _quality_item_from_format(fmt: dict, source_key: str | None = None) ->
         "width": fmt.get("width"),
         "height": fmt.get("height"),
     }
+    format_note = fmt.get("format_note")
+    watermarked = "watermarked" in str(format_note or "").lower() or fmt.get("format_id") == "download"
     return {
         "label": _pick_quality_label(fmt, source_key),
         "variant": _clean_quality_name(fmt, source_key),
         "access": _quality_access_icon(url, source_key),
         "format_id": fmt.get("format_id"),
+        "format_note": format_note,
         "url": url,
         "resolution": resolution,
         "original_resolution": fmt.get("resolution"),
@@ -203,6 +206,7 @@ async def _quality_item_from_format(fmt: dict, source_key: str | None = None) ->
         "vq_score": _format_vq_score(fmt.get("quality")),
         "fps": fps,
         "ext": fmt.get("ext"),
+        "watermarked": watermarked,
         "source": source_key or "yt-dlp",
     }
 
@@ -239,6 +243,7 @@ def _tikwm_quality_items(tikwm_data: dict | None) -> list[dict]:
                 "variant": label,
                 "access": _quality_access_icon(url, source_key),
                 "format_id": label,
+                "format_note": None,
                 "url": url,
                 "resolution": None,
                 "original_resolution": None,
@@ -248,6 +253,7 @@ def _tikwm_quality_items(tikwm_data: dict | None) -> list[dict]:
                 "vq_score": None,
                 "fps": None,
                 "ext": "mp4" if source_key != "wmplay" else "mp4",
+                "watermarked": source_key == "wmplay",
                 "source": f"tikwm:{source_key}",
             }
         )
