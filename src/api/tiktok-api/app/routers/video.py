@@ -8,6 +8,7 @@ from starlette.background import BackgroundTask
 
 from app.formatters.text_panel import build_text_panel
 from app.parsers.video_parser import extract_video_id, is_tiktok_short_url, parse_raw_info
+from app.services.tiktok_url import resolve_tiktok_url
 from app.services.ytdlp import download_format, get_raw_info
 from app.services.tikwm import get_tikwm_info
 
@@ -180,6 +181,7 @@ async def video_info(
     format: str = Query(default="json", description="json or text"),
 ):
     video_input = _resolve_input(url, id)
+    video_input = await resolve_tiktok_url(video_input)
 
     try:
         raw = await get_raw_info(video_input)
@@ -212,6 +214,7 @@ async def download_video(
     quality: str = Query(default="highest", description="highest, medium, audio or format_id"),
 ):
     video_input = _resolve_input(url, id)
+    video_input = await resolve_tiktok_url(video_input)
 
     try:
         raw = await get_raw_info(video_input)
