@@ -20,7 +20,14 @@ def _cache_key(video_id: str) -> str:
 async def get_tikwm_info(video_id_or_url: str) -> dict | None:
     from app.parsers.video_parser import extract_video_id
 
-    vid = extract_video_id(video_id_or_url)
+    try:
+        vid = extract_video_id(video_id_or_url)
+    except ValueError:
+        vid = str(video_id_or_url or "").strip()
+
+    if not vid:
+        return None
+
     key = _cache_key(vid)
     if key in cache:
         logger.debug("Cache hit for %s", vid)
