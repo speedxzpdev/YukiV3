@@ -10,9 +10,9 @@ let lastRunAt = 0;
 
 const DEFAULT_LIMIT = 15;
 const HARD_LIMIT = 25;
-const DEFAULT_MIN_DELAY_SECONDS = 90;
-const DEFAULT_MAX_DELAY_SECONDS = 180;
-const MIN_ALLOWED_DELAY_SECONDS = 60;
+const DEFAULT_MIN_DELAY_SECONDS = 20;
+const DEFAULT_MAX_DELAY_SECONDS = 20;
+const MIN_ALLOWED_DELAY_SECONDS = 10;
 const PENDING_TTL_MS = 10 * 60 * 1000;
 const RUN_COOLDOWN_MS = 30 * 60 * 1000;
 
@@ -198,7 +198,7 @@ async function handleConfirm(sock, msg, from, args, sender) {
 Grupos: ${pending.groups.length}
 Delay: ${pending.minDelay}s a ${pending.maxDelay}s entre cada grupo
 
-Primeiro envio só sai depois do primeiro delay, pra evitar comportamento de spam.`
+Primeiro envio sai em cerca de ${pending.minDelay}s, sem aquele chá de sumiço de 2 minutos.`
     },
     { quoted: msg }
   );
@@ -258,7 +258,7 @@ module.exports = {
 Extras:
 • --dry pra testar sem enviar
 • --limit 10 pra limitar o lote
-• --min-delay 120 --max-delay 240 pra delays ainda mais pesados`
+• --min-delay 20 --max-delay 20 pra controlar o intervalo`
           },
           { quoted: msg }
         );
