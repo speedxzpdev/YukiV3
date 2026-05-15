@@ -44,6 +44,64 @@ function formatResolution(resolution) {
   return `${width}x${height}`;
 }
 
+function formatDateTime(value) {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function compactText(value, max = 140) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return "Sem legenda";
+  return text.length > max ? `${text.slice(0, max - 3)}...` : text;
+}
+
+function isWatermarkedQuality(item) {
+  const variant = String(item?.variant || "");
+  const formatId = String(item?.format_id || "");
+  const source = String(item?.source || "");
+  const note = String(item?.format_note || "");
+  return Boolean(item?.watermarked)
+    || variant === "wmplay_addr"
+    || formatId === "download"
+    || source === "tikwm:wmplay"
+    || note.toLowerCase().includes("watermark");
+}
+
+function qualitySummary(item) {
+  if (!item) return "N/A";
+  const parts = [
+    formatResolution(item.resolution),
+    item.codec,
+    item.bitrate ? `${item.bitrate} kbps` : null,
+    formatBytes(item.file_size)
+  ].filter((part) => part && part !== "N/A");
+  return parts.length ? parts.join(" • ") : "N/A";
+}
+
+function compareQuality(a, b) {
+  const left = qualityRank(a);
+  const right = qualityRank(b);
+  for (let i = 0; i < left.length; i += 1) {
+    if (left[i] !== right[i]) return left[i] - right[i];
+  }
+  return 0;
+}
+
+function bestQuality(qualities, filter) {
+  return qualities
+    .filter((item) => item?.url && (!filter || filter(item)))
+    .sort((a, b) => compareQuality(b, a))[0] || null;
+}
+
 function isLikelyDownloadableQuality(item) {
   const source = String(item?.source || "");
   const url = String(item?.url || "");
@@ -85,8 +143,9 @@ function getQualities(data) {
 function selectNormalQuality(data) {
   const qualities = getQualities(data);
   return (
-    qualities.find((item) => item.label?.includes("play_addr") && item.source?.startsWith("tikwm:")) ||
-    qualities.find((item) => item.label?.includes("play_addr")) ||
+    qualities.find((item) => item.variant === "play_addr" && item.source === "tikwm:play") ||
+    qualities.find((item) => item.label?.includes("play_addr") && !isWatermarkedQuality(item)) ||
+    qualities.find((item) => !isWatermarkedQuality(item)) ||
     qualities[0]
   );
 }
@@ -102,8 +161,8 @@ function qualityRank(item) {
 
 function selectOriginalQuality(data) {
   const qualities = getQualities(data);
-  const downloadable = qualities.filter(isLikelyDownloadableQuality);
-  const candidates = downloadable.length ? downloadable : qualities;
+  const cleanQualities = qualities.filter((item) => !isWatermarkedQuality(item));
+  const candidates = cleanQualities.length ? cleanQualities : qualities;
 
   return candidates.reduce((best, item) => {
     if (!best) return item;
@@ -117,7 +176,60 @@ function selectOriginalQuality(data) {
   }, null);
 }
 
-function buildAnalyticsText(data) {
+function buildAnalyticsSummaryText(data) {
+  const user = data.user || {};
+  const stats = data.stats || {};
+  const sound = data.sound || {};
+  const qualities = getQualities(data);
+  const cleanQualities = qualities.filter((item) => !isWatermarkedQuality(item));
+  const browserQuality = bestQuality(cleanQualities, (item) => String(item.source || "") === "yt-dlp");
+  const phoneQuality = bestQuality(cleanQualities, (item) => String(item.source || "").startsWith("tikwm:"));
+  const originalQuality = bestQuality(cleanQualities);
+  const categories = (data.categories || []).join(", ") || "N/A";
+  const tags = (data.tags || []).slice(0, 8).map((tag) => `#${tag}`).join(" ") || "N/A";
+  const tips = (data.content_tips || []).slice(0, 3).join("\n│ ") || "Toque em Detailed pra ver as variantes completas.";
+
+  return `▣ *VÍDEO • ANÁLISE*
+
+👤 *${user.nickname || user.username || "Usuário desconhecido"}*
+🗓️ ${formatDateTime(data.posted_at)}
+
+❝ ${compactText(data.caption, 150)} ❞
+
+♫ *Som* • ${formatDuration(sound.duration)}
+${sound.title || "N/A"}
+
+▥ *Estatísticas*
+• 👁️ ${formatNumber(stats.views)} views
+• 🤍 ${formatNumber(stats.likes)} curtidas
+• 💬 ${formatNumber(stats.comments)} comentários
+• 🔖 ${formatNumber(stats.favorites)} favoritos
+• ↗️ ${formatNumber(stats.shares)} compartilhamentos
+• ⬇️ ${formatNumber(stats.downloads)} downloads
+
+ⓘ *Informações*
+• ID | ${data.video_id || data.id || "N/A"}
+• Região | ${data.region || "N/A"}
+• Fonte | ${data.source || "Soon"}
+• Shadow ban | ${data.shadow_ban_status || "N/A"}
+
+☆ *Qualidade*
+• 🌐 Browser | ${qualitySummary(browserQuality)}
+• 📱 Phone | ${qualitySummary(phoneQuality)}
+• Original | ${qualitySummary(originalQuality)}
+• VQ Score | ${data.vq_score ?? "N/A"}
+
+☷ *Categorias*
+│ ${categories}
+
+💡 *Dicas*
+│ ${tips}
+
+🏷️ *Tags*
+${tags}`;
+}
+
+function buildAnalyticsDetailText(data) {
   const user = data.user || {};
   const stats = data.stats || {};
   const sound = data.sound || {};
@@ -125,16 +237,19 @@ function buildAnalyticsText(data) {
   const qualityLines = qualities.map((item, index) => {
     return `${index + 1}. ${item.label}
    Resolução: ${formatResolution(item.resolution)}
-   Codec: ${item.codec || "N/A"} | Taxa de bits: ${item.bitrate || "N/A"} kbps | Tamanho: ${formatBytes(item.file_size)}`;
+   Variante: ${item.variant || "N/A"} | Formato: ${item.format_id || "N/A"}
+   Codec: ${item.codec || "N/A"} | Taxa de bits: ${item.bitrate || "N/A"} kbps | Tamanho: ${formatBytes(item.file_size)}
+   Fonte: ${item.source || "N/A"} | Marca d'água: ${isWatermarkedQuality(item) ? "sim" : "não"}
+   URL: ${item.url ? compactUrl(item.url, 80) : "N/A"}`;
   });
 
-  return `*Análise de TikTok da Yuki*
+  return `*Análise detalhada de TikTok da Yuki*
 
 *Vídeo*
 ID: ${data.video_id || data.id || "N/A"}
 Perfil: ${user.profile_url || data.profile_url || "N/A"}
 Usuário: ${user.username || "N/A"}
-Postado em: ${data.posted_at || "N/A"}
+Postado em: ${formatDateTime(data.posted_at)}
 Legenda: ${data.caption || "Sem legenda"}
 Região: ${data.region || "N/A"}
 Fonte: ${data.source || "Soon"}
@@ -175,16 +290,34 @@ async function countDownload(sender) {
   }
 }
 
-async function sendVideoDocument(sock, msg, from, data, url, label, apiQuality, quality) {
+async function sendVideoDocument(sock, msg, from, data, url, label, apiQuality, quality, delivery = "document") {
   if (!url) {
     await sock.sendMessage(from, { text: "Não encontrei uma URL válida para essa opção." }, { quoted: msg });
     return;
   }
 
   const qualityLabel = quality?.label ? ` - ${quality.label}` : "";
-  await sock.sendMessage(from, { text: `Arquivo encontrado. Enviando o vídeo como documento (${label}${qualityLabel})...` }, { quoted: msg });
+  const isVideoMessage = delivery === "video";
+  await sock.sendMessage(
+    from,
+    { text: `Arquivo encontrado. Enviando o vídeo como ${isVideoMessage ? "vídeo normal" : "documento"} (${label}${qualityLabel})...` },
+    { quoted: msg }
+  );
 
   const stream = await downloadApiStream(url, apiQuality);
+
+  if (isVideoMessage) {
+    await sock.sendMessage(
+      from,
+      {
+        video: { stream },
+        mimetype: "video/mp4",
+        caption: `Aqui está o vídeo: ${label}.\n\nObs: como vídeo normal, o WhatsApp pode comprimir.`
+      },
+      { quoted: msg }
+    );
+    return;
+  }
 
   await sock.sendMessage(
     from,
@@ -231,15 +364,33 @@ async function sendDownloadOptions(sock, msg, from, url, prefix = "/") {
   await sock.sendMessage(
     from,
     {
-      text: "Escolha como a Yuki deve enviar esse TikTok:",
-      footer: "Os arquivos serão enviados como documento para o WhatsApp não recomprimir.",
+      text: "Escolha o que a Yuki deve baixar desse TikTok:",
+      footer: "Depois você escolhe se quer documento ou vídeo normal.",
       buttons
     },
     { quoted: msg }
   );
 }
 
-async function handleDownloadChoice(sock, msg, from, url, option, sender) {
+async function sendDownloadDeliveryOptions(sock, msg, from, url, option, prefix = "/") {
+  const label = option === "original" ? "qualidade original" : "normal";
+  const buttons = [
+    { buttonId: `${prefix}download ${option} doc ${url}`, buttonText: { displayText: "Documento" }, type: 1 },
+    { buttonId: `${prefix}download ${option} video ${url}`, buttonText: { displayText: "Vídeo normal" }, type: 1 }
+  ];
+
+  await sock.sendMessage(
+    from,
+    {
+      text: `Como você quer receber o TikTok em ${label}?`,
+      footer: "Documento preserva melhor a qualidade. Vídeo normal pode ser comprimido pelo WhatsApp.",
+      buttons
+    },
+    { quoted: msg }
+  );
+}
+
+async function handleDownloadChoice(sock, msg, from, url, option, sender, delivery = "document") {
   const data = await getInfo(url);
 
   if (option === "audio") {
@@ -249,12 +400,12 @@ async function handleDownloadChoice(sock, msg, from, url, option, sender) {
   }
 
   if (option === "original") {
-    await sendVideoDocument(sock, msg, from, data, url, "qualidade-original", "original", selectOriginalQuality(data));
+    await sendVideoDocument(sock, msg, from, data, url, "qualidade-original", "original", selectOriginalQuality(data), delivery);
     await countDownload(sender);
     return data;
   }
 
-  await sendVideoDocument(sock, msg, from, data, url, "normal", "normal", selectNormalQuality(data));
+  await sendVideoDocument(sock, msg, from, data, url, "normal", "normal", selectNormalQuality(data), delivery);
   await countDownload(sender);
   return data;
 }
@@ -283,13 +434,16 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta, sen
 }
 
 module.exports = {
-  buildAnalyticsText,
+  buildAnalyticsText: buildAnalyticsDetailText,
+  buildAnalyticsDetailText,
+  buildAnalyticsSummaryText,
   getInfo,
   handleDownloadChoice,
   isTikTokUrl,
   selectNormalQuality,
   selectOriginalQuality,
   sendAudioDocument,
+  sendDownloadDeliveryOptions,
   sendDownloadOptions,
   tiktokDl
 };
