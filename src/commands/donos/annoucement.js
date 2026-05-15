@@ -77,7 +77,7 @@ function parseArgs(args) {
 
 async function getAnnouncementGroups(limit) {
   const docs = await grupos
-    .find({ groupId: /@g\.us$/ })
+    .find({ groupId: /@g\.us$/, aluguel: { $gt: new Date() }})
     .select("groupId grupoName configs")
     .sort({ grupoName: 1 })
     .lean();
