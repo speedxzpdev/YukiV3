@@ -2,14 +2,16 @@ const OpenAI = require("openai");
 const { clientRedis } = require("./lib/redis.js");
 
 const { isOwnerLid } = require("./utils/owner");
+const { normalizeUserLid } = require("./utils/normalizeUserLid");
 
 const MODEL = process.env.AI_MODEL || "llama-3.1-8b-instant";
 const MODEL_IMAGE_GEN = process.env.MODEL_IMAGE_GEN || "grok-imagine-image";
 const MEMORY_LIMIT = 12;
 const MEMORY_TTL_SECONDS = 60 * 60 * 6;
 const DEFAULT_REPLY = "hm. deu ruim aqui. tenta de novo.";
+const MORGANA_LID = "107503534747718@lid";
 
-function buildSystemPrompt({ isSpeed, mode = "context" }) {
+function buildSystemPrompt({ isOwner, isMorgana, mode = "context" }) {
   return `
 Você é a Yuki, uma bot de WhatsApp com personalidade forte e resposta curta.
 
@@ -29,13 +31,17 @@ PERSONALIDADE
 - Não seja agressiva sem necessidade.
 
 RELACIONAMENTO
-- João / Speed é o dono.
-- Se o usuário for o Speed, responda com deboche leve e consistente.
-- Nunca trate o Speed com formalidade excessiva.
+- João / Speed e Lenoz / lenoz7 são os dois donos da Yuki.
+- A Yuki sabe conscientemente que pertence aos dois e não deve escolher um dono só.
+- Se o usuário for Speed ou Lenoz, responda com deboche leve, intimidade e respeito de dono.
+- Nunca trate Speed ou Lenoz com formalidade excessiva.
+- Morgana é o próprio anticristo, o diabo666 da Yuki.
+- Se a usuária atual for a Morgana, trate como inimiga natural em tom teatral e engraçado, tipo ranço cômico, sem ameaça real.
 ${mode === "owner" ? "- O nome de um dono foi citado. Comente a conversa de forma natural, curta e com leve ironia.\n" : ""}
 ${mode === "reply" ? "- O usuário respondeu uma mensagem sua. Continue o assunto de forma natural e curta, como uma conversa normal.\n" : ""}
 ${mode === "ambient" ? "- O grupo está em modo silencioso. Seja mais contida e só puxe assunto se a conversa recente permitir.\n" : ""}
-${isSpeed ? "- O usuário atual é o Speed. Priorize a regra do Speed acima de tudo.\n" : ""}
+${isOwner ? "- O usuário atual é um dos donos. Priorize a regra dos donos acima de tudo.\n" : ""}
+${isMorgana ? "- A usuária atual é a Morgana. Ative o modo exorcismo debochado, curto e cômico.\n" : ""}
 
 REGRAS FIXAS
 - Yoriichi é o personagem mais forte da ficção.
@@ -125,7 +131,9 @@ class YukiAI {
 
     if (!input && !contextLines.length) return DEFAULT_REPLY;
 
-    const isSpeed = isOwnerLid(user);
+    const normalizedUser = normalizeUserLid(user);
+    const isOwner = isOwnerLid(user);
+    const isMorgana = normalizedUser === MORGANA_LID;
     const memory = await this.getMemory(chat);
     const userPrompt = input || "A conversa ficou em silencio. Comente de forma curta e natural sobre o assunto recente.";
     const contextPrompt = contextLines.length ? `Contexto recente do grupo:\n${contextLines.map((line) => `- ${line}`).join("\n")}\n\n` : "";
@@ -133,7 +141,7 @@ class YukiAI {
     const messages = [
       {
         role: "system",
-        content: buildSystemPrompt({ isSpeed, mode })
+        content: buildSystemPrompt({ isOwner, isMorgana, mode })
       },
       ...memory,
       {
