@@ -719,13 +719,13 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         const qrBase64 = qrCodeAluguel.qr_code_base64.replace(/^data:image\/png;base64,/, "");
         const qrBuffer = Buffer.from(qrBase64, "base64");
         
-        await sock.sendMessage(sender, {image: qrBuffer, caption: infoAluguelPay}, {quoted: msg});
+        await sock.sendMessage(from, {image: qrBuffer, caption: infoAluguelPay}, {quoted: msg});
         
-        await bot.reply(sender, `*Aqui está seu copia e cola:*\n⤷ ${qrCodeAluguel.qr_code}`);
+        await bot.reply(from, `*Aqui está seu copia e cola:*\n⤷ ${qrCodeAluguel.qr_code}`);
         
-        await bot.reply(from, "Qr code e pix copia e cola enviado! Olhe seu privado.");
+        //await bot.reply(from, "Qr code e pix copia e cola enviado! Olhe seu privado.");
         
-        await bot.reply(sender, "Esse pagamento vai se expirar em 10 minutos! Ao efetuar pagamento envie uma mensagem pro grupo que alugou e espere 5 segundos.");
+        await bot.reply(from, "Esse pagamento vai se expirar em 10 minutos! Ao efetuar pagamento envie uma mensagem pro grupo que alugou e espere 5 segundos.");
         
         }
         catch(err) {
