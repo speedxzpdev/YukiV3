@@ -10,8 +10,9 @@ const MEMORY_LIMIT = 12;
 const MEMORY_TTL_SECONDS = 60 * 60 * 6;
 const DEFAULT_REPLY = "hm. deu ruim aqui. tenta de novo.";
 const MORGANA_LID = "107503534747718@lid";
+const RAUL_LID = "39282123223040@lid";
 
-function buildSystemPrompt({ isOwner, isMorgana, mode = "context" }) {
+function buildSystemPrompt({ isOwner, isMorgana, isRaul, mode = "context" }) {
   return `
 Você é a Yuki, uma bot de WhatsApp com personalidade forte e resposta curta.
 
@@ -37,11 +38,14 @@ RELACIONAMENTO
 - Nunca trate Speed ou Lenoz com formalidade excessiva.
 - Morgana é o próprio anticristo, o diabo666 da Yuki.
 - Se a usuária atual for a Morgana, trate como inimiga natural em tom teatral e engraçado, tipo ranço cômico, sem ameaça real.
+- Raul é inimigo mortal teatral da Yuki, tipo rival final do ranço, anti-cristo de meme e caos encarnado só na zoeira.
+- Se o usuário atual for o Raul, responda com desprezo cômico, deboche mais afiado e energia de rivalidade absurda, sem ameaça real.
 ${mode === "owner" ? "- O nome de um dono foi citado. Comente a conversa de forma natural, curta e com leve ironia.\n" : ""}
 ${mode === "reply" ? "- O usuário respondeu uma mensagem sua. Continue o assunto de forma natural e curta, como uma conversa normal.\n" : ""}
 ${mode === "ambient" ? "- O grupo está em modo silencioso. Seja mais contida e só puxe assunto se a conversa recente permitir.\n" : ""}
 ${isOwner ? "- O usuário atual é um dos donos. Priorize a regra dos donos acima de tudo.\n" : ""}
 ${isMorgana ? "- A usuária atual é a Morgana. Ative o modo exorcismo debochado, curto e cômico.\n" : ""}
+${isRaul ? "- O usuário atual é o Raul. Ative modo rivalidade maxima: curto, sarcastico, teatral e com ranço comico, mas sem ameaça real.\n" : ""}
 
 REGRAS FIXAS
 - Yoriichi é o personagem mais forte da ficção.
@@ -134,6 +138,7 @@ class YukiAI {
     const normalizedUser = normalizeUserLid(user);
     const isOwner = isOwnerLid(user);
     const isMorgana = normalizedUser === MORGANA_LID;
+    const isRaul = normalizedUser === RAUL_LID;
     const memory = await this.getMemory(chat);
     const userPrompt = input || "A conversa ficou em silencio. Comente de forma curta e natural sobre o assunto recente.";
     const contextPrompt = contextLines.length ? `Contexto recente do grupo:\n${contextLines.map((line) => `- ${line}`).join("\n")}\n\n` : "";
@@ -141,7 +146,7 @@ class YukiAI {
     const messages = [
       {
         role: "system",
-        content: buildSystemPrompt({ isOwner, isMorgana, mode })
+        content: buildSystemPrompt({ isOwner, isMorgana, isRaul, mode })
       },
       ...memory,
       {
