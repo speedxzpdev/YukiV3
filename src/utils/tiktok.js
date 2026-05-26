@@ -105,6 +105,16 @@ function qualitySummary(item) {
   ].join(" • ");
 }
 
+function qualitySelector(item) {
+  const rank = toNumber(item?.quality_rank);
+  if (rank > 0) return `addr:${rank}`;
+  return item?.label || item?.format_id || item?.variant || "original";
+}
+
+function watermarkText(item) {
+  return isWatermarkedQuality(item) ? "sim" : "não";
+}
+
 function compareQuality(a, b) {
   const left = qualityRank(a);
   const right = qualityRank(b);
@@ -245,6 +255,48 @@ function selectOriginalQuality(data) {
     qualities.find((item) => item.is_best && !isWatermarkedQuality(item)) ||
     bestQuality(qualities, (item) => !isWatermarkedQuality(item))
   );
+}
+
+function selectAddrQuality(data, index) {
+  const numericIndex = toNumber(index);
+  if (!numericIndex) return null;
+
+  return getQualities(data).find((item, position) => (
+    toNumber(item.quality_rank) === numericIndex || position + 1 === numericIndex
+  )) || null;
+}
+
+function buildAddrListText(data, url, prefix = "/") {
+  const qualities = getQualities(data);
+  if (!qualities.length) {
+    return "Não achei nenhum addr disponível nesse TikTok.";
+  }
+
+  const lines = qualities.map((item, index) => {
+    const number = toNumber(item.quality_rank) || index + 1;
+    const trophy = item.is_best || item.is_download_best ? "🏆 " : "";
+    const absolute = item.is_absolute_best && !item.is_best ? " | maior bruto" : "";
+    return [
+      `*${number}. ${trophy}${item.label || item.variant || item.format_id || "addr"}*`,
+      `   ${qualitySummary(item)}`,
+      `   Fonte: ${item.source || "N/A"} | Formato: ${item.format_id || "N/A"}`,
+      `   Marca d'água: ${watermarkText(item)}${absolute}`,
+      `   URL: ${compactUrl(item.url, 78)}`
+    ].join("\n");
+  });
+
+  return `*Download por addr da Yuki*
+
+Essas são todas as variantes que a API achou.
+⚠️ As que aparecem com marca d'água vão baixar exatamente assim.
+
+${lines.join("\n\n")}
+
+Pra baixar como documento:
+${prefix}download_addr <número> doc ${url}
+
+Pra baixar como vídeo normal:
+${prefix}download_addr <número> video ${url}`;
 }
 
 function buildAnalyticsSummaryText(data) {
@@ -468,6 +520,37 @@ async function sendDownloadDeliveryOptions(sock, msg, from, url, option, prefix 
   );
 }
 
+async function sendAddrDeliveryOptions(sock, msg, from, url, index, prefix = "/") {
+  const buttons = [
+    { buttonId: `${prefix}download_addr ${index} doc ${url}`, buttonText: { displayText: "Documento" }, type: 1 },
+    { buttonId: `${prefix}download_addr ${index} video ${url}`, buttonText: { displayText: "Vídeo normal" }, type: 1 }
+  ];
+
+  await sock.sendMessage(
+    from,
+    {
+      text: `Como você quer receber o addr ${index}?`,
+      footer: "Documento preserva melhor a qualidade. Vídeo normal pode ser comprimido pelo WhatsApp.",
+      buttons
+    },
+    { quoted: msg }
+  );
+}
+
+async function handleAddrDownloadChoice(sock, msg, from, url, index, sender, delivery = "document") {
+  const data = await getInfo(url);
+  const selected = selectAddrQuality(data, index);
+  if (!selected) {
+    await sock.sendMessage(from, { text: `Não achei o addr ${index} nesse TikTok.` }, { quoted: msg });
+    return data;
+  }
+
+  const label = `addr-${toNumber(selected.quality_rank) || index}${isWatermarkedQuality(selected) ? "-watermark" : ""}`;
+  await sendVideoDocument(sock, msg, from, data, url, label, qualitySelector(selected), selected, delivery);
+  await countDownload(sender);
+  return data;
+}
+
 async function handleDownloadChoice(sock, msg, from, url, option, sender, delivery = "document") {
   const data = await getInfo(url);
 
@@ -512,14 +595,17 @@ async function tiktokDl(sock, msg, from, body, erros_prontos, espera_pronta, sen
 }
 
 module.exports = {
+  buildAddrListText,
   buildAnalyticsText: buildAnalyticsDetailText,
   buildAnalyticsDetailText,
   buildAnalyticsSummaryText,
   getInfo,
+  handleAddrDownloadChoice,
   handleDownloadChoice,
   isTikTokUrl,
   selectNormalQuality,
   selectOriginalQuality,
+  sendAddrDeliveryOptions,
   sendAudioDocument,
   sendDownloadDeliveryOptions,
   sendDownloadOptions,

@@ -104,6 +104,13 @@ def _select_download_candidates(data: dict, quality: str) -> list[dict]:
         return []
 
     lowered = quality.lower()
+    if lowered.startswith(("addr:", "rank:")):
+        try:
+            rank = int(lowered.split(":", 1)[1])
+        except ValueError:
+            return []
+        return _dedupe_qualities([item for item in qualities if int(item.get("quality_rank") or 0) == rank])
+
     if lowered in ("highest", "original", "best"):
         candidates = [item for item in qualities if not _is_watermarked_quality(item)]
         return _dedupe_qualities(sorted(candidates, key=_quality_rank, reverse=True))
