@@ -105,7 +105,8 @@ def _select_download_candidates(data: dict, quality: str) -> list[dict]:
 
     lowered = quality.lower()
     if lowered in ("highest", "original", "best"):
-        return _dedupe_qualities(sorted(qualities, key=_quality_rank, reverse=True))
+        candidates = [item for item in qualities if not _is_watermarked_quality(item)]
+        return _dedupe_qualities(sorted(candidates, key=_quality_rank, reverse=True))
 
     if lowered in ("medium", "normal"):
         preferred = []

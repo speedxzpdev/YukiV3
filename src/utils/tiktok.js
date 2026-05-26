@@ -211,7 +211,7 @@ function selectNormalQuality(data) {
     qualities.find((item) => item.variant === "play_addr" && item.source === "tikwm:play") ||
     qualities.find((item) => item.label?.includes("play_addr") && !isWatermarkedQuality(item)) ||
     qualities.find((item) => !isWatermarkedQuality(item)) ||
-    qualities[0]
+    null
   );
 }
 
@@ -234,7 +234,17 @@ function qualityRank(item) {
 
 function selectOriginalQuality(data) {
   const qualities = getQualities(data);
-  return data?.best_quality || qualities.find((item) => item.is_best) || bestQuality(qualities);
+  const downloadQuality = data?.download_quality;
+  if (downloadQuality && !isWatermarkedQuality(downloadQuality)) return downloadQuality;
+
+  const best = data?.best_quality;
+  if (best && !isWatermarkedQuality(best)) return best;
+
+  return (
+    qualities.find((item) => item.is_download_best && !isWatermarkedQuality(item)) ||
+    qualities.find((item) => item.is_best && !isWatermarkedQuality(item)) ||
+    bestQuality(qualities, (item) => !isWatermarkedQuality(item))
+  );
 }
 
 function buildAnalyticsSummaryText(data) {

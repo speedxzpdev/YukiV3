@@ -204,6 +204,16 @@ def _best_known_fps(raw: dict, formats: list[dict]) -> int | None:
     return max(known) if known else None
 
 
+def _infer_fps_from_text(*values) -> int | None:
+    text = " ".join(str(value or "") for value in values)
+    match = re.search(r"(?<!\d)([1-9]\d{1,2})\s*fps\b", text, re.IGNORECASE)
+    if not match:
+        return None
+
+    fps = _to_int(match.group(1))
+    return fps if 1 <= fps <= 240 else None
+
+
 def _codec_score(codec: str | None) -> int:
     normalized = str(codec or "").lower()
     if "av1" in normalized:
@@ -215,8 +225,22 @@ def _codec_score(codec: str | None) -> int:
     return 1 if normalized and normalized != "none" else 0
 
 
+def _is_watermarked_quality(item: dict) -> bool:
+    variant = str(item.get("variant") or "")
+    format_id = str(item.get("format_id") or "")
+    source = str(item.get("source") or "")
+    format_note = str(item.get("format_note") or "")
+    return (
+        bool(item.get("watermarked"))
+        or variant == "wmplay_addr"
+        or format_id == "download"
+        or source == "tikwm:wmplay"
+        or "watermark" in format_note.lower()
+    )
+
+
 def _watermark_penalty(item: dict) -> int:
-    return 0 if item.get("watermarked") else 1
+    return 0 if _is_watermarked_quality(item) else 1
 
 
 def _quality_source_score(item: dict) -> int:
@@ -258,16 +282,18 @@ def _quality_score(item: dict, duration: int | float | None) -> list[int]:
     pixels = _to_int(resolution.get("width")) * _to_int(resolution.get("height"))
     fps = _to_int(item.get("fps"))
     file_size = _to_int(item.get("file_size"))
+    bitrate = _to_int(item.get("bitrate"))
 
     return [
         pixels,
         fps,
-        _effective_bitrate(item, duration),
-        file_size,
         _watermark_penalty(item),
-        _codec_score(item.get("codec")),
-        _quality_source_score(item),
+        file_size,
+        bitrate,
         _metadata_completeness(item),
+        _quality_source_score(item),
+        _codec_score(item.get("codec")),
+        _effective_bitrate(item, duration),
     ]
 
 
@@ -399,6 +425,7 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
     tags = _extract_tags(raw)
     categories = _infer_categories(tags, caption)
     content_tips = _infer_content_tips(tags, caption)
+    inferred_fps = _infer_fps_from_text(caption, raw.get("title"), raw.get("description"), " ".join(tags))
 
     stats = {
         "views": raw.get("view_count"),
@@ -428,7 +455,7 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
     vq_score = _format_vq_score(raw.get("quality"))
 
     formats = raw.get("formats") or []
-    fallback_fps = _best_known_fps(raw, formats)
+    fallback_fps = _best_known_fps(raw, formats) or inferred_fps
     quality_items = []
 
     async def build_quality_item(fmt: dict):
@@ -465,10 +492,14 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
         item["label"] = f"{access} {variant}"
 
     quality_items.sort(key=_quality_sort_key, reverse=True)
-    best_quality = quality_items[0] if quality_items else None
+    absolute_best_quality = quality_items[0] if quality_items else None
+    download_quality = next((item for item in quality_items if not _is_watermarked_quality(item)), None)
+    best_quality = download_quality or absolute_best_quality
     for index, item in enumerate(quality_items, start=1):
         item["quality_rank"] = index
-        item["is_best"] = index == 1
+        item["is_best"] = item is best_quality
+        item["is_download_best"] = item is download_quality
+        item["is_absolute_best"] = item is absolute_best_quality
 
     source = raw.get("source") or "Soon"
     extractor = raw.get("extractor")
@@ -506,7 +537,8 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
         "qualities": quality_items,
         "quality": quality_items,
         "best_quality": best_quality,
-        "download_quality": best_quality,
+        "download_quality": download_quality,
+        "absolute_best_quality": absolute_best_quality,
         "categories": categories,
         "tags": tags,
         "content_tips": content_tips,
