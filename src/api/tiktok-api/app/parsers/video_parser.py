@@ -184,6 +184,107 @@ def _format_vq_score(value):
     return value if value >= 0 else None
 
 
+def _to_int(value, default: int = 0) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return default
+
+
+def _known_resolution(resolution: dict | None) -> bool:
+    if not isinstance(resolution, dict):
+        return False
+    return bool(_to_int(resolution.get("width")) and _to_int(resolution.get("height")))
+
+
+def _best_known_fps(raw: dict, formats: list[dict]) -> int | None:
+    fps_values = [raw.get("fps")]
+    fps_values.extend(fmt.get("fps") for fmt in formats)
+    known = [_to_int(value) for value in fps_values if _to_int(value) > 0]
+    return max(known) if known else None
+
+
+def _codec_score(codec: str | None) -> int:
+    normalized = str(codec or "").lower()
+    if "av1" in normalized:
+        return 4
+    if "h265" in normalized or "hevc" in normalized:
+        return 3
+    if "h264" in normalized or "avc" in normalized:
+        return 2
+    return 1 if normalized and normalized != "none" else 0
+
+
+def _watermark_penalty(item: dict) -> int:
+    return 0 if item.get("watermarked") else 1
+
+
+def _quality_source_score(item: dict) -> int:
+    source = str(item.get("source") or "")
+    if source == "yt-dlp":
+        return 3
+    if source.startswith("tikwm:"):
+        return 2
+    return 1
+
+
+def _effective_bitrate(item: dict, duration: int | float | None) -> int:
+    bitrate = _to_int(item.get("bitrate"))
+    if bitrate > 0:
+        return bitrate
+
+    file_size = _to_int(item.get("file_size"))
+    duration_value = _to_int(duration)
+    if file_size > 0 and duration_value > 0:
+        return int((file_size * 8) / duration_value / 1000)
+    return 0
+
+
+def _metadata_completeness(item: dict) -> int:
+    resolution = item.get("resolution") or {}
+    fields = [
+        _to_int(resolution.get("width")) > 0,
+        _to_int(resolution.get("height")) > 0,
+        _to_int(item.get("fps")) > 0,
+        _to_int(item.get("bitrate")) > 0,
+        bool(item.get("codec")),
+        _to_int(item.get("file_size")) > 0,
+    ]
+    return sum(1 for field in fields if field)
+
+
+def _quality_score(item: dict, duration: int | float | None) -> list[int]:
+    resolution = item.get("resolution") or {}
+    pixels = _to_int(resolution.get("width")) * _to_int(resolution.get("height"))
+    fps = _to_int(item.get("fps"))
+    file_size = _to_int(item.get("file_size"))
+
+    return [
+        pixels,
+        fps,
+        _effective_bitrate(item, duration),
+        file_size,
+        _watermark_penalty(item),
+        _codec_score(item.get("codec")),
+        _quality_source_score(item),
+        _metadata_completeness(item),
+    ]
+
+
+def _fill_quality_metadata(item: dict, fallback_resolution: dict | None, fallback_fps: int | None) -> None:
+    if not _known_resolution(item.get("resolution")) and _known_resolution(fallback_resolution):
+        item["resolution"] = {
+            "width": fallback_resolution.get("width"),
+            "height": fallback_resolution.get("height"),
+        }
+        item["original_resolution"] = f"{fallback_resolution['width']}x{fallback_resolution['height']}"
+        item["metadata_fallback"] = "video"
+
+    if not item.get("fps") and fallback_fps:
+        item["fps"] = fallback_fps
+        item["metadata_fallback"] = item.get("metadata_fallback") or "video"
+
+
 async def _quality_item_from_format(fmt: dict, source_key: str | None = None) -> dict | None:
     url = fmt.get("url")
     if not url:
@@ -220,15 +321,17 @@ async def _quality_item_from_format(fmt: dict, source_key: str | None = None) ->
 
 
 def _quality_sort_key(item: dict) -> tuple[int, int, int]:
+    score = item.get("quality_score")
+    if isinstance(score, list):
+        return tuple(score)
+
     resolution = item.get("resolution") or {}
-    height = resolution.get("height") or 0
-    width = resolution.get("width") or 0
-    bitrate = item.get("bitrate") or 0
-    try:
-        return (int(height), int(width), int(bitrate))
-    except (TypeError, ValueError):
-        logger.warning("Invalid quality sort values for %s", item.get("format_id") or item.get("variant"))
-        return (0, 0, 0)
+    return (
+        _to_int(resolution.get("width")) * _to_int(resolution.get("height")),
+        _to_int(item.get("fps")),
+        _to_int(item.get("bitrate")),
+        _to_int(item.get("file_size")),
+    )
 
 
 def _tikwm_quality_items(tikwm_data: dict | None) -> list[dict]:
@@ -314,12 +417,18 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
     }
 
     original_resolution = None
+    fallback_resolution = None
     if raw.get("width") and raw.get("height"):
         original_resolution = f"{raw['width']}x{raw['height']}"
+        fallback_resolution = {
+            "width": raw.get("width"),
+            "height": raw.get("height"),
+        }
 
     vq_score = _format_vq_score(raw.get("quality"))
 
     formats = raw.get("formats") or []
+    fallback_fps = _best_known_fps(raw, formats)
     quality_items = []
 
     async def build_quality_item(fmt: dict):
@@ -344,6 +453,9 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
 
     variant_seen = {}
     for item in quality_items:
+        _fill_quality_metadata(item, fallback_resolution, fallback_fps)
+        item["effective_bitrate"] = _effective_bitrate(item, raw.get("duration"))
+        item["quality_score"] = _quality_score(item, raw.get("duration"))
         access = item.get("access") or _quality_access_icon(item.get("url"))
         variant = item.get("variant") or "unknown"
         key = f"{access}|{variant}"
@@ -353,6 +465,10 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
         item["label"] = f"{access} {variant}"
 
     quality_items.sort(key=_quality_sort_key, reverse=True)
+    best_quality = quality_items[0] if quality_items else None
+    for index, item in enumerate(quality_items, start=1):
+        item["quality_rank"] = index
+        item["is_best"] = index == 1
 
     source = raw.get("source") or "Soon"
     extractor = raw.get("extractor")
@@ -389,6 +505,8 @@ async def parse_raw_info(raw: dict, tikwm: dict | None = None) -> dict:
         "vq_score": vq_score,
         "qualities": quality_items,
         "quality": quality_items,
+        "best_quality": best_quality,
+        "download_quality": best_quality,
         "categories": categories,
         "tags": tags,
         "content_tips": content_tips,

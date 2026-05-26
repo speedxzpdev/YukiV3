@@ -51,12 +51,39 @@ def _is_watermarked_quality(item: dict) -> bool:
 
 
 def _quality_rank(item: dict) -> tuple[int, int, int]:
+    score = item.get("quality_score")
+    if isinstance(score, list):
+        return tuple(score)
+
     resolution = item.get("resolution") or {}
     width = int(resolution.get("width") or 0)
     height = int(resolution.get("height") or 0)
     bitrate = int(item.get("bitrate") or 0)
     file_size = int(item.get("file_size") or 0)
-    return (width * height, bitrate, file_size)
+    fps = int(item.get("fps") or 0)
+    return (width * height, fps, bitrate, file_size)
+
+
+def _quality_response_headers(item: dict | None) -> dict:
+    if not item:
+        return {}
+
+    resolution = item.get("resolution") or {}
+    def header_value(value) -> str:
+        return str(value or "").encode("latin-1", "ignore").decode("latin-1")
+
+    return {
+        "X-TikTok-Quality-Label": header_value(item.get("label")),
+        "X-TikTok-Quality-Variant": header_value(item.get("variant")),
+        "X-TikTok-Quality-Format": header_value(item.get("format_id")),
+        "X-TikTok-Quality-Source": header_value(item.get("source")),
+        "X-TikTok-Quality-Width": header_value(resolution.get("width")),
+        "X-TikTok-Quality-Height": header_value(resolution.get("height")),
+        "X-TikTok-Quality-Fps": header_value(item.get("fps")),
+        "X-TikTok-Quality-Bitrate": header_value(item.get("bitrate")),
+        "X-TikTok-Quality-File-Size": header_value(item.get("file_size")),
+        "X-TikTok-Quality-Watermarked": "true" if _is_watermarked_quality(item) else "false",
+    }
 
 
 def _dedupe_qualities(qualities: list[dict]) -> list[dict]:
@@ -78,8 +105,7 @@ def _select_download_candidates(data: dict, quality: str) -> list[dict]:
 
     lowered = quality.lower()
     if lowered in ("highest", "original", "best"):
-        candidates = [item for item in qualities if not _is_watermarked_quality(item)]
-        return _dedupe_qualities(sorted(candidates, key=_quality_rank, reverse=True))
+        return _dedupe_qualities(sorted(qualities, key=_quality_rank, reverse=True))
 
     if lowered in ("medium", "normal"):
         preferred = []
@@ -128,7 +154,13 @@ def _resolved_video_id(raw: dict, fallback_input: str) -> str:
         return "tiktok"
 
 
-async def _stream_remote_url(file_url: str, media_type: str, filename: str, headers: dict) -> StreamingResponse:
+async def _stream_remote_url(
+    file_url: str,
+    media_type: str,
+    filename: str,
+    headers: dict,
+    selected_quality: dict | None = None,
+) -> StreamingResponse:
     probe_headers = headers.copy()
     probe_headers["Range"] = "bytes=0-1023"
     async with aiohttp.ClientSession() as session:
@@ -166,6 +198,7 @@ async def _stream_remote_url(file_url: str, media_type: str, filename: str, head
         headers={
             "Content-Disposition": f"attachment; filename={filename}",
             "Accept-Ranges": "bytes",
+            **_quality_response_headers(selected_quality),
         },
     )
 
@@ -268,6 +301,7 @@ async def download_video(
                     result["path"],
                     media_type=media_type,
                     filename=filename,
+                    headers=_quality_response_headers(selected),
                     background=BackgroundTask(shutil.rmtree, result["temp_dir"], ignore_errors=True),
                 )
             except Exception as exc:
@@ -280,7 +314,7 @@ async def download_video(
             continue
         try:
             filename = f"{vid}_{selected_variant}.mp4"
-            return await _stream_remote_url(file_url, media_type, filename, headers)
+            return await _stream_remote_url(file_url, media_type, filename, headers, selected)
         except HTTPException as exc:
             logger.warning("CDN download failed for %s: %s", selected_variant, exc.detail)
             errors.append(f"{selected_variant}: {exc.detail}")

@@ -24,9 +24,15 @@ function formatNumber(value) {
 }
 
 function formatBytes(value) {
-  if (!value) return "N/A";
-  const mb = Number(value) / (1024 * 1024);
+  const bytes = toNumber(value);
+  if (!bytes) return "N/A";
+  const mb = bytes / (1024 * 1024);
   return `${mb.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
+}
+
+function toNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function formatDuration(seconds) {
@@ -42,6 +48,18 @@ function formatResolution(resolution) {
   const { width, height } = resolution;
   if (!width || !height) return "N/A";
   return `${width}x${height}`;
+}
+
+function formatFps(value) {
+  const fps = toNumber(value);
+  if (!fps) return "N/A";
+  return `${fps.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} FPS`;
+}
+
+function formatBitrate(value) {
+  const bitrate = toNumber(value);
+  if (!bitrate) return "N/A kbps";
+  return `${bitrate.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} kbps`;
 }
 
 function formatDateTime(value) {
@@ -78,13 +96,13 @@ function isWatermarkedQuality(item) {
 
 function qualitySummary(item) {
   if (!item) return "N/A";
-  const parts = [
+  return [
     formatResolution(item.resolution),
-    item.codec,
-    item.bitrate ? `${item.bitrate} kbps` : null,
+    formatFps(item.fps),
+    item.codec || "N/A",
+    formatBitrate(item.bitrate),
     formatBytes(item.file_size)
-  ].filter((part) => part && part !== "N/A");
-  return parts.length ? parts.join(" • ") : "N/A";
+  ].join(" • ");
 }
 
 function compareQuality(a, b) {
@@ -102,13 +120,57 @@ function bestQuality(qualities, filter) {
     .sort((a, b) => compareQuality(b, a))[0] || null;
 }
 
-function isLikelyDownloadableQuality(item) {
+function isBrowserQuality(item) {
   const source = String(item?.source || "");
+  const access = String(item?.access || "");
   const url = String(item?.url || "");
-  return source.startsWith("tikwm:") || !/webapp-prime/i.test(url);
+  return access.includes("🌐") || source === "yt-dlp" || /webapp|tiktokcdn/i.test(url);
 }
 
-async function downloadApiStream(url, quality) {
+function isPhoneQuality(item) {
+  const source = String(item?.source || "");
+  const access = String(item?.access || "");
+  const url = String(item?.url || "");
+  return access.includes("📱")
+    || source === "tikwm:wmplay"
+    || /api16-normal|tiktokv\.us|musically|aweme\/v1\/play/i.test(url);
+}
+
+function headerValue(headers, name) {
+  return headers?.[name] || headers?.[name.toLowerCase()];
+}
+
+function qualityFromDownloadHeaders(data, headers) {
+  const qualities = getQualities(data);
+  const variant = headerValue(headers, "x-tiktok-quality-variant");
+  const formatId = headerValue(headers, "x-tiktok-quality-format");
+  const source = headerValue(headers, "x-tiktok-quality-source");
+
+  const matched = qualities.find((item) => (
+    (!variant || String(item.variant || "") === String(variant))
+    && (!formatId || String(item.format_id || "") === String(formatId))
+    && (!source || String(item.source || "") === String(source))
+  ));
+  if (matched) return matched;
+
+  const width = toNumber(headerValue(headers, "x-tiktok-quality-width"));
+  const height = toNumber(headerValue(headers, "x-tiktok-quality-height"));
+  if (!variant && !formatId && !source && !width && !height) return null;
+
+  return {
+    label: headerValue(headers, "x-tiktok-quality-label") || variant || formatId || "quality",
+    variant,
+    format_id: formatId,
+    source,
+    resolution: width && height ? { width, height } : null,
+    fps: toNumber(headerValue(headers, "x-tiktok-quality-fps")),
+    bitrate: toNumber(headerValue(headers, "x-tiktok-quality-bitrate")),
+    file_size: toNumber(headerValue(headers, "x-tiktok-quality-file-size")),
+    watermarked: headerValue(headers, "x-tiktok-quality-watermarked") === "true"
+  };
+}
+
+async function downloadApiStream(url, quality, data) {
   await ensureTikTokApiRunning();
 
   const response = await tiktokApi.get("/video/download", {
@@ -119,7 +181,10 @@ async function downloadApiStream(url, quality) {
     maxContentLength: Infinity
   });
 
-  return response.data;
+  return {
+    stream: response.data,
+    selectedQuality: qualityFromDownloadHeaders(data, response.headers)
+  };
 }
 
 async function getInfo(url) {
@@ -151,29 +216,25 @@ function selectNormalQuality(data) {
 }
 
 function qualityRank(item) {
+  if (Array.isArray(item?.quality_score)) {
+    return item.quality_score.map((value) => toNumber(value));
+  }
+
   const resolution = item?.resolution || {};
+  const bitrate = toNumber(item?.effective_bitrate || item?.bitrate);
   return [
-    Number(resolution.width || 0) * Number(resolution.height || 0),
-    Number(item?.bitrate || 0),
-    Number(item?.file_size || 0)
+    toNumber(resolution.width) * toNumber(resolution.height),
+    toNumber(item?.fps),
+    bitrate,
+    toNumber(item?.file_size),
+    isWatermarkedQuality(item) ? 0 : 1,
+    String(item?.codec || "").toLowerCase().includes("265") ? 3 : 2
   ];
 }
 
 function selectOriginalQuality(data) {
   const qualities = getQualities(data);
-  const cleanQualities = qualities.filter((item) => !isWatermarkedQuality(item));
-  const candidates = cleanQualities.length ? cleanQualities : qualities;
-
-  return candidates.reduce((best, item) => {
-    if (!best) return item;
-    const currentRank = qualityRank(item);
-    const bestRank = qualityRank(best);
-    for (let i = 0; i < currentRank.length; i += 1) {
-      if (currentRank[i] > bestRank[i]) return item;
-      if (currentRank[i] < bestRank[i]) return best;
-    }
-    return best;
-  }, null);
+  return data?.best_quality || qualities.find((item) => item.is_best) || bestQuality(qualities);
 }
 
 function buildAnalyticsSummaryText(data) {
@@ -181,10 +242,11 @@ function buildAnalyticsSummaryText(data) {
   const stats = data.stats || {};
   const sound = data.sound || {};
   const qualities = getQualities(data);
-  const cleanQualities = qualities.filter((item) => !isWatermarkedQuality(item));
-  const browserQuality = bestQuality(cleanQualities, (item) => String(item.source || "") === "yt-dlp");
-  const phoneQuality = bestQuality(cleanQualities, (item) => String(item.source || "").startsWith("tikwm:"));
-  const originalQuality = bestQuality(cleanQualities);
+  const browserQuality = bestQuality(qualities, (item) => String(item.source || "") === "yt-dlp" && isBrowserQuality(item))
+    || bestQuality(qualities, isBrowserQuality);
+  const phoneQuality = bestQuality(qualities, (item) => String(item.source || "") === "tikwm:wmplay")
+    || bestQuality(qualities, isPhoneQuality);
+  const originalQuality = selectOriginalQuality(data);
   const categories = (data.categories || []).join(", ") || "N/A";
   const tags = (data.tags || []).slice(0, 8).map((tag) => `#${tag}`).join(" ") || "N/A";
   const tips = (data.content_tips || []).slice(0, 3).join("\n│ ") || "Toque em Detailed pra ver as variantes completas.";
@@ -235,10 +297,13 @@ function buildAnalyticsDetailText(data) {
   const sound = data.sound || {};
   const qualities = getQualities(data);
   const qualityLines = qualities.map((item, index) => {
-    return `${index + 1}. ${item.label}
+    const trophy = item.is_best ? "🏆 " : "";
+    return `${index + 1}. ${trophy}${item.label}
    Resolução: ${formatResolution(item.resolution)}
+   FPS: ${formatFps(item.fps)}
    Variante: ${item.variant || "N/A"} | Formato: ${item.format_id || "N/A"}
-   Codec: ${item.codec || "N/A"} | Taxa de bits: ${item.bitrate || "N/A"} kbps | Tamanho: ${formatBytes(item.file_size)}
+   Codec: ${item.codec || "N/A"} | Taxa de bits: ${formatBitrate(item.bitrate)} | Tamanho: ${formatBytes(item.file_size)}
+   Score: ${Array.isArray(item.quality_score) ? item.quality_score.join(".") : "N/A"}
    Fonte: ${item.source || "N/A"} | Marca d'água: ${isWatermarkedQuality(item) ? "sim" : "não"}
    URL: ${item.url ? compactUrl(item.url, 80) : "N/A"}`;
   });
@@ -296,15 +361,18 @@ async function sendVideoDocument(sock, msg, from, data, url, label, apiQuality, 
     return;
   }
 
-  const qualityLabel = quality?.label ? ` - ${quality.label}` : "";
   const isVideoMessage = delivery === "video";
+  const { stream, selectedQuality } = await downloadApiStream(url, apiQuality, data);
+  const shownQuality = selectedQuality || quality;
+  const qualityLabel = shownQuality?.label
+    ? ` - ${shownQuality.label} - ${qualitySummary(shownQuality)}`
+    : "";
+
   await sock.sendMessage(
     from,
     { text: `Arquivo encontrado. Enviando o vídeo como ${isVideoMessage ? "vídeo normal" : "documento"} (${label}${qualityLabel})...` },
     { quoted: msg }
   );
-
-  const stream = await downloadApiStream(url, apiQuality);
 
   if (isVideoMessage) {
     await sock.sendMessage(
@@ -324,7 +392,7 @@ async function sendVideoDocument(sock, msg, from, data, url, label, apiQuality, 
     {
       document: { stream },
       mimetype: "video/mp4",
-      fileName: `${data.video_id || data.id || "tiktok"}-${label}.mp4`,
+      fileName: `${data.video_id || data.id || "tiktok"}-${shownQuality?.variant || label}.mp4`,
       caption: `Aqui está o vídeo em modo documento: ${label}.`
     },
     { quoted: msg }
@@ -340,7 +408,7 @@ async function sendAudioDocument(sock, msg, from, data, url) {
 
   await sock.sendMessage(from, { text: "Arquivo encontrado. Enviando o áudio como documento..." }, { quoted: msg });
 
-  const stream = await downloadApiStream(url, "audio");
+  const { stream } = await downloadApiStream(url, "audio", data);
 
   await sock.sendMessage(
     from,
