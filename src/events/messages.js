@@ -569,7 +569,23 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     
 
-    const doninhos = await donos.findOne({userLid: sender});
+    let doninhos = false;
+
+    const ownerCache = await clientRedis.hGetAll(`ownerCache:${sender}`);
+
+    if (Object.keys(ownerCache).length === 0) { 
+      const isOwner = await donos.findOne({ userLid: sender });
+
+      if (isOwner) {
+        doninhos = true;
+        await clientRedis.hSet(`ownerCache:${sender}`, { isOwner: "true" });
+        }
+        else {
+          await clientRedis.hSet(`ownerCache:${sender}`, { isOwner: "false" });
+          await clientRedis.expire(`ownerCache:${sender}`, 3600);
+          doninhos = false;
+        }
+    }
     
     const bot = new YukiBot({sock: sock, msg});
     
@@ -584,9 +600,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
     //user
     let usersSender = await users.findOne({userLid: sender});
-    const Notvip = !usersSender?.vencimentoVip || Date.now() > usersSender?.vencimentoVip?.getTime();
     
-    if(from.endsWith("@lid") && !doninhos && Notvip) {
+    //const Notvip = !usersSender?.vencimentoVip || Date.now() > usersSender?.vencimentoVip?.getTime();
+    
+    if(from.endsWith("@lid") && !doninhos) {
       
       const IsMsgPV = await safeRedis(() => clientRedis.exists(`pv:block:${sender}`), 0);
       
