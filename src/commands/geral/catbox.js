@@ -28,6 +28,7 @@ module.exports = {
         const form = new Form();
 
         form.append("reqtype", "fileupload");
+        form.append("userhash", "");
         form.append("fileToUpload", buffer, {
             filename: `upload_${crypto.randomBytes(16).toString('hex')}.${mediaMessage.mimetype.split("/")[1]}`,
             contentType: mediaMessage.mimetype
