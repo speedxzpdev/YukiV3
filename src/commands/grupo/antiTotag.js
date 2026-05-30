@@ -1,5 +1,4 @@
-const { grupos } = require("../../database/models/grupos");
-const { donos } = require("../../database/models/donos");
+const { ensureGroup, getGroupPermission, updateGroupAndCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "antimarcar",
@@ -17,25 +16,14 @@ module.exports = {
         return
       }
       
-      const metadata = await sock.groupMetadata(from);
+      const { metadata, allowed } = await getGroupPermission(sock, from, sender);
       
-      const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.lid);
-      
-      
-      
-      const donim = await donos.findOne({userLid: sender});
-      
-      if (!isAdmin.includes(sender) && !donim) {
+      if (!allowed) {
         await bot.sendNoAdmin();
         return
       }
       
-      const grupoDb = await grupos.findOne({groupId: from});
-      
-      
-      if (!grupoDb) {
-        await grupos.create({groupId: from});
-      }
+      await ensureGroup(from, metadata);
       
       const options = args[0]?.trim();
       
@@ -45,14 +33,14 @@ module.exports = {
       }
       
       if(options === "0") {
-        await grupos.updateOne({groupId: from}, {$set: {antiTotag: false}}, {upsert: true});
+        await updateGroupAndCache(from, {$set: {antiTotag: false}}, {metadata});
         
         await bot.reply(from, "Anti marcação desativado com sucesso. Agora podem fazer a festa!");
         return
       }
       
       else if(options === "1") {
-        await grupos.updateOne({groupId: from}, {$set: {antiTotag: true}}, {upsert: true});
+        await updateGroupAndCache(from, {$set: {antiTotag: true}}, {metadata});
         
        await bot.reply(from, "Anti marcação ativada. Chega de bagunça!");
         return

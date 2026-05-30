@@ -1,106 +1,71 @@
-const { downloadMediaMessage } = require('whaileys');
-const { donos } = require("../../database/models/donos");
-const { grupos } = require("../../database/models/grupos.js");
+const { downloadMediaMessage } = require("whaileys");
+const { ensureGroup, getGroupPermission } = require("../../utils/dbHelpers");
 
 module.exports = {
+  name: "totag",
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
+    const texto = args.slice(0).join(" ")?.trim();
+    const { metadata, allowed } = await getGroupPermission(sock, from, sender);
 
-name: "totag",
-async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
-  
-  const texto = args.slice(0).join(" ")?.trim();
-  
-  const metadados = await sock.groupMetadata(from);
-  
-  const Admins = metadados.participants.filter(p => p.admin)
-  const groupAdmins = Admins.map(m => m.lid)
-  
-  
-  const button = [
-    {buttonId: `${process.env.PREFIXO}afkmode 1`, buttonText: {displayText: "😴𝐒𝐢𝐥𝐞𝐧𝐜𝐢𝐚𝐫"}, type: 1}
+    const button = [
+      {buttonId: `${process.env.PREFIXO}afkmode 1`, buttonText: {displayText: "😴Silenciar"}, type: 1}
     ];
 
-
-  if (!groupAdmins.includes(msg.key.participant) && !await donos.findOne({userLid: sender})) {
-    await bot.sendNoAdmin(from);
-    return
-  }
-  
-
-  const seloTotag = {
-    key: {
-      remoteJid: from,
-      id: 'yuki123',
-      fromMe: false,
-      participant: msg.key.participant},
-      message: {
-        extendedTextMessage: {text: `⤷ ❄️ Mᴀʀᴄᴀᴄ̧ᴀ̃ᴏ ᴅᴏ ᴀᴅᴍɪɴ: ${msg.pushName}`}
-        
-      }
+    if (!allowed) {
+      await bot.sendNoAdmin(from);
+      return;
     }
-  
-  
-  const quoted = msg.message.extendedTextMessage?.contextInfo?.quotedMessage
-  
-  const msg_quoted = quoted?.conversation || quoted?.extendedTextMessage?.text || quoted?.documentMessage?.caption || texto
-  
-  const foto = quoted?.imageMessage
-  
-  const video = quoted?.videoMessage
-  
-  const sticker = quoted?.stickerMessage
-  
-  const enquete = quoted?.pollCreationMessageV3
-  
-  
- const metadata = await sock.groupMetadata(from);
- 
- const grupo = await grupos.findOne({groupId: from});
- 
- const afkList = grupo?.afkList ?? [];
 
-const todos = metadata.participants.map(p => p.id).filter(p => {
-  return !afkList.includes(p);
-});
-  
-  if (foto) {
-    const imgDl = await downloadMediaMessage({message: {imageMessage: foto}}, 'buffer', {})
-    await sock.sendMessage(from, { image: imgDl, caption: foto.caption, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag })
-    return
-  }
-  
-  if (video) {
-  const videoDl = await downloadMediaMessage({message: {videoMessage: video}}, 'buffer', {})
-  
-  await sock.sendMessage(from, { video: videoDl, caption: video.caption, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag })
-  return
-  }
-  
-  if (sticker) {
-    const stickerDl = await downloadMediaMessage({message: {stickerMessage: sticker}}, 'buffer', {})
-    
-    await sock.sendMessage(from, { sticker: stickerDl, mentions: todos}, { quoted: seloTotag })
-    return
-  }
-  if (msg_quoted) {
-    
-    await sock.sendMessage(from, { text: msg_quoted, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag})
-    return
-  }
-  
-  if (!msg_quoted) {
-    await sock.sendMessage(from, { text: texto, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag })
-    return
-  }
+    const seloTotag = {
+      key: {
+        remoteJid: from,
+        id: "yuki123",
+        fromMe: false,
+        participant: msg.key.participant
+      },
+      message: {
+        extendedTextMessage: {text: `⤷ ❄️ Marcação do admin: ${msg.pushName}`}
+      }
+    };
 
+    const quoted = msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
+    const msg_quoted = quoted?.conversation || quoted?.extendedTextMessage?.text || quoted?.documentMessage?.caption || texto;
+    const foto = quoted?.imageMessage;
+    const video = quoted?.videoMessage;
+    const sticker = quoted?.stickerMessage;
 
+    const grupo = await ensureGroup(from, metadata);
+    const afkList = grupo?.afkList ?? [];
+    const todos = metadata.participants.map(p => p.id).filter(p => !afkList.includes(p));
 
-  else {
-    await sock.sendMessage(from, {text: "Responda uma mensagem ou digite algo!"}, {quoted: msg})
-    return
+    if (foto) {
+      const imgDl = await downloadMediaMessage({message: {imageMessage: foto}}, "buffer", {});
+      await sock.sendMessage(from, { image: imgDl, caption: foto.caption, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag });
+      return;
+    }
+
+    if (video) {
+      const videoDl = await downloadMediaMessage({message: {videoMessage: video}}, "buffer", {});
+      await sock.sendMessage(from, { video: videoDl, caption: video.caption, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag });
+      return;
+    }
+
+    if (sticker) {
+      const stickerDl = await downloadMediaMessage({message: {stickerMessage: sticker}}, "buffer", {});
+      await sock.sendMessage(from, { sticker: stickerDl, mentions: todos}, { quoted: seloTotag });
+      return;
+    }
+
+    if (msg_quoted) {
+      await sock.sendMessage(from, { text: msg_quoted, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag});
+      return;
+    }
+
+    if (!msg_quoted) {
+      await sock.sendMessage(from, { text: texto, mentions: todos, footer: "• Caso não queira ser marcado use: */afkmode 1*", buttons: button}, { quoted: seloTotag });
+      return;
+    }
+
+    await sock.sendMessage(from, {text: "Responda uma mensagem ou digite algo!"}, {quoted: msg});
   }
-  
-  
-  
-}
-
-}
+};

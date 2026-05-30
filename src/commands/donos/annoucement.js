@@ -1,7 +1,7 @@
 const crypto = require("crypto");
 const { grupos } = require("../../database/models/grupos");
-const { donos } = require("../../database/models/donos");
 const { prefixo } = require("../../config");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 const pendingAnnouncements = new Map();
 
@@ -158,8 +158,7 @@ Pulados: ${result.skipped}${errorsText}`
 }
 
 async function assertOwner(sock, msg, from, sender) {
-  const donoSender = await donos.findOne({ userLid: sender });
-  if (donoSender) return true;
+  if (await isOwnerCached(sender)) return true;
 
   await sock.sendMessage(from, { text: "Só dono pode usar announcement, meu mano." }, { quoted: msg });
   return false;

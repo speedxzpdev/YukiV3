@@ -1,5 +1,5 @@
-const { users } = require("../../../database/models/users.js");
 const jwt = require("jsonwebtoken");
+const { updateUserAndCache } = require("../../../utils/dbHelpers.js");
 
 module.exports = async (req, res) => {
 const user = req?.cookies?.user;
@@ -13,7 +13,7 @@ return;
 
 const jwtsender = jwt.verify(user, process.env.SECRET);
 
-await users.updateOne({userLid: jwtsender.sender}, {$set: {name: nome}}, {upsert: true});
+await updateUserAndCache(jwtsender.sender, {$set: {name: nome}}, {upsert: true, name: nome});
 
 res.status(200).json({message: "nome trocado com sucesso!"});
 

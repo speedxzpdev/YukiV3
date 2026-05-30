@@ -7,6 +7,8 @@ const model = new mongoose.Schema({
   tentativasMsg: {type: Number, default: 0}
 });
 
+model.index({ userLid: 1, grupo: 1 });
+
 const mutados = mongoose.model('mutado', model);
 
 module.exports = {

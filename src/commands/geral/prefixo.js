@@ -1,10 +1,8 @@
-const { users } = require("../../database/models/users.js");
-
+const { ensureUser, updateUserAndCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "disable-prefix",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
-    
     async function sendHelp() {
       await bot.reply(from, `*Como ativar o modo sem prefixo da Yuki:*
 
@@ -13,50 +11,42 @@ module.exports = {
 \`/disable-prefix 0\`
 > Desativa o modo sem prefixo`);
     }
-    
+
     try {
-      
-      
-      
-      const user = await users.findOne({userLid: sender});
-      
+      const user = await ensureUser(sender, msg.pushName || "Sem nome");
       const argumentos = Number(args[0]);
-      
-      if(argumentos === undefined) {
-        sendHelp();
-        return
+
+      if(args[0] === undefined) {
+        await sendHelp();
+        return;
       }
-      
+
       if(argumentos === 0) {
         if(user.prefixo) {
           await bot.reply(from, "Você já está com o modo sem prefixo desativado!");
-          return
+          return;
         }
-        
-        await users.updateOne({userLid: sender}, {$set: {prefixo: true}}, {upsert: true});
-        
+
+        await updateUserAndCache(sender, {$set: {prefixo: true}});
         await bot.reply(from, "Modo sem prefixo desativado com sucesso!");
-        
+        return;
       }
-      else if(argumentos === 1) {
-      if(!user.prefixo) {
-        await bot.reply(from, "Você já está com o modo sem prefixo ativado!");
-        return
+
+      if(argumentos === 1) {
+        if(!user.prefixo) {
+          await bot.reply(from, "Você já está com o modo sem prefixo ativado!");
+          return;
+        }
+
+        await updateUserAndCache(sender, {$set: {prefixo: false}});
+        await bot.reply(from, "Modo sem prefixo ativado com sucesso!");
+        return;
       }
-      
-      await users.updateOne({userLid: sender}, {$set: {prefixo: false}}, {upsert: true});
-      
-      await bot.reply(from, "Modo sem prefixo ativado com sucesso!");
+
+      await sendHelp();
+    } catch(err) {
+      await bot.reply(from, erros_prontos);
+      console.error(err);
     }
-    else {
-      sendHelp();
-    }
-    
   }
-  catch(err) {
-    await bot.reply(from, erros_prontos);
-    console.error(err);
-  }
-  
-}
-}
+};

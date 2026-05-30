@@ -21,8 +21,10 @@ module.exports = {
     
     const processador = os.cpus()[0]
     
-    const usersFind = await users.find();
-    const gruposFind = await grupos.find();
+    const [usersCount, gruposCount] = await Promise.all([
+      users.countDocuments(),
+      grupos.countDocuments()
+    ]);
 
 const infoPing = `⚡𝗣𝗶𝗻𝗴:${ping}ms
 💨𝗦𝗶𝘀𝘁𝗲𝗺𝗮 𝗼𝗽𝗲𝗿𝗮𝗰𝗶𝗼𝗻𝗮𝗹: ${os.type()}
@@ -36,8 +38,8 @@ const infoPing = `⚡𝗣𝗶𝗻𝗴:${ping}ms
 
 𝗕𝗼𝘁 𝗶𝗻𝗳𝗼:
 
-👻𝗨𝘀𝘂𝗮́𝗿𝗶𝗼𝘀: ${usersFind.length}
-💖𝗚𝗿𝘂𝗽𝗼𝘀: ${gruposFind.length}
+👻𝗨𝘀𝘂𝗮́𝗿𝗶𝗼𝘀: ${usersCount}
+💖𝗚𝗿𝘂𝗽𝗼𝘀: ${gruposCount}
 *Grupo:* https://chat.whatsapp.com/IbVzNXRCH2X8Oim6B4wKnP?mode=gi_t
 `
 

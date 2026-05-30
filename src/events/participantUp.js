@@ -1,4 +1,4 @@
-const { grupos } = require("../database/models/grupos");
+const { ensureGroup } = require("../utils/dbHelpers");
 
 
 
@@ -14,7 +14,7 @@ module.exports = (sock) => {
     
     const metadata = await sock.groupMetadata(from);
     
-    const groupsDb = await grupos.findOne({groupId: from});
+    const groupsDb = await ensureGroup(from, metadata);
     
     if (groupsDb?.configs?.welcome) {
       const action = update.action

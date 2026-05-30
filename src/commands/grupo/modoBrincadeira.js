@@ -1,5 +1,4 @@
-const { grupos } = require("../../database/models/grupos");
-const { donos } = require("../../database/models/donos");
+const { ensureGroup, getGroupPermission, updateGroupAndCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "modobrincadeira",
@@ -17,25 +16,14 @@ module.exports = {
         return
       }
       
-      const metadata = await sock.groupMetadata(from);
+      const { metadata, allowed } = await getGroupPermission(sock, from, sender);
       
-      const isAdmin = metadata.participants.filter(p => p.admin).map(p => p.lid);
-      
-      
-      
-      const donim = await donos.findOne({userLid: sender});
-      
-      if (!isAdmin.includes(sender) && !donim) {
+      if (!allowed) {
         await sock.sendMessage(from, {text: "Comando restrito a admins"}, {quoted: msg});
         return
       }
       
-      const grupoDb = await grupos.findOne({groupId: from});
-      
-      
-      if (!grupoDb) {
-        await grupos.create({groupId: from});
-      }
+      await ensureGroup(from, metadata);
       
       const options = args[0]?.trim();
       
@@ -45,14 +33,14 @@ module.exports = {
       }
       
       if(options === "0") {
-        await grupos.updateOne({groupId: from}, {$set: {"configs.cmdFun": false}});
+        await updateGroupAndCache(from, {$set: {"configs.cmdFun": false}}, {metadata});
         
         await sock.sendMessage(from, {text: "Modo brincadeira desativado!"}, {quoted: msg});
         return
       }
       
       else if(options === "1") {
-        await grupos.updateOne({groupId: from}, {$set: {"configs.cmdFun": true}});
+        await updateGroupAndCache(from, {$set: {"configs.cmdFun": true}}, {metadata});
         
         await sock.sendMessage(from, {text: "Modo brincadeira ativo!"}, {quoted: msg});
         return

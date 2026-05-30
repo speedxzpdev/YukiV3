@@ -8,7 +8,7 @@ module.exports = {
    async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
 
-        const usersAll = await users.find().sort({level: -1}).limit(10);
+        const usersAll = await users.find().sort({level: -1}).limit(10).lean();
 
         const rank = usersAll.map((user, index) => {
             return `${index + 1}º @${user.userLid.split("@")[0]}

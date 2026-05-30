@@ -1,5 +1,5 @@
-const { users } = require("../../database/models/users");
 const { clientRedis } = require("../../lib/redis.js");
+const { ensureUser } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "coinflipbet",
@@ -11,73 +11,59 @@ module.exports = {
 Responda alguém ou mencione usando o comando junto com o valor desejado.
 > Exemplo: coinflip 100 @yuki
 
-Simples pra até pra um bebê`)
+Simples pra até pra um bebê`);
       }
-      
-      
-      
+
       const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0]
-  || msg.message?.extendedTextMessage?.contextInfo?.participant
-      
-      
-      
-      const userSender = await users.findOne({userLid: sender});
-      
-      const userMention = await users.findOne({userLid: mention});
-      
+        || msg.message?.extendedTextMessage?.contextInfo?.participant;
+
       if(!mention) {
         await sendHelp();
-        return
+        return;
       }
-      
-      const parametroMoney = Number(args[0].trim());
-      
-      
-      
-      if(!parametroMoney) {
+
+      const parametroMoney = Number(args[0]?.trim());
+
+      if(!parametroMoney || parametroMoney <= 0) {
         await sendHelp();
-        return
+        return;
       }
-      
-      if(!userMention && parametroMoney > userMention.dinheiro) {
-        await bot.reply(from, "Este usuário não possui essa quantidade de moedas!")
-        return
-      }
-      
+
+      const [userSender, userMention] = await Promise.all([
+        ensureUser(sender, msg.pushName || "Sem nome"),
+        ensureUser(mention, "Sem nome")
+      ]);
+
       if(parametroMoney > userSender.dinheiro) {
         await bot.reply(from, "Você não possui esse valor!");
-        return
+        return;
       }
-      
+
       if(parametroMoney > userMention.dinheiro) {
         await sock.sendMessage(from, {text: `@${mention.split("@")[0]} não possui este valor!`, mentions: [mention]}, {quoted: msg});
-        return
+        return;
       }
-      
-      const desafiopassado = await clientRedis.exists(`aposta:${mention}`)
-      
+
+      const desafiopassado = await clientRedis.exists(`aposta:${mention}`);
+
       if(desafiopassado) {
         await bot.reply(from, "Você possui uma aposta pendente.");
-        return
+        return;
       }
-      
-      //await desafios.create({user: sender, alvo: mention, valor: parametroMoney});
+
       await clientRedis.hSet(`aposta:${mention}`, {
         autor: sender,
         alvo: mention,
         valor: parametroMoney,
-        resolvida: 'false'
+        resolvida: "false"
       });
-      
+
       await clientRedis.expire(`aposta:${mention}`, 60);
-      
+
       await sock.sendMessage(from, {text: `@${mention.split("@")[0]}... Você acaba de ser desafiado para um cara ou coroa por @${sender.split("@")[0]}. Responda com um: *aceitar* ou *recusar*`, mentions: [mention, sender]}, {quoted: msg});
-      
-    }
-    catch(err) {
+    } catch(err) {
       await bot.reply(from, erros_prontos);
       console.error(err);
     }
-    
   }
-}
+};

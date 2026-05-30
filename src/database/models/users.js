@@ -1,13 +1,22 @@
 const mongoose = require("mongoose");
 
-
 const userSchema = new mongoose.Schema({
   userLid: {type: String, required: true, unique: true},
   name: {type: String, required: true},
   bio: {type: String, default: "Olá, amo a Yuki!"},
+  grupos: [{
+    id: {type: String},
+    nome: {type: String}
+  }],
+  discord_id: {type: String, default: null},
+  discord_name: {type: String, default: null},
+  spotifyToken: {
+    refresh: {type: String, default: null},
+    token: {type: String, default: null}
+  },
   isVip: {type: Boolean, default: false},
-  vencimentoVip: {type: Date, default: new Date()},
-  registro: {type: Date, default: new Date()},
+  vencimentoVip: {type: Date, default: Date.now},
+  registro: {type: Date, default: Date.now},
   casal: {
     parceiro: {type: String, default: null},
     pedido: {type: Date, default: null},
@@ -26,8 +35,13 @@ const userSchema = new mongoose.Schema({
   proximolevel: {type: Number, default: 100}
 });
 
+userSchema.index({ cmdCount: -1 });
+userSchema.index({ dinheiro: -1 });
+userSchema.index({ level: -1 });
+userSchema.index({ discord_id: 1 });
+
 const users = mongoose.model("User", userSchema);
 
 module.exports = {
   users
-}
+};

@@ -1,4 +1,4 @@
-const { donos } = require("../../database/models/donos");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 
 module.exports = {
@@ -23,9 +23,7 @@ module.exports = {
       
       
       
-      const donoSender = await donos.findOne({userLid: sender});
-      
-      if(!donoSender) {
+      if(!(await isOwnerCached(sender))) {
         await sock.sendMessage(from, {text: "Tu não é dono, viadinho!"}, {quoted: msg});
         return;
       }

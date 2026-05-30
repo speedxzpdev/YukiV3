@@ -1,6 +1,6 @@
 const axios = require("axios");
-const { users } = require("../database/models/users");
 const { normalizeUserLid } = require("./normalizeUserLid");
+const { updateUserAndCache } = require("./dbHelpers");
 
 async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
   
@@ -26,7 +26,7 @@ async function instaDl(sock, msg, from, body, erros_prontos, espera_pronta) {
       msg?.key?.remoteJid
     );
 
-    await users.updateOne({userLid: sender}, {$inc: {donwloads: 1}});
+    await updateUserAndCache(sender, {$inc: {donwloads: 1}});
     
     
     

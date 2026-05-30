@@ -4,7 +4,7 @@ module.exports = {
   name: "rankativos",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     try {
-      const array = await rankativos.find({from: from}).sort({msg: -1}).limit(10);
+      const array = await rankativos.find({from: from}).sort({msg: -1}).limit(10).lean();
       
       const list = array.map((item, indice) => {
         return `❛❛.𔓘᷼${indice + 1} ➻ @${item.userLid.split("@")[0]}\n𝗺𝗲𝗻𝘀𝗮𝗴𝗲𝗻𝘀: ${item.msg}

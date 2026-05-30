@@ -1,4 +1,4 @@
-const { donos } = require("../../database/models/donos");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 function chunk(arr, size) {
   const out = [];
@@ -14,9 +14,8 @@ module.exports = {
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       const rawSender = sender
-      const dono = await donos.findOne({ userLid: rawSender });
 
-      if (!dono) {
+      if (!(await isOwnerCached(rawSender))) {
         await sock.sendMessage(from, { text: "Comando de dono." });
         return;
       }
