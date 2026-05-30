@@ -7,7 +7,7 @@ module.exports = {
     try {
       const msgEspera = await sock.sendMessage(from, { text: "Buscando usuários ativos..." }, { quoted: msg });
 
-      const globalUsers = await users.find().sort({ cmdCount: -1 }).limit(10);
+      const globalUsers = await users.find().sort({ cmdCount: -1 }).limit(10).lean();
 
       const rankMap = globalUsers
         .filter((p) => !isOwnerLid(p.userLid))

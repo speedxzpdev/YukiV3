@@ -1,7 +1,7 @@
 const axios = require('axios');
 const socket = require("../../../sock.js");
 const { clientRedis } = require("../../../lib/redis.js");
-const { users } = require("../../../database/models/users.js");
+const { updateUserAndCache } = require("../../../utils/dbHelpers.js");
 
 
 module.exports = async (req, res) => {
@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
             }
         });
 
-        await users.updateOne({userLid: user.userLid}, {$set: {discord_id: user_response.data.id, discord_name: user_response.data.global_name}}, {upsert: true});
+        await updateUserAndCache(user.userLid, {$set: {discord_id: user_response.data.id, discord_name: user_response.data.global_name}}, {upsert: true});
 
         try {
             

@@ -6,9 +6,9 @@ module.exports = {
   async execute(sock, msg, from, args, erros_prontos, espera_pronta) {
     try {
     //Busca todos os documentos
-    const donosTotal = await donos.find();
+    const donosTotal = await donos.find().lean();
     //caso nao exista NENHUM DONO
-    if(!donosTotal) {
+    if(!donosTotal.length) {
       await sock.sendMessage(from, {text: "Não há donos registrados."}, {quoted: msg});
       return;
     }

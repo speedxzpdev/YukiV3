@@ -1,5 +1,5 @@
 const fs = require("fs").promises
-const { donos } = require("../../database/models/donos");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "cleartemp",
@@ -9,9 +9,7 @@ module.exports = {
       
       
       
-      const doninhos = await donos.findOne({userLid: sender})
-      
-      if(!doninhos) {
+      if(!(await isOwnerCached(sender))) {
         await sock.sendMessage(from, {text: "Comando exlusivo para donos!"}, {quoted: msg});
         return
       }

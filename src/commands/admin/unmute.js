@@ -1,54 +1,39 @@
 const { mutados } = require("../../database/models/mute");
-const { donos } = require("../../database/models/donos");
-const { numberBot } = require("../../config");
-
+const { getGroupPermission, invalidateMute } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "unmute",
-   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
-     
-     async function reply(texto) {
+  async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
+    async function reply(texto) {
       await sock.sendMessage(from, {text: texto}, {quoted: msg});
     }
-    
+
     try {
-      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
-      
-      const metadata = await sock.groupMetadata(from);
-      
-      const admins = metadata.participants.filter(p => p.admin).map(p => p.lid);
-      
-      
-      
-      const donoSender = await donos.findOne({userLid: sender});
-      
-      
-      if(!admins.includes(sender) && !donoSender) {
+      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
+      const { allowed } = await getGroupPermission(sock, from, sender);
+
+      if(!allowed) {
         await reply("Você n é admin, zé bct");
-        return
+        return;
       }
-      
+
       if(!mention) {
         await reply("Mencione quem deseja desmutar.");
-        return
+        return;
       }
-      
-      const mutadoatual = await mutados.findOne({userLid: mention, grupo: from});
-      
-      if(!mutadoatual) {
+
+      const result = await mutados.deleteOne({userLid: mention, grupo: from});
+
+      if(!result.deletedCount) {
         await reply("Esse usuário não está mutado.");
-        return
+        return;
       }
-      
-      await mutados.deleteOne({userLid: mention, grupo: from});
-      
+
+      invalidateMute(mention, from);
       await reply("Usuário desmutado com sucesso!");
-    }
-    catch(err) {
+    } catch(err) {
       await reply(erros_prontos);
-      console.error(err)
+      console.error(err);
     }
-    
-    
-   }
-}
+  }
+};

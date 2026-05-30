@@ -1,72 +1,76 @@
 const waifus = require("../../database/waifus/waifus.json");
 const preco = require("../../database/waifus/raridadePreço.json");
-const { users } = require("../../database/models/users.js");
-const path = require("path");
 const { comprarWaifu } = require("../../utils/events.js");
-
+const { ensureUser, updateUserAndCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "comprarwaifu",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
-      
       async function sendHelp() {
         await bot.reply(from, `Como comprar waifus:
 
 ⤷  ao usar */comprarwaifu* pegue o *id* da waifu que deseja comprar, pode fazer isso usando */loja*.
 > Exemplo: /comprar waifu 20
-Caso tenha o valor que custa a waifu ela será adicionada ao seu inventário.`)
+Caso tenha o valor que custa a waifu ela será adicionada ao seu inventário.`);
       }
-      
-      
+
       const parametro = Number(args[0]);
-      
+
       if(!parametro) {
-        sendHelp();
-        return
+        await sendHelp();
+        return;
       }
-      
+
       const waifuFind = waifus.find(item => item.id === parametro);
-      
+
       if(!waifuFind) {
         await bot.reply(from, "Não encontrei nenhuma waifu com esse id. Use /loja para ver cada id.");
-        return
+        return;
       }
-      
+
       const waifuEscolhida = {
-          nome: waifuFind.nome,
-          id: waifuFind.id,
-          raridade: waifuFind.raridade,
-          img: waifuFind.image,
-          preco: preco[waifuFind.raridade]
-        }
-      
-      
-      
-      const userSender = await users.findOne({userLid: sender});
-      
+        nome: waifuFind.nome,
+        id: waifuFind.id,
+        raridade: waifuFind.raridade,
+        img: waifuFind.image,
+        preco: preco[waifuFind.raridade]
+      };
+
+      const userSender = await ensureUser(sender, msg.pushName || "Sem nome");
+
       if(userSender.dinheiro < waifuEscolhida.preco) {
         await bot.reply(from, `${userSender.name}... No momento você não possui o valor suficiente para comprar a ${waifuEscolhida.nome}...`);
-        return
+        return;
       }
-      else {
-        await users.updateOne({ userLid: sender }, { $push: {waifus: { nome: waifuEscolhida.nome,
-        image: waifuEscolhida.img,
-        id: waifuEscolhida.id,
-        raridade: waifuEscolhida.raridade,
-        preco: waifuEscolhida.preco
-        }
-        }, $inc: {dinheiro: -waifuEscolhida.preco}});
-        
-        await bot.reply(from, `${waifuEscolhida.nome}, comprada com sucesso!`);
-        comprarWaifu({ctx: msg, waifu: waifuEscolhida})
-        
+
+      const result = await updateUserAndCache(
+        sender,
+        {
+          $push: {
+            waifus: {
+              nome: waifuEscolhida.nome,
+              image: waifuEscolhida.img,
+              id: waifuEscolhida.id,
+              raridade: waifuEscolhida.raridade,
+              preco: waifuEscolhida.preco
+            }
+          },
+          $inc: { dinheiro: -waifuEscolhida.preco }
+        },
+        {filter: {dinheiro: {$gte: waifuEscolhida.preco}}}
+      );
+
+      if(!result) {
+        await bot.reply(from, `${userSender.name}... No momento você não possui o valor suficiente para comprar a ${waifuEscolhida.nome}...`);
+        return;
       }
-    }
-    catch(err) {
+
+      await bot.reply(from, `${waifuEscolhida.nome}, comprada com sucesso!`);
+      comprarWaifu({ctx: msg, waifu: waifuEscolhida});
+    } catch(err) {
       await bot.reply(from, erros_prontos);
       console.error(err);
     }
-    
   }
-}
+};

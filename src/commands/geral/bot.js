@@ -10,18 +10,7 @@ module.exports = {
       
       const msgEspera = await bot.reply(from, espera_pronta);
       
-      const groups = await grupos.find();
-      
-      const gruposAtivos = groups.filter(g => {
-        const agoraMs = Date.now();
-        
-        if(g.aluguel) {
-        const vencimentoMs = g.aluguel.getTime();
-        
-        return vencimentoMs < agoraMs
-          
-        }
-      });
+      const gruposAtivos = await grupos.countDocuments({aluguel: {$gt: new Date()}});
       
       
       const ownerLink = `https://api.whatsapp.com/send/?phone=%2B558791732587&text=Oi,%20Speed&type=phone_number&app_absent=0&wame_ctl=1`
@@ -44,7 +33,7 @@ module.exports = {
 *Dono:* Speed
 > métricas
 *Processo:* ${horasProcess}h ${MinProcess}m ${segundosProcesso}s 
-*Grupos ativos:* ${gruposAtivos.length}
+*Grupos ativos:* ${gruposAtivos}
 *mensagens por minuto:* ${Number(msgMinuto) + 1}
 *Comandos por minuto*: ${Number(cmdMinuto) + 1}
 > Links

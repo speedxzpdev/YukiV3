@@ -1,6 +1,6 @@
 const axios = require("axios");
-const { users } = require("../../database/models/users");
 const { normalizeUserLid } = require("../../utils/normalizeUserLid");
+const { updateUserAndCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "play",
@@ -57,7 +57,7 @@ module.exports = {
     
     await sock.sendPresenceUpdate("paused", from);
     
-    await users.updateOne({userLid: normalizeUserLid(sender)}, {$inc: {donwloads: 1}});
+    await updateUserAndCache(normalizeUserLid(sender), {$inc: {donwloads: 1}});
     
     
   }

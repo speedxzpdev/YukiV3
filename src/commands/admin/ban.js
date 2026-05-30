@@ -1,5 +1,5 @@
 const { numberBot } = require("../../config");
-const { donos } = require("../../database/models/donos");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 const { isOwnerLid } = require("../../utils/owner");
 
 module.exports = {
@@ -12,10 +12,10 @@ module.exports = {
 
       const metadados = await sock.groupMetadata(from);
       const admins = metadados.participants.filter((p) => p.admin);
-      const groupAdmins = admins.map((m) => m.lid);
-      const donin = await donos.findOne({ userLid: sender });
+      const groupAdmins = admins.flatMap((m) => [m.lid, m.id]).filter(Boolean);
+      const isSubOwner = await isOwnerCached(sender);
 
-      if (!groupAdmins.includes(sender) && !donin) {
+      if (!groupAdmins.includes(sender) && !isSubOwner) {
         const mensagensTentativaSemPerm = [
           `${msg.pushName}, tu não tem cargo pra isso, mano. Vai brincar de moderador em outro lugar.`,
           `Tentou banir sem permissão. O ego tá grande, mas o poder é zero.`,
@@ -61,7 +61,7 @@ module.exports = {
         return;
       }
 
-      if (await donos.findOne({ userLid: mention })) {
+      if (await isOwnerCached(mention)) {
         await sock.sendMessage(from, { text: "Ele é um dos meus donos especiais, não pode ser banido!" }, { quoted: msg });
         return;
       }

@@ -1,6 +1,6 @@
 const axios = require("axios");
-const { users } = require("../database/models/users");
 const { normalizeUserLid } = require("./normalizeUserLid");
+const { ensureUser, updateUserAndCache } = require("./dbHelpers");
 const { ensureTikTokApiRunning } = require("./tiktokApiRuntime");
 
 const tiktokApi = axios.create({
@@ -411,7 +411,8 @@ async function countDownload(sender) {
   const userLid = normalizeUserLid(sender);
   if (!userLid) return;
   try {
-    await users.updateOne({ userLid }, { $inc: { donwloads: 1 } }, { upsert: true });
+    await ensureUser(userLid, "Sem nome");
+    await updateUserAndCache(userLid, { $inc: { donwloads: 1 } });
   } catch (err) {
     console.error("Falha ao atualizar contador de downloads:", err);
   }

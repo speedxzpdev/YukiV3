@@ -1,13 +1,11 @@
-const { donos } = require("../../database/models/donos");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "seradmin",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
       
-      const dono = await donos.findOne({userLid: sender});
-      
-      if(!dono) {
+      if(!(await isOwnerCached(sender))) {
         await sock.sendMessage(from, {text: "Você é dono? Seu filho da puta"}, {quoted: msg});
         return
       }

@@ -1,6 +1,6 @@
 const { mutados } = require("../../database/models/mute");
-const { donos } = require("../../database/models/donos");
 const { numberBot } = require("../../config");
+const { getGroupPermission, isOwnerCached, setMuteCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "mute",
@@ -8,65 +8,48 @@ module.exports = {
     async function reply(texto) {
       await sock.sendMessage(from, {text: texto}, {quoted: msg});
     }
-    
+
     try {
-      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant
-      
-      const metadata = await sock.groupMetadata(from);
-      
-      const admins = metadata.participants.filter(p => p.admin).map(p => p.lid);
-      
-      
-      const donoSender = await donos.findOne({userLid: sender});
-      
-      
-      if(!admins.includes(sender) && !donoSender) {
+      const mention = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || msg.message?.extendedTextMessage?.contextInfo?.participant;
+      const { allowed } = await getGroupPermission(sock, from, sender);
+
+      if(!allowed) {
         await reply("Você n é admin, zé bct");
-        return
+        return;
       }
-      
+
       if(!mention) {
         await reply("Mencione quem deseja mutar.");
-        return
+        return;
       }
-      
-      const isdono = await donos.findOne({userLid: mention});
-      
-      if(isdono) {
+
+      if(await isOwnerCached(mention)) {
         await reply("Muta subdono n seu miseravel");
-        return
+        return;
       }
-      
+
       if(mention.includes(numberBot)) {
         await reply("Vai me mutar não seu lixo!");
-        return
+        return;
       }
-      
-      /*if(mention.includes(admins)) {
-        await reply("Posso mutar adm não seu lixo.");
-        return
-      }
-      */
-      
-      const ismute = await mutados.findOne({userLid: mention});
-      
-      if(ismute) {
+
+      const mute = await mutados.findOneAndUpdate(
+        {userLid: mention, grupo: from},
+        {$setOnInsert: {userLid: mention, grupo: from}},
+        {upsert: true, new: false}
+      );
+
+      if(mute) {
+        setMuteCache(mention, from, mute.toObject?.() || mute);
         await reply("Este usuário já está mutado.");
-        return
+        return;
       }
-      
-      await mutados.create({userLid: mention, grupo: from});
-      
+
+      setMuteCache(mention, from, {userLid: mention, grupo: from, tentativasMsg: 0});
       await reply("Usuário mutado com sucesso! Caso mande mais de 3 mensagens será removido.");
-      
-    }
-    catch(err) {
+    } catch(err) {
       await reply(erros_prontos);
-      return
+      console.error(err);
     }
-    
-    
-    
-    
   }
-}
+};

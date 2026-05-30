@@ -7,10 +7,10 @@ module.exports = {
     try {
       const msgEspera = await bot.reply(from, "Buscando rank...");
 
-      const dono = await donos.find();
+      const dono = await donos.find().lean();
       const donosIds = dono.map((i) => i.userLid);
 
-      const usersRank = await users.find({ userLid: { $nin: donosIds } }).sort({ dinheiro: -1 }).limit(10);
+      const usersRank = await users.find({ userLid: { $nin: donosIds } }).sort({ dinheiro: -1 }).limit(10).lean();
 
       const rank = usersRank.map((item, indice) => {
         return `${indice + 1}° @${item.userLid.split("@")[0]}\n⤷ *Moedas:* ${item.dinheiro}\n⤷ *Quantidade de waifu:* ${item.waifus.length}`;

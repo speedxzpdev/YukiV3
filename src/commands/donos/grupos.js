@@ -1,5 +1,5 @@
 const { grupos } = require("../../database/models/grupos");
-const { donos } = require("../../database/models/donos");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "listargrupos",
@@ -7,16 +7,14 @@ module.exports = {
     try {
       
       
-      const donoSender = await donos.findOne({userLid: sender});
-      
-      if(!donoSender) {
+      if(!(await isOwnerCached(sender))) {
         await sock.sendMessage(from, {text: "Só donos podem usar essa merda!"}, {quoted: msg});
         return
       }
       
       const esperaMsg = await sock.sendMessage(from, {text: "Buscando grupos..."}, {quoted: msg});
       
-      const gruposArray = await grupos.find();
+      const gruposArray = await grupos.find().lean();
       
       
       

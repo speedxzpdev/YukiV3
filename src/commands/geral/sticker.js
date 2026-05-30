@@ -6,8 +6,8 @@ const { downloadMediaMessage } = require('whaileys');
 const fs = require('fs')
 const { exec } = require('child_process')
 const { version } = require("../../config");
-const { users } = require("../../database/models/users");
 const { normalizeUserLid } = require("../../utils/normalizeUserLid");
+const { updateUserAndCache } = require("../../utils/dbHelpers");
 
 
 module.exports = {
@@ -131,7 +131,7 @@ const subdados = `↦ ✨𝑭𝒆𝒊𝒕𝒐 𝒑𝒐𝒓: ${pushname} • ${ti
       
       await sock.sendMessage(jid, { sticker: stickerBuffer }, { quoted: msg });
       
-      await users.updateOne({userLid: normalizeUserLid(sender)}, {$inc: {figurinhas: 1}});
+      await updateUserAndCache(normalizeUserLid(sender), {$inc: {figurinhas: 1}});
 
       await fs.unlinkSync(inputPath);
       await fs.unlinkSync(outputPath);
