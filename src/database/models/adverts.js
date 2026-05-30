@@ -7,6 +7,8 @@ const schema = new mongoose.Schema({
   adv: {type: Number, default: 0}
 });
 
+schema.index({ userLid: 1, grupo: 1 });
+
 const advertidos = mongoose.model("adv", schema)
 
 module.exports = {

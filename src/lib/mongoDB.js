@@ -1,44 +1,58 @@
-/*
-  DECIDIMOS FAZER ESSA GAMBIARRA PARA CONECTAR AO MONGO, POIS O MONGODB SE DESCONECTA DE VEZ EM QUANDO, ENTÃO PARA EVITAR QUE O SERVIDOR FIQUE CAINDO, DECIDIMOS COLOCAR UM SETTIMEOUT PARA REINICIAR O SERVIDOR CASO O MONGO DESCONECTE, E TAMBÉM COLOCAMOS UM LOG PARA SABER QUANDO O MONGO DESCONECTA E QUANDO ELE RECONECTA. 
-  NO ENTANTO, ESSA NÃO É A MELHOR SOLUÇÃO, POIS O SERVIDOR FICA REINICIANDO SEM NECESSIDADE, O IDEAL SERIA OTIMIZAR AS QUANTIDADE DE QUERY MAS  O TEMPO ESTÁ APERTADO E ESSA SOLUÇÃO FUNCIONA, ENTÃO DECIDIMOS DEIXAR ASSIM POR ENQUANTO, MAS FUTURAMENTE VAMOS OTIMIZAR ISSO PARA EVITAR QUE O SERVIDOR FIQUE REINICIANDO SEM NECESSIDADE.
-*/
-
-
-
-
 const mongoose = require("mongoose");
 
+let connectPromise = null;
+let eventsRegistered = false;
 
-async function connectDB() {
-    try {
-  await mongoose.connect(process.env.URIDB);
-  console.log("mongoDB Conectado!"); 
+function registerMongoEvents() {
+  if (eventsRegistered) return;
+  eventsRegistered = true;
 
-} 
+  mongoose.connection.on("connected", () => {
+    console.log("[mongo] conectado");
+  });
 
-  catch (error) { 
+  mongoose.connection.on("disconnected", () => {
+    console.error("[mongo] desconectado; o driver vai tentar reconectar pelo pool");
+  });
 
-    console.error("erro ao conectaar", error);
+  mongoose.connection.on("reconnected", () => {
+    console.log("[mongo] reconectado");
+  });
 
-    setTimeout(() => {      process.exit(1);
-    }, 5000);
-    
-    }
+  mongoose.connection.on("error", (err) => {
+    console.error("[mongo] erro na conexao:", err);
+  });
 }
 
-mongoose.connection.on("disconnected", () => {
-  console.log("MongoDB desconectado!");
-  setTimeout(() => {    process.exit(1);
-  }, 5000);
+async function connectDB() {
+  registerMongoEvents();
 
-});
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
 
-mongoose.connection.on("reconnected", () => {
-  console.log("MongoDB reconectado!");
-});
+  if (connectPromise) {
+    return connectPromise;
+  }
 
-mongoose.connection.on("error", (err) => {
-  console.error("Erro na conexão Mongo:", err);
-});
+  connectPromise = mongoose
+    .connect(process.env.URIDB, {
+      maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE || 20),
+      minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE || 2),
+      serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS || 10000),
+      socketTimeoutMS: Number(process.env.MONGO_SOCKET_TIMEOUT_MS || 45000)
+    })
+    .then(() => {
+      console.log("mongoDB Conectado!");
+      connectPromise = null;
+      return mongoose.connection;
+    })
+    .catch((err) => {
+      connectPromise = null;
+      throw err;
+    });
 
-module.exports = connectDB
+  return connectPromise;
+}
+
+module.exports = connectDB;

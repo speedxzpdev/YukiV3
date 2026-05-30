@@ -7,6 +7,9 @@ const schema = new mongoose.Schema({
   from: {type: String, required: true}
 });
 
+schema.index({ userLid: 1, from: 1 });
+schema.index({ from: 1, msg: -1 });
+
 const rankativos = mongoose.model("rankAtivo", schema);
 
 module.exports = {

@@ -1,14 +1,16 @@
 const express = require("express");
 const { clientRedis } = require("../lib/redis.js");
 const { payment } = require("../lib/mercadoPago.js");
-const { grupos } = require("../database/models/grupos.js");
 const { numberOwner } = require("../config.js");
 const axios = require("axios");
-const { users } = require("../database/models/users.js");
+const { getUserCached, updateGroupAndCache, updateUserAndCache } = require("../utils/dbHelpers.js");
 const userRouter = require("./routes/user.js");
 const cors = require("cors");
 const cookieParser = require("cookie-parser")
 const catbox = require("./controllers/user/catbox.js");
+
+let activeSock = null;
+let httpServer = null;
 
 async function refreshToken(token, user) {
   try {
@@ -21,7 +23,7 @@ async function refreshToken(token, user) {
         "Content-Type": "application/x-www-form-urlencoded",
         "Authorization": "Basic " + Buffer.from(process.env.CLIENT_SPOTIFY + ":" + process.env.SPOTIFY_KEY).toString("base64")}});
         
-        await users.updateOne({userLid: user}, {$set: {"spotifyToken.token": response.data.access_token}}, {upsert: true});
+        await updateUserAndCache(user, {$set: {"spotifyToken.token": response.data.access_token}}, {upsert: true});
         
         console.log(`token resetado para: ${response.data.access_token}`);
         
@@ -33,6 +35,12 @@ async function refreshToken(token, user) {
 }
 
 module.exports = async function server(sock) {
+  activeSock = sock;
+
+  if (httpServer) {
+    console.log("[backend] socket atualizado; servidor HTTP ja estava ativo");
+    return httpServer;
+  }
   
   const app = express();
   
@@ -84,18 +92,18 @@ next()
           const diasTimestamp = 1000 * 24 * 60 * 60 * Number(aluguel.dias);
           
           //adiciona os dias;
-          await grupos.updateOne({groupId: aluguel.groupId}, {$set: {aluguel: Date.now() + diasTimestamp}}, {upsert: true});
+          await updateGroupAndCache(aluguel.groupId, {$set: {aluguel: Date.now() + diasTimestamp}});
           
           
           try {
-          const metadataGroup = await sock.groupMetadata(aluguel.groupId);
+          const metadataGroup = await activeSock.groupMetadata(aluguel.groupId);
           
-          await sock.sendMessage(aluguel.user, {text: `🥳Pagamento concluído! ${aluguel.dias} dias serão adicionando ao grupo: ${metadataGroup.subject} 🎉`});
+          await activeSock.sendMessage(aluguel.user, {text: `🥳Pagamento concluído! ${aluguel.dias} dias serão adicionando ao grupo: ${metadataGroup.subject} 🎉`});
           
             
-          await sock.sendMessage(aluguel.groupId, {text: `O @${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
+          await activeSock.sendMessage(aluguel.groupId, {text: `O @${aluguel.user.split("@")[0]} patrocinou o aluguel da yuki pra galera! 🥳🎉`, mentions: [aluguel.user]});
           
-          await sock.sendMessage(numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]});
+          await activeSock.sendMessage(numberOwner, {text: `Pagamento concluido🎉\nNome: ${aluguel.user.split("@")[0]}\nGrupo:${metadataGroup.subject}\nvalor: ${aluguel.valor}\ndias: ${aluguel.dias}`, mentions: [aluguel.user]});
           
           }
           catch(err) {
@@ -155,11 +163,11 @@ next()
       Authorization: "Basic " + Buffer.from(process.env.CLIENT_SPOTIFY + ":" + process.env.SPOTIFY_KEY).toString("base64")
     }});
     
-    await users.updateOne({userLid: user.userLid}, {$set: {spotifyToken: {refresh: response.data.refresh_token, token: response.data.access_token}}}, {upsert: true});
+    await updateUserAndCache(user.userLid, {$set: {spotifyToken: {refresh: response.data.refresh_token, token: response.data.access_token}}}, {upsert: true});
     
     res.status(200).send("ok, pode voltar para o whatsapp.");
     
-    await sock.sendMessage(user.userLid, {text: "Spotify conectado com sucesso!"});
+    await activeSock.sendMessage(user.userLid, {text: "Spotify conectado com sucesso!"});
     
     }
     catch(err) {
@@ -177,7 +185,7 @@ next()
         return
       }
       
-      const userDb = await users.findOne({userLid: user});
+      const userDb = await getUserCached(user);
       
       if(!userDb) {
         res.status(404).send("Usuário não encontrado.");
@@ -186,7 +194,7 @@ next()
       
       let token = userDb?.spotifyToken?.token;
       
-      const refresh = userDb?.spotifyToken?.refresh_token;
+      const refresh = userDb?.spotifyToken?.refresh;
       
       let response;
        
@@ -247,7 +255,7 @@ next()
         return;
       }
       
-      await sock.sendMessage(from, {text: message});
+      await activeSock.sendMessage(from, {text: message});
       
       res.status(200).send("mensagem enviada com sucesso!");
       
@@ -264,9 +272,13 @@ next()
   
   
   
-  app.listen(port, () => {
+  httpServer = app.listen(port, () => {
     console.log(`Backend iniciado em: http://localhost:${port}`);
   });
+  httpServer.on("error", (err) => {
+    console.error("[backend] erro no servidor HTTP:", err);
+  });
+  return httpServer;
   
   
 }

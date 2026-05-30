@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const schema = new mongoose.Schema({
-  userLid: {type: String, require: true},
-  data: {type: Date, default: new Date},
+  userLid: {type: String, required: true, index: true},
+  data: {type: Date, default: Date.now},
   desc: {type: String, default: "Oi!"}
   
 });

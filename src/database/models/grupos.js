@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 
 const schema = new mongoose.Schema({
-  groupId: {type: String, required: true},
+  groupId: {type: String, required: true, index: true},
   grupoName: {type: String, required: true},
   ownerId: {type: String, required: true},
-  aluguel: {type: Date, default: Date.now()},
+  aluguel: {type: Date, default: Date.now},
   configs: {
     events: {type: Boolean, default: true},
     prefixo: {type: String, default: "/"},
@@ -24,6 +24,9 @@ const schema = new mongoose.Schema({
   
   
 });
+
+schema.index({ aluguel: 1 });
+schema.index({ cmdUsados: -1 });
 
 const grupos = mongoose.model("grupos", schema);
 
