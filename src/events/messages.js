@@ -1,9 +1,7 @@
 const { prefixo, numberBot, numberBotJid } = require("../config.js");
-const connectDB = require("../lib/mongoDB.js");
 const similarityCmd = require("../utils/similaridadeCmd");
 const { users } = require("../database/models/users");
 const { donos } = require("../database/models/donos");
-const { rankativos } = require("../database/models/rankativos");
 const { grupos } = require("../database/models/grupos");
 const instaDl = require("../utils/instagram");
 const { mutados } = require("../database/models/mute");
@@ -20,6 +18,106 @@ const addXp = require("../utils/xp.js");
 const YukiAI = require("../ai.js");
 const { normalizeUserLid } = require("../utils/normalizeUserLid");
 const { isOwnerLid } = require("../utils/owner");
+const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
+const {
+  createMessageMongoMetrics,
+  finishMessageMongoMetrics,
+  markQueuedWrite,
+  trackMongo
+} = require("../utils/messageMongoMetrics");
+const { queueCommandActivity, queueMessageActivity } = require("../utils/statsBatcher");
+const {
+  invalidateMute,
+  muteCacheKey,
+  setMuteCache,
+  updateUserAndCache
+} = require("../utils/dbHelpers");
+
+const NULL_CACHE_TTL_MS = 5 * 1000;
+const OWNER_NEGATIVE_CACHE_TTL_MS = 60 * 1000;
+const pendingUserLoads = new Map();
+const pendingGroupLoads = new Map();
+const pendingOwnerLoads = new Map();
+
+async function oncePerKey(map, key, loader) {
+  if (map.has(key)) return map.get(key);
+
+  const promise = loader().finally(() => {
+    map.delete(key);
+  });
+
+  map.set(key, promise);
+  return promise;
+}
+
+async function ensureCachedUser(sender, pushName, metrics) {
+  const user = await oncePerKey(pendingUserLoads, `ensure:${sender}`, () =>
+    trackMongo(metrics, "users.findOneAndUpdate:ensure", () =>
+      users.findOneAndUpdate(
+        { userLid: sender },
+        { $setOnInsert: { userLid: sender, name: pushName || "Sem nome" } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean()
+    )
+  );
+
+  userCache.set(sender, user || null);
+  return user;
+}
+
+async function getCachedGroup(groupId, metrics) {
+  const cached = groupCache.get(groupId);
+  if (cached !== undefined) return cached;
+
+  const group = await oncePerKey(pendingGroupLoads, `get:${groupId}`, () =>
+    metrics
+      ? trackMongo(metrics, "grupos.findOne:group", () =>
+        grupos.findOne({ groupId }).lean()
+      )
+      : grupos.findOne({ groupId }).lean()
+  );
+
+  groupCache.set(groupId, group || null, group ? undefined : NULL_CACHE_TTL_MS);
+  return group;
+}
+
+async function ensureCachedGroup(sock, groupId, metrics) {
+  const group = await oncePerKey(pendingGroupLoads, `ensure:${groupId}`, async () => {
+    const groupDados = await sock.groupMetadata(groupId);
+
+    return trackMongo(metrics, "grupos.findOneAndUpdate:ensure", () =>
+      grupos.findOneAndUpdate(
+        { groupId },
+        {
+          $setOnInsert: {
+            groupId,
+            grupoName: groupDados.subject || "Sem nome",
+            ownerId: groupDados?.owner || "Sem dono"
+          }
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).lean()
+    );
+  });
+
+  groupCache.set(groupId, group || null);
+  return group;
+}
+
+async function getCachedOwner(sender, metrics) {
+  const cached = ownerCache.get(sender);
+  if (cached !== undefined) return cached;
+
+  const owner = await oncePerKey(pendingOwnerLoads, sender, () =>
+    trackMongo(metrics, "donos.findOne:sender", () =>
+      donos.findOne({ userLid: sender }).lean()
+    )
+  );
+
+  const isOwner = !!owner;
+  ownerCache.set(sender, isOwner, isOwner ? undefined : OWNER_NEGATIVE_CACHE_TTL_MS);
+  return isOwner;
+}
 
 async function safeRedis(action, fallback = null) {
   if (!clientRedis?.isOpen) return fallback;
@@ -366,7 +464,7 @@ async function safeRedis(action, fallback = null) {
         activeInterval.delete(from);
 
         try {
-          const freshGroup = await grupos.findOne({ groupId: from });
+          const freshGroup = await getCachedGroup(from);
           if (!freshGroup?.autoReply) return;
 
           const currentState = getAiState(from);
@@ -528,6 +626,10 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     const from = msg?.key?.remoteJid || msg?.key?.participantLid
     if (!from || !sender) return;
+
+    const mongoMetrics = createMessageMongoMetrics({ from, sender });
+
+    try {
     
     
     
@@ -569,25 +671,46 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     
 
-    let doninhos = false;
-
-    const ownerCache = await clientRedis.hGetAll(`ownerCache:${sender}`);
-
-    if (Object.keys(ownerCache).length === 0) { 
-      const isOwner = await donos.findOne({ userLid: sender });
-
-      if (isOwner) {
-        doninhos = true;
-        await clientRedis.hSet(`ownerCache:${sender}`, { isOwner: "true" });
-        }
-        else {
-          await clientRedis.hSet(`ownerCache:${sender}`, { isOwner: "false" });
-          await clientRedis.expire(`ownerCache:${sender}`, 3600);
-          doninhos = false;
-        }
-    }
-    
     const bot = new YukiBot({sock: sock, msg});
+    const isGroup = from.endsWith("@g.us");
+    const isPrivate = from.endsWith("@lid");
+    let ownerPromise = null;
+
+    const getOwner = () => {
+      if (!ownerPromise) ownerPromise = getCachedOwner(sender, mongoMetrics);
+      return ownerPromise;
+    };
+
+    const body = (msg.message?.conversation) ||
+    (msg.message?.extendedTextMessage?.text) ||
+    (msg.message?.imageMessage?.caption) ||
+    (msg.message?.documentMessage?.caption) || msg?.message?.buttonsResponseMessage?.selectedButtonId || "Msg estranha...";
+
+    const bodyCase = body.toLowerCase();
+
+    //argumentos
+    const args = body.slice(prefixo.length).trim().split(/ +/);
+    const isPrefixCommand = body.startsWith(prefixo);
+    const noPrefixPreview = isPrefixCommand ? [] : body.trim().split(/ +/);
+    const noPrefixCommandName = (noPrefixPreview[0] || "").toLowerCase();
+    const noPrefixCommandCandidate = noPrefixCommandName ? commandsMap.get(noPrefixCommandName) : null;
+
+    let usersSender = null;
+    let userLoaded = false;
+
+    async function getUsersSender() {
+      if (userLoaded) return usersSender;
+
+      const cachedUser = userCache.get(sender);
+      if(cachedUser) {
+        usersSender = cachedUser;
+      } else {
+        usersSender = await ensureCachedUser(sender, msg.pushName, mongoMetrics);
+      }
+
+      userLoaded = true;
+      return usersSender;
+    }
     
     await safeRedis(() => clientRedis.incr("metrics:message:min"));
     await safeRedis(() => clientRedis.expire("metrics:message:min", 60));
@@ -598,12 +721,11 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
 
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
-    //user
-    let usersSender = await users.findOne({userLid: sender});
-    
-    //const Notvip = !usersSender?.vencimentoVip || Date.now() > usersSender?.vencimentoVip?.getTime();
-    
-    if(from.endsWith("@lid") && !doninhos) {
+    if(isPrivate) {
+      const privateUser = await getUsersSender();
+      const Notvip = !privateUser?.vencimentoVip || Date.now() > privateUser?.vencimentoVip?.getTime();
+
+      if(!(await getOwner()) && Notvip) {
       
       const IsMsgPV = await safeRedis(() => clientRedis.exists(`pv:block:${sender}`), 0);
       
@@ -616,13 +738,18 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       await safeRedis(() => clientRedis.expire(`pv:block:${sender}`, 2 * 60));
       
       return;
+      }
     }
-    //se uma mensagem for de um grupo registra.
-    if(from.endsWith("@g.us")) {
+    let groupDBInfo = null;
 
-      const grupoDBInfo = await grupos.findOne({groupId: from})
+    //se uma mensagem for de um grupo registra.
+    if(isGroup) {
+
+      groupDBInfo = await getCachedGroup(from, mongoMetrics)
       //verifica se é adm
-      const isAdmRegistrado = usersSender?.grupos?.some(grupo => grupo.id === from);
+      if(isPrefixCommand || noPrefixCommandCandidate) {
+      const commandUser = await getUsersSender();
+      const isAdmRegistrado = commandUser?.grupos?.some(grupo => grupo.id === from);
 
       if(!isAdmRegistrado) {
         const isAdminSender = await bot.isAdmin(from);
@@ -631,19 +758,27 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
           try {
             const groupDados = await sock.groupMetadata(from);
 
-            await users.updateOne({userLid: sender}, {$addToSet: {grupos: {id: from, nome: groupDados.subject}}}, {upsert: true})
+            const updatedUser = await trackMongo(mongoMetrics, "users.findOneAndUpdate:adminGroup", () =>
+              updateUserAndCache(
+                sender,
+                {$addToSet: {grupos: {id: from, nome: groupDados.subject}}},
+                {upsert: true, name: msg.pushName || "Sem nome"}
+              )
+            );
+
+            usersSender = updatedUser?.toObject?.() || updatedUser || commandUser;
+            userLoaded = true;
           } catch(err) {
             console.error("Erro ao salvar grupo do admin:", err?.data || err?.message || err);
           }
         }
       }
+      }
       
-      if(!grupoDBInfo) {
+      if(!groupDBInfo) {
         
         try {
-          const groupDados = await sock.groupMetadata(from);
-        
-          await grupos.create({groupId: from, grupoName: groupDados.subject, ownerId: groupDados?.owner || "Sem dono"});
+          groupDBInfo = await ensureCachedGroup(sock, from, mongoMetrics);
         } catch(err) {
           console.error("Erro ao registrar grupo:", err?.data || err?.message || err);
         }
@@ -651,35 +786,50 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       
     }
     
-
-    const groupDBInfo = await grupos.findOne({groupId: from});
-    
-    
-
-    if(!await users.findOne({userLid: sender})) {
-      await users.create({userLid: sender, name: msg.pushName || "Sem nome"});
-      
-      usersSender = await users.findOne({userLid: sender})
-    }
-
-    await rankativos.updateOne({userLid: sender, from: from}, {$inc: {msg: 1}}, {upsert: true})
+    queueMessageActivity(sender, from);
+    markQueuedWrite(mongoMetrics);
 
      //se estiver alguem mutado
-    if(await mutados.findOne({userLid: sender, grupo: from})) {
+    let userMutado = null;
+    if(isGroup) {
+      const cachedMute = muteCache.get(muteCacheKey(sender, from));
+      if(cachedMute !== undefined) {
+        userMutado = cachedMute;
+      } else {
+        userMutado = await trackMongo(mongoMetrics, "mutados.findOne:message", () =>
+          mutados.findOne({userLid: sender, grupo: from}).lean()
+        );
+        muteCache.set(
+          muteCacheKey(sender, from),
+          userMutado || null,
+          userMutado ? undefined : Number(process.env.MUTE_NEGATIVE_CACHE_TTL_MS || 30 * 1000)
+        );
+      }
+    }
+
+    if(userMutado) {
       try {
-      const userMutado = await mutados.findOne({userLid: sender, grupo: from});
       //apaga todas as msg
       await sock.sendMessage(userMutado.grupo, {delete: msg.key})
       
-      const muteTentativa = await mutados.findOneAndUpdate({userLid: sender, grupo: from}, {$inc: {tentativasMsg: 1}}, {new: true});
+      const muteTentativa = await trackMongo(mongoMetrics, "mutados.findOneAndUpdate:tentativas", () =>
+        mutados.findOneAndUpdate({userLid: sender, grupo: from}, {$inc: {tentativasMsg: 1}}, {new: true}).lean()
+      );
       //se a pessoa for desmutada antes
-      if(!muteTentativa) return;
+      if(!muteTentativa) {
+        invalidateMute(sender, from);
+        return;
+      }
+      setMuteCache(sender, from, muteTentativa);
       //se ela tentar mandar mais de 3 mensagens
       if(muteTentativa.tentativasMsg >= 3) {
         //remove ela do grupo
         await sock.groupParticipantsUpdate(muteTentativa.grupo, [muteTentativa.userLid], 'remove');
         //apaga ela da colessao
-        await mutados.deleteOne({userLid: sender, grupo: from});
+        await trackMongo(mongoMetrics, "mutados.deleteOne:limite", () =>
+          mutados.deleteOne({userLid: sender, grupo: from})
+        );
+        invalidateMute(sender, from);
         
       }
       
@@ -692,18 +842,8 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     
     addXp(sender, 1, sock, from, msg);
+    markQueuedWrite(mongoMetrics);
 
-    const body = (msg.message?.conversation) ||
-    (msg.message?.extendedTextMessage?.text) ||
-    (msg.message?.imageMessage?.caption) ||
-    (msg.message?.documentMessage?.caption) || msg?.message?.buttonsResponseMessage?.selectedButtonId || "Msg estranha...";
-    
-    const bodyCase = body.toLowerCase();
-    
-    //argumentos 
-    const args = body.slice(prefixo.length).trim().split(/ +/);
-    
-        
     //Caso tenha um aluguel a pagar
     const alugarExiste = await safeRedis(() => clientRedis.exists(`aluguel:${sender}&${from}`), 0);
     
@@ -774,28 +914,38 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       
       if(bodyCase.includes("aceitar")) {
         try {
+          const valorAposta = Number(apostaObject.valor) || 0;
           
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
           
           const caraOuCora = Math.floor(Math.random() * 100);
           
           if(caraOuCora < 50) {
-            await sock.sendMessage(from, {text: `Coroa! @${apostaObject.alvo.split("@")[0]} ganhou +${apostaObject.valor}`, mentions: [apostaObject.alvo], edit: msgEspera.key});
+            await sock.sendMessage(from, {text: `Coroa! @${apostaObject.alvo.split("@")[0]} ganhou +${valorAposta}`, mentions: [apostaObject.alvo], edit: msgEspera.key});
             //dá o dinheiro
-            await users.updateOne({userLid: apostaObject.alvo}, {$inc: {dinheiro: apostaObject.valor}});
-            //remove de quem perdeu
-            await users.updateOne({userLid: apostaObject.autor}, {$inc: {dinheiro: -apostaObject.valor}})
+            await Promise.all([
+              trackMongo(mongoMetrics, "users.findOneAndUpdate:apostaWinner", () =>
+                updateUserAndCache(apostaObject.alvo, {$inc: {dinheiro: valorAposta}}, {upsert: true})
+              ),
+              trackMongo(mongoMetrics, "users.findOneAndUpdate:apostaLoser", () =>
+                updateUserAndCache(apostaObject.autor, {$inc: {dinheiro: -valorAposta}}, {upsert: true})
+              )
+            ]);
             
             //apaga
             await safeRedis(() => clientRedis.del(`aposta:${sender}`));
           }
           else {
-            await sock.sendMessage(from, {text: `Cara! @${apostaObject.autor.split("@")[0]} ganhou +${apostaObject.valor}`, mentions: [apostaObject.autor], edit: msgEspera.key});
+            await sock.sendMessage(from, {text: `Cara! @${apostaObject.autor.split("@")[0]} ganhou +${valorAposta}`, mentions: [apostaObject.autor], edit: msgEspera.key});
             //dá o valor
-            await users.updateOne({userLid: apostaObject.autor}, {$inc: {dinheiro: apostaObject.valor}});
-            
-            //remove de quem perdeu
-            await users.updateOne({userLid: apostaObject.alvo}, {$inc: {dinheiro: -apostaObject.valor}})
+            await Promise.all([
+              trackMongo(mongoMetrics, "users.findOneAndUpdate:apostaWinner", () =>
+                updateUserAndCache(apostaObject.autor, {$inc: {dinheiro: valorAposta}}, {upsert: true})
+              ),
+              trackMongo(mongoMetrics, "users.findOneAndUpdate:apostaLoser", () =>
+                updateUserAndCache(apostaObject.alvo, {$inc: {dinheiro: -valorAposta}}, {upsert: true})
+              )
+            ]);
             
             await safeRedis(() => clientRedis.del(`aposta:${sender}`));
           }
@@ -807,7 +957,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         
       }
       if(bodyCase.includes("recusar")) {
-        await sock.sendMessage(from, {text: `Aposta de: @${apostaObject.autor.split("@")[0]} recusada!`, mentions: [apostaObject.autot]}, {quoted: msg});
+        await sock.sendMessage(from, {text: `Aposta de: @${apostaObject.autor.split("@")[0]} recusada!`, mentions: [apostaObject.autor]}, {quoted: msg});
       }
       
       await safeRedis(() => clientRedis.del(`aposta:${sender}`))
@@ -822,9 +972,14 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     if(bodyCase === "aceitar") {
       //Adiciona ao pedidor
-      await users.updateOne({userLid: namoroObject?.autor}, {$set: {"casal.parceiro": namoroObject.alvo, "casal.pedido": new Date()}});
-      //adiciona ao alvo 
-      await users.updateOne({userLid: sender}, {$set: {"casal.parceiro": namoroObject.autor, "casal.pedido": new Date()}});
+      await Promise.all([
+        trackMongo(mongoMetrics, "users.findOneAndUpdate:namoroAutor", () =>
+          updateUserAndCache(namoroObject?.autor, {$set: {"casal.parceiro": namoroObject.alvo, "casal.pedido": new Date()}}, {upsert: true})
+        ),
+        trackMongo(mongoMetrics, "users.findOneAndUpdate:namoroAlvo", () =>
+          updateUserAndCache(sender, {$set: {"casal.parceiro": namoroObject.autor, "casal.pedido": new Date()}}, {upsert: true})
+        )
+      ]);
       
       //deleta o pedido dos pendentes 
       await safeRedis(() => clientRedis.del(`namoro:${sender}`));
@@ -844,7 +999,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
   
   //pega os dados do grupo
-  const groupReply = await grupos.findOne({groupId: from});
+  const groupReply = groupDBInfo;
   
   //Caso o grupo tenha a anttotag ativa
   if(from.endsWith("@g.us") && groupReply?.antiTotag) {
@@ -882,10 +1037,13 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     await sock.sendMessage(from, {delete: msg.key});
     
-    await advertidos.updateOne({grupo: from, userLid: sender}, {$inc: {adv: 1}}, {upsert: true});
-    
-    
-    let advs = await advertidos.findOne({userLid: sender, grupo: from});
+    let advs = await trackMongo(mongoMetrics, "advertidos.findOneAndUpdate:antlink", () =>
+      advertidos.findOneAndUpdate(
+        {grupo: from, userLid: sender},
+        {$inc: {adv: 1}},
+        {upsert: true, new: true}
+      ).lean()
+    );
     
     if(advs.adv >= 3) {
       await bot.reply(from, "Você teve 3 chances.");
@@ -920,7 +1078,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
   
       //Caso um grupo tenha auto download
-  const groupDonwload = await grupos.findOne({groupId: from});
+  const groupDonwload = groupDBInfo;
   
   if((groupDonwload && groupDonwload.autoDownload) || from.endsWith("@lid")) {
   if(body.includes("https://open.spotify.com/track/")) {
@@ -954,19 +1112,17 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       }
     
     //Caso o users tenha o modo sem prefixo
-if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
+if(noPrefixCommandCandidate && !isPrefixCommand) {
+  const noPrefixUser = await getUsersSender();
+
+  if(!noPrefixUser?.prefixo) {
   
-  const argsNoPrefix = body.trim().split(" ");
+  const argsNoPrefix = body.trim().split(/ +/);
   
   const commandNamePrefix = argsNoPrefix.shift().toLowerCase();
   
   //Busca pelo mapa
-  const commandNoPrefix = commandsMap.get(commandNamePrefix);
-  
-  
-  
-  //se existir
-  if(commandNoPrefix) {
+  const commandNoPrefix = noPrefixCommandCandidate;
   
       //Verifica se tem spam no comando
     if(spamCommand(sender, commandNamePrefix)) {
@@ -984,14 +1140,14 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
             //lida com aluguel
     const isPadrao = commandNoPrefix.categoria === "padrao";
     if(!isPadrao && from.endsWith("@g.us")) {
-    const grupoAluguel = await grupos.findOne({groupId: from});
+    const grupoAluguel = groupDBInfo;
     
     if(!grupoAluguel) return;
     const dataAtual = Date.now();
     
-    const isDono = !!doninhos;
+    const isDono = await getOwner();
     
-    const vipExpireAt = usersSender?.vencimentoVip?.getTime?.();
+    const vipExpireAt = noPrefixUser?.vencimentoVip?.getTime?.();
     
     const hasVipAtivo = Number.isFinite(vipExpireAt) && dataAtual <= vipExpireAt;
     
@@ -1003,7 +1159,9 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     }
     }
     
-  commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot, sender);
+  await commandNoPrefix.execute(sock, msg, from, argsNoPrefix, erros_prontos, espera_pronta, bot, sender);
+  queueCommandActivity(sender, from);
+  markQueuedWrite(mongoMetrics, 3);
   
   //Adiciona nas metricas
   await safeRedis(() => clientRedis.incr("metrics:commands:min"));
@@ -1043,9 +1201,6 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
   }
 
 
-
-
-  let userFind = await users.findOne({userLid: sender});
 
 
 //tratamento dos comandos
@@ -1108,7 +1263,7 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     }
     
     //busca um grupo
-    const grupoFun = await grupos.findOne({groupId: from});
+    const grupoFun = groupDBInfo;
     
     //se um comando for de diversao
     if (commandGet.categoria && commandGet.categoria === "diversao") {
@@ -1129,16 +1284,17 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     }
     
               //lida com aluguel
+    const commandUser = await getUsersSender();
     const isPadrao = commandGet.categoria === "padrao";
     if(!isPadrao && from.endsWith("@g.us") && process.env.DEV_AMBIENT === "false") {
-    const grupoAluguel = await grupos.findOne({groupId: from});
+    const grupoAluguel = groupDBInfo;
     
     if(!grupoAluguel) return;
     const dataAtual = Date.now();
     
-    const isDono = !!doninhos;
+    const isDono = await getOwner();
     
-    const vipExpireAt = usersSender?.vencimentoVip?.getTime?.();
+    const vipExpireAt = commandUser?.vencimentoVip?.getTime?.();
     
     const hasVipAtivo = Number.isFinite(vipExpireAt) && dataAtual <= vipExpireAt;
     
@@ -1160,14 +1316,8 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     //pausa a simulacao
     await sock.sendPresenceUpdate('paused', from);
 //adiciona no contador de comandos
-    await rankativos.updateOne({userLid: sender, from: from}, {$inc: {cmdUsados: 1}}, {upsert: true})
-//adiciona no contador do grupo
-   if(from.endsWith("@g.us")) {
-   await grupos.updateOne({groupId: from}, {$inc: {cmdUsados: 1}});
-     
-   }
-//adiciona no contador de user
-   await users.updateOne({userLid: sender}, {$inc: {cmdCount: 1}});
+    queueCommandActivity(sender, from);
+    markQueuedWrite(mongoMetrics, 3);
    
      //Adiciona nas metricas
   await safeRedis(() => clientRedis.incr("metrics:commands:min"));
@@ -1179,8 +1329,11 @@ if(!usersSender?.prefixo && !body.startsWith(prefixo)) {
     processMessage(grupoRemote);
     
     
-
-
+    } catch (err) {
+      console.error("[messages] erro ao processar mensagem:", err);
+    } finally {
+      finishMessageMongoMetrics(mongoMetrics);
+    }
   });
 
 
