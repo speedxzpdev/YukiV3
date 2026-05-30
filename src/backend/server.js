@@ -8,6 +8,7 @@ const { users } = require("../database/models/users.js");
 const userRouter = require("./routes/user.js");
 const cors = require("cors");
 const cookieParser = require("cookie-parser")
+const catbox = require("./controllers/user/catbox.js");
 
 async function refreshToken(token, user) {
   try {
@@ -257,6 +258,8 @@ next()
     }
     
   });
+
+  app.post("/catbox", catbox);
   
   
   
