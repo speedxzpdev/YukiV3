@@ -74,11 +74,22 @@ function groupDefaults(groupId, metadata = {}) {
 function normalizeUpdateWithInsertDefaults(groupId, update, metadata) {
   const hasOperator = Object.keys(update).some((key) => key.startsWith("$"));
   const normalized = hasOperator ? { ...update } : { $set: update };
-
-  normalized.$setOnInsert = {
+  const insertDefaults = {
     ...groupDefaults(groupId, metadata),
     ...(normalized.$setOnInsert || {})
   };
+
+  const updatePaths = Object.entries(normalized)
+    .filter(([operator]) => operator !== "$setOnInsert")
+    .flatMap(([, value]) => Object.keys(value || {}));
+
+  for (const key of Object.keys(insertDefaults)) {
+    if (updatePaths.some((path) => path === key || path.startsWith(`${key}.`) || key.startsWith(`${path}.`))) {
+      delete insertDefaults[key];
+    }
+  }
+
+  normalized.$setOnInsert = insertDefaults;
 
   return normalized;
 }

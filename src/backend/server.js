@@ -92,7 +92,7 @@ next()
           const diasTimestamp = 1000 * 24 * 60 * 60 * Number(aluguel.dias);
           
           //adiciona os dias;
-          await updateGroupAndCache(aluguel.groupId, {$set: {aluguel: Date.now() + diasTimestamp}});
+          await updateGroupAndCache(aluguel.groupId, {$set: {aluguel: new Date(Date.now() + diasTimestamp)}});
           
           
           try {

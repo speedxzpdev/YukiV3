@@ -31,7 +31,7 @@ module.exports = {
       const diaMs = 24 * 60 * 60 * 1000;
       const vencimentoMs = diasVip * diaMs;
 
-      await updateUserAndCache(mention, {$set: {isVip: true, vencimentoVip: Date.now() + vencimentoMs}});
+      await updateUserAndCache(mention, {$set: {isVip: true, vencimentoVip: new Date(Date.now() + vencimentoMs)}});
       await sock.sendMessage(from, {text: `${diasVip} dias de vip adicionado para @${mention.split("@")[0]}`, edit: msgEspera.key, mentions: [mention]});
     } catch(err) {
       await sock.sendMessage(from, {text: erros_prontos}, {quoted: msg});

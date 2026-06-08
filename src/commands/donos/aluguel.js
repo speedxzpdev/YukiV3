@@ -4,8 +4,6 @@ module.exports = {
   name: "addaluguel",
   async execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender) {
     try {
-      const metadata = await sock.groupMetadata(from);
-
       if(!(await isOwnerCached(sender))) {
         await sock.sendMessage(from, {text: "Só donos podem usar essa merda!"}, {quoted: msg});
         return;
@@ -16,6 +14,7 @@ module.exports = {
         return;
       }
 
+      const metadata = await sock.groupMetadata(from);
       const parametro = args?.slice(0).join(" ").trim();
       const diasAluguel = Number(parametro);
 
@@ -28,7 +27,7 @@ module.exports = {
       const diaMs = 24 * 60 * 60 * 1000;
       const diasVencimento = diasAluguel * diaMs;
 
-      await updateGroupAndCache(from, {$set: {aluguel: diasVencimento + Date.now(), grupoName: metadata.subject}}, {metadata});
+      await updateGroupAndCache(from, {$set: {aluguel: new Date(Date.now() + diasVencimento), grupoName: metadata.subject}}, {metadata});
       await sock.sendMessage(from, {text: 'Dias adicionados com sucesso! Use: "/grupoinfo", para ver mais informações.', edit: msgEspera.key});
     } catch(err) {
       await sock.sendMessage(from, {text: erros_prontos}, {quoted: msg});
