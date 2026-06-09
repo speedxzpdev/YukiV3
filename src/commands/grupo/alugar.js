@@ -1,4 +1,5 @@
 const { clientRedis } = require("../../lib/redis.js");
+const { isOwnerCached } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "alugar",
@@ -27,7 +28,9 @@ module.exports = {
         return;
       }
       
-      if(!await bot.isAdmin(from)) {
+      const isDono = await isOwnerCached(sender);
+
+      if(!isDono && !(await bot.isAdmin(from))) {
         await bot.sendNoAdmin(from);
         return;
       }
