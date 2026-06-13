@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel da Yuki</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/painel-assets/styles.css">
+</head>
+<body>
+  <canvas id="yukiScene" aria-hidden="true"></canvas>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <main class="app">
+    <section class="topbar glass">
+      <div class="brand">
+        <span class="brand-mark">Y</span>
+        <div>
+          <p class="eyebrow">Yuki web</p>
+          <h1>Painel</h1>
+        </div>
+      </div>
+      <div id="status" class="status">Carregando...</div>
+    </section>
+
+    <section id="error" class="notice hidden"></section>
+
+    <section id="content" class="workspace hidden">
+      <section class="identity glass">
+        <div class="identity-copy">
+          <p class="eyebrow">Sessao reconhecida</p>
+          <h2 id="userName">-</h2>
+          <p id="userLid" class="muted">-</p>
+        </div>
+        <div class="identity-side">
+          <span class="orbital-label">Yuki</span>
+          <div class="vip" id="vipState">VIP</div>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Resumo do usuario">
+        <article class="metric glass accent">
+          <span>Dinheiro</span>
+          <strong id="money">0</strong>
+        </article>
+        <article class="metric glass">
+          <span>Level</span>
+          <strong id="level">0</strong>
+        </article>
+        <article class="metric glass">
+          <span>XP</span>
+          <strong id="xp">0</strong>
+        </article>
+        <article class="metric glass">
+          <span>Comandos</span>
+          <strong id="commands">0</strong>
+        </article>
+        <article class="metric glass">
+          <span>Downloads</span>
+          <strong id="downloads">0</strong>
+        </article>
+        <article class="metric glass">
+          <span>Figurinhas</span>
+          <strong id="stickers">0</strong>
+        </article>
+      </section>
+
+      <section class="connections glass">
+        <div>
+          <p class="eyebrow">Vinculos</p>
+          <h2>Conexoes</h2>
+        </div>
+        <div class="chips">
+          <span id="discordChip" class="chip">Discord</span>
+          <span id="spotifyChip" class="chip">Spotify</span>
+        </div>
+      </section>
+
+      <section class="groups-panel glass">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Situacao por grupo</p>
+            <h2>Grupos</h2>
+          </div>
+          <span id="groupCount" class="muted">0</span>
+        </div>
+
+        <div class="tools">
+          <label class="search">
+            <span>Buscar</span>
+            <input id="groupSearch" type="search" autocomplete="off" placeholder="Nome ou ID do grupo">
+          </label>
+          <div class="segments" aria-label="Filtro dos grupos">
+            <button class="segment active" data-filter="all" type="button">Todos</button>
+            <button class="segment" data-filter="muted" type="button">Mutado</button>
+            <button class="segment" data-filter="warned" type="button">Adv</button>
+            <button class="segment" data-filter="admin" type="button">Admin</button>
+          </div>
+        </div>
+
+        <div id="groups" class="groups"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/painel-vendor/three/three.module.js"
+      }
+    }
+  </script>
+  <script type="module" src="/painel-assets/scene.mjs"></script>
+  <script src="/painel-assets/app.js"></script>
+</body>
+</html>
