@@ -3,6 +3,7 @@ const { clientRedis } = require("../lib/redis.js");
 const { payment } = require("../lib/mercadoPago.js");
 const { numberOwner } = require("../config.js");
 const axios = require("axios");
+const path = require("path");
 const { getUserCached, updateGroupAndCache, updateUserAndCache } = require("../utils/dbHelpers.js");
 const userRouter = require("./routes/user.js");
 const cors = require("cors");
@@ -54,6 +55,9 @@ credentials: true
   
   app.use(cookieParser());
 
+  const publicDir = path.join(__dirname, "public");
+  app.use("/painel-assets", express.static(path.join(publicDir, "painel")));
+
   app.use((req, res, next) => {
 
 console.log("req recebida!");
@@ -67,6 +71,10 @@ next()
   
   app.get("/", async (req, res) => {
     await res.status(200).json({res: "ok!"});
+  });
+
+  app.get("/painel", (req, res) => {
+    res.sendFile(path.join(publicDir, "painel", "index.html"));
   });
   
   app.use("/auth", userRouter);

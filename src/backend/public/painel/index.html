@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel da Yuki</title>
+  <link rel="stylesheet" href="/painel-assets/styles.css">
+</head>
+<body>
+  <main class="app">
+    <section class="topbar">
+      <div>
+        <p class="eyebrow">Yuki</p>
+        <h1>Painel</h1>
+      </div>
+      <div id="status" class="status">Carregando...</div>
+    </section>
+
+    <section id="error" class="notice hidden"></section>
+
+    <section id="content" class="hidden">
+      <section class="summary">
+        <div>
+          <p class="label">Usuario</p>
+          <h2 id="userName">-</h2>
+          <p id="userLid" class="muted">-</p>
+        </div>
+        <div class="vip" id="vipState">VIP</div>
+      </section>
+
+      <section class="grid">
+        <article class="metric">
+          <span>Dinheiro</span>
+          <strong id="money">0</strong>
+        </article>
+        <article class="metric">
+          <span>Level</span>
+          <strong id="level">0</strong>
+        </article>
+        <article class="metric">
+          <span>XP</span>
+          <strong id="xp">0</strong>
+        </article>
+        <article class="metric">
+          <span>Comandos</span>
+          <strong id="commands">0</strong>
+        </article>
+        <article class="metric">
+          <span>Downloads</span>
+          <strong id="downloads">0</strong>
+        </article>
+        <article class="metric">
+          <span>Figurinhas</span>
+          <strong id="stickers">0</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <h2>Conexoes</h2>
+        </div>
+        <div class="chips">
+          <span id="discordChip" class="chip">Discord</span>
+          <span id="spotifyChip" class="chip">Spotify</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">
+          <h2>Grupos</h2>
+          <span id="groupCount" class="muted">0</span>
+        </div>
+        <div id="groups" class="groups"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/painel-assets/app.js"></script>
+</body>
+</html>

@@ -12,7 +12,8 @@ try {
 }
 
 
-  const token_exists = await clientRedis.exists(`token:${body?.token}`);
+  const tokenKey = `token:${body.token}`;
+  const token_exists = await clientRedis.exists(tokenKey);
 
   if(!token_exists) {
 
@@ -21,7 +22,14 @@ try {
 
 }
 
- const sender = await clientRedis.get(`token:${body?.token}`);
+ const sender = await clientRedis.get(tokenKey);
+
+ if(!sender) {
+   res.status(404).json({error: "token inválido ou expirado."});
+   return;
+ }
+
+ await clientRedis.del([tokenKey, `userToken:${sender}`]);
 
  const tokenJwt = jwt.sign({sender: sender}, process.env.SECRET);
 
