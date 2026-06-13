@@ -1,6 +1,11 @@
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
 const contentEl = document.getElementById("content");
+const searchEl = document.getElementById("groupSearch");
+const segmentEls = Array.from(document.querySelectorAll(".segment"));
+
+let currentGroups = [];
+let currentFilter = "all";
 
 function setStatus(text, kind = "") {
   statusEl.textContent = text;
@@ -73,6 +78,7 @@ function setChip(id, active, onText, offText) {
 function render(data) {
   const { user, groups } = data;
   const vipActive = user.isVip && (!user.vencimentoVip || new Date(user.vencimentoVip).getTime() >= Date.now());
+  currentGroups = groups;
 
   document.getElementById("userName").textContent = user.name || "Sem nome";
   document.getElementById("userLid").textContent = user.userLid;
@@ -90,32 +96,49 @@ function render(data) {
   setChip("discordChip", user.discordConnected, user.discordName ? `Discord: ${user.discordName}` : "Discord conectado", "Discord off");
   setChip("spotifyChip", user.spotifyConnected, "Spotify conectado", "Spotify off");
 
-  const groupsEl = document.getElementById("groups");
-  document.getElementById("groupCount").textContent = `${groups.length} grupos`;
-
-  if (!groups.length) {
-    groupsEl.innerHTML = '<p class="muted">Nenhum grupo relacionado encontrado.</p>';
-  } else {
-    groupsEl.innerHTML = groups.map((group) => `
-      <article class="group">
-        <div>
-          <h3>${escapeHtml(group.name)}</h3>
-          <p class="muted">${escapeHtml(group.groupId)}</p>
-        </div>
-        <div class="group-meta">
-          ${group.isAdminRegistered ? '<span class="badge ok">admin registrado</span>' : '<span class="badge">sem admin salvo</span>'}
-          ${group.muted ? `<span class="badge bad">mutado (${group.muteAttempts})</span>` : '<span class="badge ok">nao mutado</span>'}
-          ${group.advertencias ? `<span class="badge warn">${group.advertencias} adv</span>` : '<span class="badge ok">sem adv</span>'}
-          <span class="badge">${formatNumber(group.messages)} msgs</span>
-          <span class="badge">${formatNumber(group.commands)} cmds</span>
-        </div>
-      </article>
-    `).join("");
-  }
-
+  renderGroups();
   errorEl.classList.add("hidden");
   contentEl.classList.remove("hidden");
   setStatus("Online", "ok");
+}
+
+function matchesFilter(group) {
+  if (currentFilter === "muted") return group.muted;
+  if (currentFilter === "warned") return group.advertencias > 0;
+  if (currentFilter === "admin") return group.isAdminRegistered;
+  return true;
+}
+
+function renderGroups() {
+  const groupsEl = document.getElementById("groups");
+  const query = searchEl.value.trim().toLowerCase();
+  const visibleGroups = currentGroups.filter((group) => {
+    const haystack = `${group.name} ${group.groupId}`.toLowerCase();
+    return matchesFilter(group) && (!query || haystack.includes(query));
+  });
+
+  document.getElementById("groupCount").textContent = `${visibleGroups.length} de ${currentGroups.length}`;
+
+  if (!visibleGroups.length) {
+    groupsEl.innerHTML = '<p class="empty">Nenhum grupo nesse filtro.</p>';
+    return;
+  }
+
+  groupsEl.innerHTML = visibleGroups.map((group) => `
+    <article class="group">
+      <div>
+        <h3>${escapeHtml(group.name)}</h3>
+        <p class="muted">${escapeHtml(group.groupId)}</p>
+      </div>
+      <div class="group-meta">
+        ${group.isAdminRegistered ? '<span class="badge ok">admin registrado</span>' : '<span class="badge">sem admin salvo</span>'}
+        ${group.muted ? `<span class="badge bad">mutado (${group.muteAttempts})</span>` : '<span class="badge ok">nao mutado</span>'}
+        ${group.advertencias ? `<span class="badge warn">${group.advertencias} adv</span>` : '<span class="badge ok">sem adv</span>'}
+        <span class="badge">${formatNumber(group.messages)} msgs</span>
+        <span class="badge">${formatNumber(group.commands)} cmds</span>
+      </div>
+    </article>
+  `).join("");
 }
 
 function escapeHtml(value) {
@@ -143,6 +166,16 @@ async function boot() {
   } catch (err) {
     showError(err.message || "Nao foi possivel abrir o painel.");
   }
+}
+
+searchEl.addEventListener("input", renderGroups);
+
+for (const segment of segmentEls) {
+  segment.addEventListener("click", () => {
+    currentFilter = segment.dataset.filter;
+    for (const item of segmentEls) item.classList.toggle("active", item === segment);
+    renderGroups();
+  });
 }
 
 boot();

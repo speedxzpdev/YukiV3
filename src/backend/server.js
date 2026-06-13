@@ -57,6 +57,7 @@ credentials: true
 
   const publicDir = path.join(__dirname, "public");
   app.use("/painel-assets", express.static(path.join(publicDir, "painel")));
+  app.use("/painel-vendor/three", express.static(path.join(__dirname, "../../node_modules/three/build")));
 
   app.use((req, res, next) => {
 
