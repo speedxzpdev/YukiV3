@@ -16,7 +16,7 @@ module.exports = {
       const existeToken = await clientRedis.exists(`userToken:${sender}`);
 
       if(existeToken) {
-        await bot.reply(from, "Voce ja tem um link pendente no privado. Ele expira em 5 minutos.");
+        await bot.reply(from, "Voce ja tem um link pendente no grupo. Ele expira em 5 minutos.");
         return;
       }
 
@@ -29,8 +29,7 @@ module.exports = {
       const url = new URL("/painel", baseUrl);
       url.searchParams.set("token", token);
 
-      await bot.reply(sender, `Seu painel da Yuki: ${url.toString()}\n\nEsse link expira em 5 minutos e funciona uma vez so.`);
-      await bot.editReply(from, msgEspera.key, "Link do painel enviado no seu privado!");
+      await bot.editReply(from, msgEspera.key, `Seu painel da Yuki: ${url.toString()}\n\nEsse link expira em 5 minutos e funciona uma vez so. Nao abre link de outra pessoa.`);
     } catch(err) {
       await bot.reply(from, erros_prontos);
       console.error(err);
