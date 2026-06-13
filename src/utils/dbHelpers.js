@@ -1,6 +1,7 @@
 const { users } = require("../database/models/users");
 const { grupos } = require("../database/models/grupos");
 const { donos } = require("../database/models/donos");
+const { isOwnerLid } = require("./owner");
 const { groupCache, muteCache, ownerCache, userCache } = require("./hotPathCache");
 const NULL_CACHE_TTL_MS = Number(process.env.NULL_CACHE_TTL_MS || 5 * 1000);
 
@@ -165,6 +166,7 @@ async function updateUserAndCache(userLid, update, options = {}) {
 
 async function isOwnerCached(userLid) {
   if (!userLid) return false;
+  if (isOwnerLid(userLid)) return true;
 
   const cached = ownerCache.get(userLid);
   if (cached !== undefined) return cached;
@@ -173,6 +175,21 @@ async function isOwnerCached(userLid) {
   const isOwner = !!owner;
   ownerCache.set(userLid, isOwner, isOwner ? undefined : 60 * 1000);
   return isOwner;
+}
+
+async function getOwnerLevelCached(userLid) {
+  if (!userLid) return 0;
+  if (isOwnerLid(userLid)) return 2;
+  if (await isOwnerCached(userLid)) return 1;
+  return 0;
+}
+
+async function canModerateTarget(actorLid, targetLid) {
+  const targetLevel = await getOwnerLevelCached(targetLid);
+  if (targetLevel === 0) return true;
+
+  const actorLevel = await getOwnerLevelCached(actorLid);
+  return actorLevel > targetLevel;
 }
 
 async function getGroupPermission(sock, groupId, sender) {
@@ -198,7 +215,9 @@ module.exports = {
   ensureGroup,
   ensureGroupFromSocket,
   ensureUser,
+  canModerateTarget,
   getGroupPermission,
+  getOwnerLevelCached,
   getUserCached,
   invalidateGroup,
   invalidateMute,

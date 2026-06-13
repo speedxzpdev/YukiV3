@@ -1,6 +1,5 @@
 const { numberBot } = require("../../config");
-const { isOwnerCached } = require("../../utils/dbHelpers");
-const { isOwnerLid } = require("../../utils/owner");
+const { canModerateTarget, isOwnerCached } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "ban",
@@ -48,24 +47,10 @@ module.exports = {
         await sock.sendMessage(from, { text: banbotmsg }, { quoted: msg });
         return;
       }
-
-      if (isOwnerLid(mention)) {
-        const mensagensBanDono = [
-          `Se eu pudesse, te bania só por tentar tocar no criador.`,
-          `${msg.pushName}, não se bane quem tem poder sobre a porra toda.`,
-          `${msg.pushName}... sério mesmo que tu tentou isso? Que vergonha alheia.`
-        ];
-
-        const msgbanDono = mensagensBanDono[Math.floor(Math.random() * mensagensBanDono.length)];
-        await sock.sendMessage(from, { text: msgbanDono }, { quoted: msg });
+      if (!(await canModerateTarget(sender, mention))) {
+        await sock.sendMessage(from, { text: "Esse ai ta acima de tu na hierarquia." }, { quoted: msg });
         return;
       }
-
-      if (await isOwnerCached(mention)) {
-        await sock.sendMessage(from, { text: "Ele é um dos meus donos especiais, não pode ser banido!" }, { quoted: msg });
-        return;
-      }
-
       await sock.groupParticipantsUpdate(from, [mention], "remove");
       await sock.sendMessage(from, { text: "Usuário banido com sucesso!" }, { quoted: msg });
     } catch (err) {

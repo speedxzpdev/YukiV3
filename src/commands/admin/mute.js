@@ -1,6 +1,6 @@
 const { mutados } = require("../../database/models/mute");
 const { numberBot } = require("../../config");
-const { getGroupPermission, isOwnerCached, setMuteCache } = require("../../utils/dbHelpers");
+const { canModerateTarget, getGroupPermission, setMuteCache } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "mute",
@@ -23,8 +23,8 @@ module.exports = {
         return;
       }
 
-      if(await isOwnerCached(mention)) {
-        await reply("Muta subdono n seu miseravel");
+      if(!(await canModerateTarget(sender, mention))) {
+        await reply("Esse ai ta acima de tu na hierarquia.");
         return;
       }
 

@@ -1,5 +1,5 @@
 const { advertidos } = require("../../database/models/adverts");
-const { getGroupPermission, isOwnerCached } = require("../../utils/dbHelpers");
+const { canModerateTarget, getGroupPermission } = require("../../utils/dbHelpers");
 
 module.exports = {
   name: "adv",
@@ -18,8 +18,8 @@ module.exports = {
         return;
       }
 
-      if(await isOwnerCached(mention)) {
-        await sock.sendMessage(from, {text: "Tentar advertir um dono é igual um velho tentando fuder. Nunca funciona"}, {quoted: msg});
+      if(!(await canModerateTarget(sender, mention))) {
+        await sock.sendMessage(from, {text: "Esse ai ta acima de tu na hierarquia."}, {quoted: msg});
         return;
       }
 
