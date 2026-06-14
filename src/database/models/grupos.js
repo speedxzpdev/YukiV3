@@ -11,7 +11,8 @@ const schema = new mongoose.Schema({
     welcome: {type: Boolean, default: true},
     antlink: {type: Boolean, default: false},
     cmdFun: {type: Boolean, default: false},
-    cmdAdulto: {type: Boolean, default: false}
+    cmdAdulto: {type: Boolean, default: false},
+    bolao: {type: Boolean, default: true}
   },
   lang: {type: String, default: "pt-br"},
   autoReply: {type: Boolean, default: true},
