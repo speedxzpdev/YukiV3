@@ -19,6 +19,7 @@ const YukiAI = require("../ai.js");
 const { normalizeUserLid } = require("../utils/normalizeUserLid");
 const { isOwnerLid } = require("../utils/owner");
 const { isBotBanned } = require("../utils/botBan");
+const { resolveOwnerDuel } = require("../utils/ownerLuck");
 const normalizeCommandKey = require("../utils/commandKey");
 const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
 const {
@@ -918,11 +919,25 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       if(bodyCase.includes("aceitar")) {
         try {
           const valorAposta = Number(apostaObject.valor) || 0;
-          
+
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
-          
-          const caraOuCora = Math.floor(Math.random() * 100);
-          
+
+          const ownerDuel = resolveOwnerDuel(apostaObject.autor, apostaObject.alvo);
+          const alvoLid = normalizeUserLid(apostaObject.alvo);
+          const caraOuCora = ownerDuel.type === "win"
+            ? (ownerDuel.winner === alvoLid ? 0 : 100)
+            : Math.floor(Math.random() * 100);
+
+          if (ownerDuel.type === "draw") {
+            await sock.sendMessage(from, {
+              text: `Empate tecnico. Lenoz contra Speed nao tem perdedor nessa casa.`,
+              mentions: [apostaObject.autor, apostaObject.alvo],
+              edit: msgEspera.key
+            });
+            await safeRedis(() => clientRedis.del(`aposta:${sender}`));
+            return;
+          }
+
           if(caraOuCora < 50) {
             await sock.sendMessage(from, {text: `Coroa! @${apostaObject.alvo.split("@")[0]} ganhou +${valorAposta}`, mentions: [apostaObject.alvo], edit: msgEspera.key});
             //dá o dinheiro

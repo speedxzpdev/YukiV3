@@ -1,5 +1,6 @@
 const { donos } = require("../../database/models/donos");
 const { getGroupPermission } = require("../../utils/dbHelpers");
+const { filterOwnerSafeTargets } = require("../../utils/ownerLuck");
 
 module.exports = {
   name: "roletarussa",
@@ -25,7 +26,13 @@ module.exports = {
         return !p.admin && !isDono;
       }).map(p => p.id);
 
-      const memberRandom = members[Math.floor(Math.random() * members.length)];
+      const safeMembers = filterOwnerSafeTargets(members);
+      if(!safeMembers.length) {
+        await sock.sendMessage(from, {text: "A roleta girou, mas nao achou ninguem seguro pra cair."}, {quoted: msg});
+        return;
+      }
+
+      const memberRandom = safeMembers[Math.floor(Math.random() * safeMembers.length)];
 
       await sock.sendMessage(from, {text: `@${memberRandom.split("@")[0]}... Você foi o sorteado...`, mentions: [memberRandom]}, {quoted: msg});
 
