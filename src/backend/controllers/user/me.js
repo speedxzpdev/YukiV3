@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const data = await buildPanelHome(sender, req.activeSock);
+    const data = await buildPanelHome(sender);
     data.csrfToken = req.user?.csrfToken || null;
     res.status(200).json(data);
   } catch(err) {

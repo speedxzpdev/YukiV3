@@ -34,6 +34,8 @@ const tabDefs = [
   {id: "announcements", label: "Anuncios", needsAnnouncements: true}
 ];
 
+const REQUEST_TIMEOUT_MS = 15 * 1000;
+
 function setStatus(text, kind = "") {
   statusEl.textContent = text;
   statusEl.className = `status ${kind}`.trim();
@@ -104,12 +106,24 @@ async function api(path, options = {}) {
     headers["X-CSRF-Token"] = state.csrfToken || "";
   }
 
-  const response = await fetch(path, {
-    method: options.method || "GET",
-    credentials: "include",
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response;
+
+  try {
+    response = await fetch(path, {
+      method: options.method || "GET",
+      credentials: "include",
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal
+    });
+  } catch (err) {
+    if (err.name === "AbortError") throw new Error("A Yuki demorou para responder. Tente de novo.");
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     let message = "Nao foi possivel concluir.";
@@ -124,12 +138,24 @@ async function api(path, options = {}) {
 }
 
 async function loginWithToken(token) {
-  const response = await fetch("/auth/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    credentials: "include",
-    body: JSON.stringify({token})
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response;
+
+  try {
+    response = await fetch("/auth/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      credentials: "include",
+      body: JSON.stringify({token}),
+      signal: controller.signal
+    });
+  } catch (err) {
+    if (err.name === "AbortError") throw new Error("Login demorou para responder. Gere outro link e tente de novo.");
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error("Link invalido ou expirado. Gere outro link no WhatsApp com /painel.");

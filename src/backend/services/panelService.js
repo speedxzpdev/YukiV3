@@ -25,11 +25,21 @@ const ANNOUNCEMENT_PREVIEW_TTL_MS = 10 * 60 * 1000;
 const ANNOUNCEMENT_COOLDOWN_MS = 30 * 60 * 1000;
 const ANNOUNCEMENT_LIMIT = 25;
 const ANNOUNCEMENT_MIN_DELAY_SECONDS = 10;
+const SOCKET_TIMEOUT_MS = 8 * 1000;
 
 function httpError(status, message) {
   const error = new Error(message);
   error.status = status;
   return error;
+}
+
+function withTimeout(promise, ms, message) {
+  let timeout;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeout = setTimeout(() => reject(httpError(504, message)), ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeout));
 }
 
 function toIso(value) {
@@ -104,7 +114,7 @@ async function getLivePermission(sock, groupId, sender) {
   if (!sock) throw httpError(503, "socket da yuki indisponivel.");
 
   const [metadata, role] = await Promise.all([
-    sock.groupMetadata(groupId),
+    withTimeout(sock.groupMetadata(groupId), SOCKET_TIMEOUT_MS, "whatsapp demorou para responder."),
     getRole(sender)
   ]);
   const actorParticipant = findParticipant(metadata, sender);
@@ -142,7 +152,7 @@ function compactGroup(group, extras = {}) {
   };
 }
 
-async function buildPanelHome(sender, sock) {
+async function buildPanelHome(sender) {
   const role = await getRole(sender);
   const [user, mutes, adverts, ranks, allGroups, subowners] = await Promise.all([
     users.findOne({userLid: sender}).lean(),
@@ -180,18 +190,10 @@ async function buildPanelHome(sender, sock) {
     const adv = advertInfo.get(groupId);
     const rank = rankInfo.get(groupId);
 
-    let isAdminLive = false;
-    if (sock && role.level === 0) {
-      try {
-        const metadata = await sock.groupMetadata(groupId);
-        isAdminLive = !!findParticipant(metadata, sender)?.admin;
-      } catch {}
-    }
-
     groups.push(compactGroup(group, {
       isAdminRegistered: !!saved,
-      canManage: role.level > 0 || isAdminLive,
-      managedBy: role.level > 0 ? role.name : (isAdminLive ? "admin" : "user"),
+      canManage: role.level > 0 || !!saved,
+      managedBy: role.level > 0 ? role.name : (saved ? "admin" : "user"),
       muted: !!mute,
       muteAttempts: mute?.tentativasMsg || 0,
       advertencias: adv?.adv || 0,
