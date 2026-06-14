@@ -18,6 +18,7 @@ const addXp = require("../utils/xp.js");
 const YukiAI = require("../ai.js");
 const { normalizeUserLid } = require("../utils/normalizeUserLid");
 const { isOwnerLid } = require("../utils/owner");
+const normalizeCommandKey = require("../utils/commandKey");
 const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
 const {
   createMessageMongoMetrics,
@@ -692,7 +693,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const args = body.slice(prefixo.length).trim().split(/ +/);
     const isPrefixCommand = body.startsWith(prefixo);
     const noPrefixPreview = isPrefixCommand ? [] : body.trim().split(/ +/);
-    const noPrefixCommandName = (noPrefixPreview[0] || "").toLowerCase();
+    const noPrefixCommandName = normalizeCommandKey(noPrefixPreview[0]);
     const noPrefixCommandCandidate = noPrefixCommandName ? commandsMap.get(noPrefixCommandName) : null;
 
     let usersSender = null;
@@ -1207,7 +1208,7 @@ if(noPrefixCommandCandidate && !isPrefixCommand) {
   if (body.startsWith(prefixo)) {
     
 //pega o argumento digitado e deixa ele em letras minusculas
-  const commandName = (args.shift() || "").toLowerCase();
+  const commandName = normalizeCommandKey(args.shift());
   //procura no map
   const commandGet = commandsMap.get(commandName)
 

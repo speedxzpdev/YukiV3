@@ -8,6 +8,15 @@ const {
   runGroupAction,
   updateGroupConfig
 } = require("../../services/panelService");
+const {
+  confirmPayout,
+  createGame,
+  createResultPreview,
+  getPanelBolaoGame,
+  listPanelBolao,
+  placeOrUpdateBet,
+  serializeGame
+} = require("../../../services/bolaoService");
 
 function getSender(req) {
   const sender = req.user?.sender;
@@ -96,9 +105,87 @@ async function announcementConfirm(req, res) {
   }
 }
 
+async function bolaoHome(req, res) {
+  try {
+    const data = await listPanelBolao(getSender(req));
+    res.status(200).json(data);
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
+async function bolaoDetails(req, res) {
+  try {
+    const data = await getPanelBolaoGame(getSender(req), req.params.gameId);
+    res.status(200).json(data);
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
+async function bolaoBet(req, res) {
+  try {
+    assertCsrf(req);
+    const result = await placeOrUpdateBet({
+      gameId: req.params.gameId,
+      sender: getSender(req),
+      homeScore: req.body?.homeScore,
+      awayScore: req.body?.awayScore,
+      amount: req.body?.amount
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
+async function bolaoCreateGame(req, res) {
+  try {
+    assertCsrf(req);
+    const game = await createGame({
+      homeTeam: req.body?.homeTeam,
+      awayTeam: req.body?.awayTeam,
+      competition: req.body?.competition,
+      startsAt: req.body?.startsAt
+    }, getSender(req));
+    res.status(201).json({game: serializeGame(game)});
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
+async function bolaoResultPreview(req, res) {
+  try {
+    assertCsrf(req);
+    const game = await createResultPreview(req.params.gameId, getSender(req), {
+      homeScore: req.body?.homeScore,
+      awayScore: req.body?.awayScore
+    });
+    res.status(200).json({game});
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
+async function bolaoPayoutConfirm(req, res) {
+  try {
+    assertCsrf(req);
+    const game = await confirmPayout(req.params.gameId, getSender(req));
+    res.status(200).json({game});
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
 module.exports = {
   announcementConfirm,
   announcementPreview,
+  bolaoBet,
+  bolaoCreateGame,
+  bolaoDetails,
+  bolaoHome,
+  bolaoPayoutConfirm,
+  bolaoResultPreview,
   groupAction,
   groupDetails,
   listGroups,

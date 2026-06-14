@@ -18,6 +18,7 @@ const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
 require("dotenv").config({ quiet: true });
 const server = require("./backend/server.js");
+const normalizeCommandKey = require("./utils/commandKey");
 
 let isBooting = false;
 let reconnectTimeout = null;
@@ -42,6 +43,11 @@ function loadCommands(dir) {
       }
 
       commandsMap.set(command.name, command);
+
+      const normalizedName = normalizeCommandKey(command.name);
+      if (normalizedName && normalizedName !== command.name) {
+        commandsMap.set(normalizedName, command);
+      }
     }
   }
 }
