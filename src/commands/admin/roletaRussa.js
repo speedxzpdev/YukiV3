@@ -26,7 +26,7 @@ module.exports = {
         return !p.admin && !isDono;
       }).map(p => p.id);
 
-      const safeMembers = filterOwnerSafeTargets(members);
+      const safeMembers = await filterOwnerSafeTargets(members);
       if(!safeMembers.length) {
         await sock.sendMessage(from, {text: "A roleta girou, mas nao achou ninguem seguro pra cair."}, {quoted: msg});
         return;

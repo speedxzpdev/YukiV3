@@ -922,7 +922,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
           const msgEspera = await sock.sendMessage(from, {text: "Apostando cara ou coroa... Vamos ver quem vai ganhar"}, {quoted: msg});
 
-          const ownerDuel = resolveOwnerDuel(apostaObject.autor, apostaObject.alvo);
+          const ownerDuel = await resolveOwnerDuel(apostaObject.autor, apostaObject.alvo);
           const alvoLid = normalizeUserLid(apostaObject.alvo);
           const caraOuCora = ownerDuel.type === "win"
             ? (ownerDuel.winner === alvoLid ? 0 : 100)
