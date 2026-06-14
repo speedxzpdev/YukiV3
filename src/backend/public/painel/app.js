@@ -5,6 +5,7 @@ const tabsEl = document.getElementById("tabs");
 
 const views = {
   profile: document.getElementById("viewProfile"),
+  bolao: document.getElementById("viewBolao"),
   groups: document.getElementById("viewGroups"),
   config: document.getElementById("viewConfig"),
   moderation: document.getElementById("viewModeration"),
@@ -22,11 +23,22 @@ const state = {
   selectedGroupId: null,
   selectedGroup: null,
   groupDetails: null,
-  announcementPreview: null
+  announcementPreview: null,
+  bolao: {
+    loading: false,
+    canManage: false,
+    balance: 0,
+    stats: {},
+    games: [],
+    selectedGameId: null,
+    selectedGame: null,
+    details: null
+  }
 };
 
 const tabDefs = [
   {id: "profile", label: "Perfil"},
+  {id: "bolao", label: "Bolao"},
   {id: "groups", label: "Grupos"},
   {id: "config", label: "Config", needsGroup: true},
   {id: "moderation", label: "Moderacao", needsGroup: true},
@@ -78,6 +90,25 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Sem data";
   return date.toLocaleDateString("pt-BR");
+}
+
+function formatDateTime(value) {
+  if (!value) return "Sem data";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sem data";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function toDateTimeLocal(value) {
+  const date = value ? new Date(value) : new Date(Date.now() + 3 * 60 * 60 * 1000);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
 function canManageSelectedGroup() {
@@ -215,6 +246,57 @@ async function loadGroupDetails(force = false) {
   return state.groupDetails;
 }
 
+function setSelectedBolaoGame(gameId) {
+  const games = state.bolao.games || [];
+  if (gameId && games.some((game) => game.id === gameId || game.code === gameId)) {
+    const game = games.find((item) => item.id === gameId || item.code === gameId);
+    state.bolao.selectedGameId = game.id;
+    state.bolao.selectedGame = game;
+    return;
+  }
+
+  if (!state.bolao.selectedGameId || !games.some((game) => game.id === state.bolao.selectedGameId)) {
+    const open = games.find((game) => game.status === "open");
+    const pending = games.find((game) => ["scheduled", "closed", "awaiting_result", "result_pending_confirmation"].includes(game.status));
+    state.bolao.selectedGameId = (open || pending || games[0])?.id || null;
+  }
+
+  state.bolao.selectedGame = games.find((game) => game.id === state.bolao.selectedGameId) || null;
+}
+
+async function loadBolaoSummary(preferredGameId = null) {
+  state.bolao.loading = true;
+  const data = await api("/auth/panel/bolao");
+  state.bolao.canManage = !!data.canManage;
+  state.bolao.balance = data.balance || 0;
+  state.bolao.stats = data.stats || {};
+  state.bolao.games = data.games || [];
+  setSelectedBolaoGame(preferredGameId);
+  state.bolao.loading = false;
+
+  if (state.bolao.selectedGameId) {
+    await loadBolaoDetails(state.bolao.selectedGameId);
+  }
+}
+
+async function loadBolaoDetails(gameId = state.bolao.selectedGameId) {
+  if (!gameId) {
+    state.bolao.details = null;
+    return null;
+  }
+
+  state.bolao.details = await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}`);
+  const detailGame = state.bolao.details?.game;
+  if (detailGame) {
+    const index = state.bolao.games.findIndex((game) => game.id === detailGame.id);
+    if (index >= 0) state.bolao.games[index] = detailGame;
+    else state.bolao.games.unshift(detailGame);
+    state.bolao.selectedGameId = detailGame.id;
+    state.bolao.selectedGame = detailGame;
+  }
+  return state.bolao.details;
+}
+
 function renderShell() {
   document.getElementById("roleBadge").textContent = state.user.roleLabel || "Usuario";
   document.getElementById("roleBadge").className = `role-badge ${state.user.role || "user"}`;
@@ -286,6 +368,215 @@ function accessCopy(role, managedCount) {
   if (role === "subowner") return "Staff operacional. Acoes ficam abaixo dos donos reais.";
   if (managedCount) return "Admin de grupo com acoes liberadas nos grupos onde voce ainda e admin.";
   return "Seu painel mostra dados pessoais e status nos grupos.";
+}
+
+function renderBolao() {
+  if (state.bolao.loading && !state.bolao.games.length) {
+    views.bolao.innerHTML = loadingPanel("Bolao");
+    return;
+  }
+
+  const games = state.bolao.games || [];
+  const selected = state.bolao.selectedGame;
+  const detail = state.bolao.details;
+
+  views.bolao.innerHTML = `
+    <section class="bolao-hero liquid">
+      <div class="pitch-lines" aria-hidden="true"></div>
+      <div class="bolao-title">
+        <p class="eyebrow">Moedas em campo</p>
+        <h2>Bolao</h2>
+        <p class="muted">Placar exato, aposta editavel e pagamento travado por confirmacao.</p>
+      </div>
+      <div class="bolao-kpis">
+        ${bolaoKpi("Saldo", formatMoney(state.bolao.balance))}
+        ${bolaoKpi("Abertos", formatNumber(state.bolao.stats.openGames))}
+        ${bolaoKpi("Em jogo", formatNumber(state.bolao.stats.pendingResults))}
+      </div>
+    </section>
+
+    <section class="bolao-layout">
+      <aside class="liquid bolao-rail">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Rodadas</p>
+            <h3>Jogos</h3>
+          </div>
+          <span class="count">${games.length}</span>
+        </div>
+        <div class="bolao-game-list">
+          ${games.length ? games.map(renderBolaoGameButton).join("") : '<p class="empty">Nenhum jogo cadastrado ainda.</p>'}
+        </div>
+      </aside>
+
+      <div class="bolao-main">
+        ${selected ? renderBolaoFocus(selected, detail) : renderBolaoEmpty()}
+        ${state.bolao.canManage ? renderBolaoAdmin(selected) : ""}
+      </div>
+    </section>
+  `;
+}
+
+function bolaoKpi(label, value) {
+  return `
+    <span class="bolao-kpi">
+      <small>${escapeHtml(label)}</small>
+      <strong>${escapeHtml(value)}</strong>
+    </span>
+  `;
+}
+
+function bolaoStatusClass(status) {
+  if (status === "open") return "live";
+  if (["paid", "refunded"].includes(status)) return "done";
+  if (["closed", "awaiting_result", "result_pending_confirmation", "paying"].includes(status)) return "locked";
+  if (status === "cancelled") return "bad";
+  return "idle";
+}
+
+function renderBolaoGameButton(game) {
+  return `
+    <button class="bolao-game ${game.id === state.bolao.selectedGameId ? "active" : ""}" data-bolao-game="${escapeHtml(game.id)}" type="button">
+      <span>
+        <strong>${escapeHtml(game.title)}</strong>
+        <small>${escapeHtml(game.code)} · ${formatDateTime(game.startsAt)}</small>
+      </span>
+      <em class="${bolaoStatusClass(game.status)}">${escapeHtml(game.statusLabel)}</em>
+    </button>
+  `;
+}
+
+function renderBolaoFocus(game, detail) {
+  const userBet = detail?.game?.userBet || game.userBet;
+  const bets = detail?.bets || [];
+  const leaderboard = detail?.leaderboard || [];
+
+  return `
+    <section class="liquid bolao-ticket">
+      <div class="ticket-glow" aria-hidden="true"></div>
+      <div class="bolao-match-head">
+        <div>
+          <p class="eyebrow">${escapeHtml(game.competition || "Copa")}</p>
+          <h2>${escapeHtml(game.homeTeam)} <span>x</span> ${escapeHtml(game.awayTeam)}</h2>
+        </div>
+        <span class="bolao-status ${bolaoStatusClass(game.status)}">${escapeHtml(game.statusLabel)}</span>
+      </div>
+
+      <div class="match-strip">
+        <span><strong>${formatDateTime(game.startsAt)}</strong><small>Jogo</small></span>
+        <span><strong>${formatDateTime(game.bettingClosesAt)}</strong><small>Fecha</small></span>
+        <span><strong>${formatMoney(game.pool || 0)}</strong><small>Pool</small></span>
+        <span><strong>${formatNumber(game.bets || 0)}</strong><small>Apostas</small></span>
+      </div>
+
+      ${renderBolaoBetForm(game, userBet)}
+      ${renderBolaoBetLists(game, bets, leaderboard)}
+    </section>
+  `;
+}
+
+function renderBolaoBetForm(game, userBet) {
+  const disabled = !game.canBet;
+  const homeValue = userBet?.homeScore ?? "";
+  const awayValue = userBet?.awayScore ?? "";
+  const stakeValue = userBet?.stake || 100;
+
+  return `
+    <form id="bolaoBetForm" class="bolao-bet ${disabled ? "disabled" : ""}" data-game-id="${escapeHtml(game.id)}">
+      <div>
+        <p class="eyebrow">${userBet ? "Seu bilhete" : "Nova aposta"}</p>
+        <h3>${userBet ? `${escapeHtml(userBet.score)} · ${formatMoney(userBet.stake)} moedas` : "Cravar placar"}</h3>
+        <p class="muted">${disabled ? "Apostas fechadas para esta partida." : "Voce pode editar ate a janela fechar."}</p>
+      </div>
+      <div class="score-editor">
+        <label><span>${escapeHtml(game.homeTeam)}</span><input id="bolaoHomeScore" type="number" min="0" max="30" value="${escapeHtml(homeValue)}" ${disabled ? "disabled" : ""}></label>
+        <strong>x</strong>
+        <label><span>${escapeHtml(game.awayTeam)}</span><input id="bolaoAwayScore" type="number" min="0" max="30" value="${escapeHtml(awayValue)}" ${disabled ? "disabled" : ""}></label>
+        <label><span>Moedas</span><input id="bolaoStake" type="number" min="100" step="1" value="${escapeHtml(stakeValue)}" ${disabled ? "disabled" : ""}></label>
+        <button class="primary-button" type="submit" ${disabled ? "disabled" : ""}>${userBet ? "Atualizar" : "Apostar"}</button>
+      </div>
+      <p id="bolaoBetMessage" class="form-message"></p>
+    </form>
+  `;
+}
+
+function renderBolaoBetLists(game, bets, leaderboard) {
+  const preview = game.payoutPreview || {};
+  const previewHtml = ["result_pending_confirmation", "paying", "paid", "refunded"].includes(game.status) ? `
+    <div class="bolao-preview">
+      <p class="eyebrow">Preview</p>
+      <h3>${preview.winnerCount ? `${preview.winnerCount} ganhadores` : "Reembolso geral"}</h3>
+      <p class="muted">Pool ${formatMoney(preview.pool)} · pagamento ${formatMoney(preview.totalPayout || preview.pool)}</p>
+    </div>
+  ` : "";
+
+  const list = leaderboard.length ? leaderboard : bets;
+  const rows = list.length ? list.slice(0, 10).map((item) => `
+    <article class="bolao-row">
+      <span>${escapeHtml(item.name || "Sem nome")}</span>
+      <strong>${escapeHtml(item.score || "oculto")}</strong>
+      <em>${formatMoney(item.paidAmount || item.stake || 0)}</em>
+    </article>
+  `).join("") : '<p class="empty">As apostas aparecem aqui quando houver dados liberados.</p>';
+
+  return `
+    <div class="bolao-bottom">
+      ${previewHtml}
+      <div class="bolao-table">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">${leaderboard.length ? "Resultado" : "Movimento"}</p>
+            <h3>${leaderboard.length ? "Ranking" : "Apostas"}</h3>
+          </div>
+        </div>
+        ${rows}
+      </div>
+    </div>
+  `;
+}
+
+function renderBolaoAdmin(selected) {
+  const resultDisabled = !selected || !["closed", "awaiting_result", "result_pending_confirmation"].includes(selected.status);
+
+  return `
+    <section class="bolao-admin">
+      <form id="bolaoCreateForm" class="liquid bolao-admin-panel">
+        <p class="eyebrow">Dono</p>
+        <h3>Criar jogo</h3>
+        <div class="bolao-admin-grid">
+          <label><span>Mandante</span><input id="bolaoCreateHome" required placeholder="Brasil"></label>
+          <label><span>Visitante</span><input id="bolaoCreateAway" required placeholder="Argentina"></label>
+          <label><span>Data</span><input id="bolaoCreateStart" type="datetime-local" required value="${escapeHtml(toDateTimeLocal())}"></label>
+          <label><span>Competicao</span><input id="bolaoCreateCompetition" value="Copa do Mundo"></label>
+        </div>
+        <button class="primary-button" type="submit">Agendar</button>
+        <p id="bolaoCreateMessage" class="form-message"></p>
+      </form>
+
+      <form id="bolaoResultForm" class="liquid bolao-admin-panel ${resultDisabled ? "disabled" : ""}" data-game-id="${escapeHtml(selected?.id || "")}">
+        <p class="eyebrow">Resultado</p>
+        <h3>${selected ? escapeHtml(selected.title) : "Selecione um jogo"}</h3>
+        <div class="score-editor compact">
+          <label><span>Casa</span><input id="bolaoResultHome" type="number" min="0" max="30" ${resultDisabled ? "disabled" : ""}></label>
+          <strong>x</strong>
+          <label><span>Fora</span><input id="bolaoResultAway" type="number" min="0" max="30" ${resultDisabled ? "disabled" : ""}></label>
+          <button class="ghost-button" type="submit" ${resultDisabled ? "disabled" : ""}>Preview</button>
+        </div>
+        <button id="bolaoConfirmPayout" class="danger-button" type="button" data-game-id="${escapeHtml(selected?.id || "")}" ${selected?.status === "result_pending_confirmation" ? "" : "disabled"}>Confirmar pagamento</button>
+        <p id="bolaoResultMessage" class="form-message"></p>
+      </form>
+    </section>
+  `;
+}
+
+function renderBolaoEmpty() {
+  return `
+    <section class="liquid empty-panel">
+      <p class="eyebrow">Bolao</p>
+      <h2>Nenhum jogo</h2>
+      <p class="muted">Quando a Yuki abrir uma rodada, ela aparece aqui.</p>
+    </section>
+  `;
 }
 
 function renderGroups() {
@@ -388,6 +679,7 @@ function renderConfig() {
           ${toggleControl("autoDownload", "Auto download", config.autoDownload)}
           ${toggleControl("antiTotag", "Anti marcar", config.antiTotag)}
           ${toggleControl("events", "Eventos", config.events)}
+          ${toggleControl("bolao", "Bolao", config.bolao)}
         </div>
 
         <div class="prefix-row">
@@ -595,6 +887,7 @@ function emptyPanel(title, text) {
 function renderAll() {
   renderShell();
   renderProfile();
+  renderBolao();
   renderGroups();
   renderConfig();
   renderModeration();
@@ -608,6 +901,11 @@ function renderAll() {
 async function switchTab(tabId) {
   if (!visibleTabs().some((tab) => tab.id === tabId)) return;
   state.activeTab = tabId;
+
+  if (tabId === "bolao") {
+    renderAll();
+    await loadBolaoSummary();
+  }
 
   if (["config", "moderation"].includes(tabId) && canManageSelectedGroup()) {
     renderAll();
@@ -627,6 +925,14 @@ async function selectGroup(groupId) {
   renderAll();
 }
 
+async function selectBolaoGame(gameId) {
+  setSelectedBolaoGame(gameId);
+  state.bolao.details = null;
+  renderAll();
+  await loadBolaoDetails(state.bolao.selectedGameId);
+  renderAll();
+}
+
 async function saveConfig(event) {
   event.preventDefault();
   if (!state.groupDetails) return;
@@ -640,7 +946,8 @@ async function saveConfig(event) {
     autoReply: form.querySelector('[name="autoReply"]').checked,
     autoDownload: form.querySelector('[name="autoDownload"]').checked,
     antiTotag: form.querySelector('[name="antiTotag"]').checked,
-    events: form.querySelector('[name="events"]').checked
+    events: form.querySelector('[name="events"]').checked,
+    bolao: form.querySelector('[name="bolao"]').checked
   };
 
   const message = document.getElementById("configMessage");
@@ -731,6 +1038,88 @@ async function confirmAnnouncement() {
   setStatus("Anuncio iniciado", "ok");
 }
 
+async function submitBolaoBet(event) {
+  event.preventDefault();
+  const form = event.target;
+  const gameId = form.dataset.gameId;
+  const message = document.getElementById("bolaoBetMessage");
+  if (message) message.textContent = "Registrando...";
+
+  await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}/bets`, {
+    method: "POST",
+    mutate: true,
+    body: {
+      name: state.user?.name || "Sem nome",
+      homeScore: Number(document.getElementById("bolaoHomeScore").value),
+      awayScore: Number(document.getElementById("bolaoAwayScore").value),
+      amount: Number(document.getElementById("bolaoStake").value)
+    }
+  });
+
+  await loadBolaoSummary(gameId);
+  renderAll();
+  setStatus("Aposta salva", "ok");
+}
+
+async function submitBolaoCreate(event) {
+  event.preventDefault();
+  const message = document.getElementById("bolaoCreateMessage");
+  if (message) message.textContent = "Agendando...";
+
+  const created = await api("/auth/panel/bolao/games", {
+    method: "POST",
+    mutate: true,
+    body: {
+      homeTeam: document.getElementById("bolaoCreateHome").value,
+      awayTeam: document.getElementById("bolaoCreateAway").value,
+      startsAt: document.getElementById("bolaoCreateStart").value.replace("T", " "),
+      competition: document.getElementById("bolaoCreateCompetition").value
+    }
+  });
+
+  await loadBolaoSummary(created.game?.id);
+  renderAll();
+  setStatus("Jogo agendado", "ok");
+}
+
+async function submitBolaoResult(event) {
+  event.preventDefault();
+  const form = event.target;
+  const gameId = form.dataset.gameId;
+  if (!gameId) return;
+
+  const message = document.getElementById("bolaoResultMessage");
+  if (message) message.textContent = "Calculando...";
+
+  await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}/result`, {
+    method: "POST",
+    mutate: true,
+    body: {
+      homeScore: Number(document.getElementById("bolaoResultHome").value),
+      awayScore: Number(document.getElementById("bolaoResultAway").value)
+    }
+  });
+
+  await loadBolaoSummary(gameId);
+  renderAll();
+  setStatus("Preview pronto", "ok");
+}
+
+async function confirmBolaoPayout(gameId) {
+  const ok = await confirmAction("Pagar bolao", "Confirmar pagamento ou reembolso deste jogo?");
+  if (!ok) return;
+
+  await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}/payout`, {
+    method: "POST",
+    mutate: true,
+    body: {}
+  });
+
+  await loadBolaoSummary(gameId);
+  renderAll();
+  setStatus("Pagamento confirmado", "ok");
+}
+
 document.addEventListener("click", async (event) => {
   try {
     const tabButton = event.target.closest("[data-tab]");
@@ -742,6 +1131,12 @@ document.addEventListener("click", async (event) => {
     const groupButton = event.target.closest("[data-group-id]");
     if (groupButton) {
       await selectGroup(groupButton.dataset.groupId);
+      return;
+    }
+
+    const bolaoGameButton = event.target.closest("[data-bolao-game]");
+    if (bolaoGameButton) {
+      await selectBolaoGame(bolaoGameButton.dataset.bolaoGame);
       return;
     }
 
@@ -759,6 +1154,10 @@ document.addEventListener("click", async (event) => {
 
     if (event.target.id === "confirmAnnouncement") {
       await confirmAnnouncement();
+    }
+
+    if (event.target.id === "bolaoConfirmPayout") {
+      await confirmBolaoPayout(event.target.dataset.gameId);
     }
   } catch (err) {
     setStatus("Erro", "error");
@@ -781,6 +1180,18 @@ document.addEventListener("submit", async (event) => {
     if (event.target.id === "announcementForm") {
       await createAnnouncement(event);
     }
+
+    if (event.target.id === "bolaoBetForm") {
+      await submitBolaoBet(event);
+    }
+
+    if (event.target.id === "bolaoCreateForm") {
+      await submitBolaoCreate(event);
+    }
+
+    if (event.target.id === "bolaoResultForm") {
+      await submitBolaoResult(event);
+    }
   } catch (err) {
     setStatus("Erro", "error");
     const message = event.target.querySelector(".form-message");
@@ -792,6 +1203,8 @@ async function boot() {
   try {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+    const bolaoHash = window.location.hash.match(/^#bolao\/([^?#]+)/);
+    const bolaoGameId = bolaoHash ? decodeURIComponent(bolaoHash[1]) : null;
 
     if (token) {
       setStatus("Entrando...");
@@ -800,7 +1213,18 @@ async function boot() {
 
     setStatus("Carregando...");
     await loadMe();
+    if (bolaoGameId) state.activeTab = "bolao";
+    if (state.activeTab === "bolao") {
+      await loadBolaoSummary(bolaoGameId);
+    }
     renderAll();
+    if (state.activeTab !== "bolao") {
+      loadBolaoSummary()
+        .then(() => renderAll())
+        .catch((err) => {
+          console.warn("Nao foi possivel carregar bolao:", err);
+        });
+    }
     loadManageableGroups()
       .then(() => renderAll())
       .catch((err) => {

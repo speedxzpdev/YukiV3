@@ -18,6 +18,7 @@ const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
 require("dotenv").config({ quiet: true });
 const server = require("./backend/server.js");
+const { startBolaoScheduler } = require("./services/bolaoScheduler.js");
 
 let isBooting = false;
 let reconnectTimeout = null;
@@ -131,6 +132,7 @@ async function yukibot() {
     });
 
     server(sock);
+    startBolaoScheduler(sock);
     require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
     require("./events/participantUp")(sock);
     require("./events/waifus.js")(sock);

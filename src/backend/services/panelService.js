@@ -146,7 +146,8 @@ function compactGroup(group, extras = {}) {
       prefixo: group.configs?.prefixo || "/",
       autoReply: group.autoReply !== false,
       autoDownload: group.autoDownload !== false,
-      antiTotag: !!group.antiTotag
+      antiTotag: !!group.antiTotag,
+      bolao: group.configs?.bolao !== false
     },
     ...extras
   };
@@ -228,7 +229,8 @@ async function buildPanelHome(sender) {
     permissions: {
       canUseOps: role.level > 0,
       canUseAnnouncements: role.level > 0,
-      canManageAnyGroup: role.level > 0
+      canManageAnyGroup: role.level > 0,
+      canManageBolao: role.level >= 2
     },
     csrfToken: null,
     groups,
@@ -370,7 +372,8 @@ async function updateGroupConfig(sock, groupId, sender, input) {
     autoReply: "autoReply",
     autoDownload: "autoDownload",
     antiTotag: "antiTotag",
-    events: "configs.events"
+    events: "configs.events",
+    bolao: "configs.bolao"
   };
 
   const set = {};
