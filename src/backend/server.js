@@ -77,6 +77,11 @@ next()
   app.get("/painel", (req, res) => {
     res.sendFile(path.join(publicDir, "painel", "index.html"));
   });
+
+  app.use((req, res, next) => {
+    req.activeSock = activeSock;
+    next();
+  });
   
   app.use("/auth", userRouter);
 

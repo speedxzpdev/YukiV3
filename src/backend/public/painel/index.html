@@ -12,7 +12,7 @@
   <div class="atmosphere" aria-hidden="true"></div>
 
   <main class="app">
-    <section class="topbar glass">
+    <header class="topbar liquid">
       <div class="brand">
         <span class="brand-mark">Y</span>
         <div>
@@ -20,88 +20,39 @@
           <h1>Painel</h1>
         </div>
       </div>
-      <div id="status" class="status">Carregando...</div>
-    </section>
+      <div class="top-meta">
+        <span id="roleBadge" class="role-badge">Usuario</span>
+        <span id="status" class="status">Carregando...</span>
+      </div>
+    </header>
 
     <section id="error" class="notice hidden"></section>
 
-    <section id="content" class="workspace hidden">
-      <section class="identity glass">
-        <div class="identity-copy">
-          <p class="eyebrow">Sessao reconhecida</p>
-          <h2 id="userName">-</h2>
-          <p id="userLid" class="muted">-</p>
-        </div>
-        <div class="identity-side">
-          <span class="orbital-label">Yuki</span>
-          <div class="vip" id="vipState">VIP</div>
-        </div>
-      </section>
+    <section id="content" class="shell hidden">
+      <nav id="tabs" class="tab-rail liquid" aria-label="Areas do painel"></nav>
 
-      <section class="metrics" aria-label="Resumo do usuario">
-        <article class="metric glass accent">
-          <span>Dinheiro</span>
-          <strong id="money">0</strong>
-        </article>
-        <article class="metric glass">
-          <span>Level</span>
-          <strong id="level">0</strong>
-        </article>
-        <article class="metric glass">
-          <span>XP</span>
-          <strong id="xp">0</strong>
-        </article>
-        <article class="metric glass">
-          <span>Comandos</span>
-          <strong id="commands">0</strong>
-        </article>
-        <article class="metric glass">
-          <span>Downloads</span>
-          <strong id="downloads">0</strong>
-        </article>
-        <article class="metric glass">
-          <span>Figurinhas</span>
-          <strong id="stickers">0</strong>
-        </article>
-      </section>
-
-      <section class="connections glass">
-        <div>
-          <p class="eyebrow">Vinculos</p>
-          <h2>Conexoes</h2>
-        </div>
-        <div class="chips">
-          <span id="discordChip" class="chip">Discord</span>
-          <span id="spotifyChip" class="chip">Spotify</span>
-        </div>
-      </section>
-
-      <section class="groups-panel glass">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">Situacao por grupo</p>
-            <h2>Grupos</h2>
-          </div>
-          <span id="groupCount" class="muted">0</span>
-        </div>
-
-        <div class="tools">
-          <label class="search">
-            <span>Buscar</span>
-            <input id="groupSearch" type="search" autocomplete="off" placeholder="Nome ou ID do grupo">
-          </label>
-          <div class="segments" aria-label="Filtro dos grupos">
-            <button class="segment active" data-filter="all" type="button">Todos</button>
-            <button class="segment" data-filter="muted" type="button">Mutado</button>
-            <button class="segment" data-filter="warned" type="button">Adv</button>
-            <button class="segment" data-filter="admin" type="button">Admin</button>
-          </div>
-        </div>
-
-        <div id="groups" class="groups"></div>
-      </section>
+      <section id="viewProfile" class="view active"></section>
+      <section id="viewGroups" class="view"></section>
+      <section id="viewConfig" class="view"></section>
+      <section id="viewModeration" class="view"></section>
+      <section id="viewOps" class="view"></section>
+      <section id="viewAnnouncements" class="view"></section>
     </section>
   </main>
+
+  <template id="confirmTemplate">
+    <div class="modal-backdrop">
+      <section class="confirm-modal liquid" role="dialog" aria-modal="true">
+        <p class="eyebrow">Confirmacao</p>
+        <h2 id="confirmTitle">Confirmar acao</h2>
+        <p id="confirmText" class="muted"></p>
+        <div class="modal-actions">
+          <button id="confirmCancel" class="ghost-button" type="button">Cancelar</button>
+          <button id="confirmOk" class="danger-button" type="button">Confirmar</button>
+        </div>
+      </section>
+    </div>
+  </template>
 
   <script type="importmap">
     {

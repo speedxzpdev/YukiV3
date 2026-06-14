@@ -1,4 +1,5 @@
 const { clientRedis } = require("../../../lib/redis.js");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
 module.exports = async (req, res)  => {
@@ -31,7 +32,8 @@ try {
 
  await clientRedis.del([tokenKey, `userToken:${sender}`]);
 
- const tokenJwt = jwt.sign({sender: sender}, process.env.SECRET);
+ const csrfToken = crypto.randomBytes(32).toString("hex");
+ const tokenJwt = jwt.sign({sender: sender, csrfToken}, process.env.SECRET);
 
 const isProd = process.env.DEV_AMBIENT === "false";
 
