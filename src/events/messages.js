@@ -18,6 +18,7 @@ const addXp = require("../utils/xp.js");
 const YukiAI = require("../ai.js");
 const { normalizeUserLid } = require("../utils/normalizeUserLid");
 const { isOwnerLid } = require("../utils/owner");
+const { isBotBanned } = require("../utils/botBan");
 const normalizeCommandKey = require("../utils/commandKey");
 const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
 const {
@@ -631,6 +632,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const mongoMetrics = createMessageMongoMetrics({ from, sender });
 
     try {
+    if (await isBotBanned(sender)) return;
     
     
     
