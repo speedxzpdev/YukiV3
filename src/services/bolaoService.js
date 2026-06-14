@@ -38,12 +38,11 @@ function stripAccents(value) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function slug(value) {
-  return stripAccents(value)
+function teamCode(value) {
+  const compact = stripAccents(value)
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 20) || "jogo";
+    .replace(/[^a-z0-9]+/g, "");
+  return compact.slice(0, 3) || "tm";
 }
 
 function parseLocalDateTime(value) {
@@ -148,7 +147,7 @@ async function createGame(input, sender, options = {}) {
   }
 
   const title = `${cleanText(input.homeTeam, "Time A")} x ${cleanText(input.awayTeam, "Time B")}`;
-  const code = `${slug(input.homeTeam)}-${slug(input.awayTeam)}-${crypto.randomBytes(2).toString("hex")}`;
+  const code = `${teamCode(input.homeTeam)}-${teamCode(input.awayTeam)}-${crypto.randomBytes(2).toString("hex")}`;
 
   return bolaoGames.create({
     code,
@@ -213,7 +212,7 @@ function serializeGame(game, extras = {}) {
     statusLabel: statusLabel(raw.status),
     canBet,
     minBet: raw.minBet || MIN_BET,
-    publicLink: buildPanelLink(String(raw._id)),
+    publicLink: buildPanelLink(raw.code),
     result: raw.result?.homeScore !== null && raw.result?.awayScore !== null ? {
       homeScore: raw.result.homeScore,
       awayScore: raw.result.awayScore,
@@ -268,14 +267,14 @@ async function listPanelBolao(sender) {
   };
 }
 
-async function getPanelBolaoGame(sender, ref) {
-  const senderLid = normalizeUserLid(sender);
+async function getBolaoGameDetails(ref, sender = null) {
+  const senderLid = sender ? normalizeUserLid(sender) : null;
   const game = await findGame(ref);
   const gameId = game._id;
   const [stats, userBet, canManage, activeBets] = await Promise.all([
     getStats([gameId]),
-    bolaoBets.findOne({gameId, userLid: senderLid}).lean(),
-    isBolaoAdmin(senderLid),
+    senderLid ? bolaoBets.findOne({gameId, userLid: senderLid}).lean() : null,
+    senderLid ? isBolaoAdmin(senderLid) : false,
     bolaoBets.find({gameId, status: {$in: ["active", "paid", "lost", "refunded"]}})
       .sort({paidAmount: -1, stake: -1})
       .limit(60)
@@ -301,6 +300,14 @@ async function getPanelBolaoGame(sender, ref) {
   };
 }
 
+async function getPanelBolaoGame(sender, ref) {
+  return getBolaoGameDetails(ref, sender);
+}
+
+async function getPublicBolaoGame(ref) {
+  return getBolaoGameDetails(ref, null);
+}
+
 async function placeOrUpdateBet(input) {
   const sender = normalizeUserLid(input.sender);
   const game = await findGame(input.gameId || input.code);
@@ -316,7 +323,7 @@ async function placeOrUpdateBet(input) {
   }
 
   const user = await ensureUser(sender, input.name || "Sem nome");
-  const name = user?.name || input.name || "Sem nome";
+  const name = cleanText(input.name || user?.name, user?.name || "Sem nome").slice(0, 40);
   const existing = await bolaoBets.findOne({gameId: game._id, userLid: sender}).lean();
   if (existing && existing.status !== "active") throw httpError(409, "essa aposta ja foi encerrada.");
 
@@ -563,7 +570,7 @@ Fecha: ${formatDateTime(game.closesAt)}
 Placar exato. Minimo: ${game.minBet || MIN_BET} moedas.
 Premio: pool dividido entre quem cravar + bonus igual ao valor apostado.
 
-Painel: ${buildPanelLink(String(game._id))}
+Painel: ${buildPanelLink(game.code)}
 Comando: ${prefixo || "/"}bolao apostar ${game.code} 2x1 ${game.minBet || MIN_BET}`;
 }
 
@@ -592,6 +599,7 @@ module.exports = {
   isBolaoAdmin,
   listPanelBolao,
   getPanelBolaoGame,
+  getPublicBolaoGame,
   parseGameCreateText,
   parseScoreText,
   placeOrUpdateBet,

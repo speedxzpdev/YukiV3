@@ -116,6 +116,7 @@ function canManageSelectedGroup() {
 
 function visibleTabs() {
   return tabDefs.filter((tab) => {
+    if (!state.user) return tab.id === "bolao";
     if (tab.needsOps) return !!state.permissions.canUseOps;
     if (tab.needsAnnouncements) return !!state.permissions.canUseAnnouncements;
     if (tab.needsGroup) return state.groups.some((group) => group.canManage);
@@ -124,6 +125,10 @@ function visibleTabs() {
 }
 
 async function api(path, options = {}) {
+  if (options.mutate && !state.csrfToken) {
+    await loadMe();
+  }
+
   const headers = {
     ...(options.headers || {})
   };
@@ -161,7 +166,16 @@ async function api(path, options = {}) {
       const data = await response.json();
       message = data.error || message;
     } catch {}
-    throw new Error(message);
+
+    if (options.mutate && response.status === 403 && /csrf/i.test(message) && !options.retryCsrf) {
+      state.csrfToken = null;
+      await loadMe();
+      return api(path, {...options, retryCsrf: true});
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return response.status === 204 ? null : response.json();
@@ -191,23 +205,38 @@ async function loginWithToken(token) {
     throw new Error("Link invalido ou expirado. Gere outro link no WhatsApp com /painel.");
   }
 
-  window.history.replaceState({}, document.title, "/painel");
+  window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash || ""}`);
 }
 
-async function loadMe() {
-  const data = await api("/auth/me");
-  state.csrfToken = data.csrfToken;
-  state.user = data.user;
-  state.permissions = data.permissions || {};
-  state.groups = data.groups || [];
-  state.ops = data.ops || {};
+async function loadMe(options = {}) {
+  try {
+    const data = await api("/auth/me");
+    state.csrfToken = data.csrfToken;
+    state.user = data.user;
+    state.permissions = data.permissions || {};
+    state.groups = data.groups || [];
+    state.ops = data.ops || {};
 
-  if (!state.selectedGroupId || !state.groups.some((group) => group.groupId === state.selectedGroupId)) {
-    const manageable = state.groups.find((group) => group.canManage);
-    state.selectedGroupId = manageable?.groupId || state.groups[0]?.groupId || null;
+    if (!state.selectedGroupId || !state.groups.some((group) => group.groupId === state.selectedGroupId)) {
+      const manageable = state.groups.find((group) => group.canManage);
+      state.selectedGroupId = manageable?.groupId || state.groups[0]?.groupId || null;
+    }
+
+    state.selectedGroup = state.groups.find((group) => group.groupId === state.selectedGroupId) || null;
+    return true;
+  } catch (err) {
+    if (options.optional && err.status === 401) {
+      state.csrfToken = null;
+      state.user = null;
+      state.permissions = {};
+      state.groups = [];
+      state.ops = {};
+      state.selectedGroupId = null;
+      state.selectedGroup = null;
+      return false;
+    }
+    throw err;
   }
-
-  state.selectedGroup = state.groups.find((group) => group.groupId === state.selectedGroupId) || null;
 }
 
 function mergeGroups(nextGroups) {
@@ -262,6 +291,18 @@ function selectBolaoState(gameId) {
 
 async function loadBolao(preferredGameId = null) {
   state.bolao.loading = true;
+  if (!state.user && preferredGameId) {
+    const data = await api(`/auth/public/bolao/${encodeURIComponent(preferredGameId)}`);
+    state.bolao.canManage = false;
+    state.bolao.balance = 0;
+    state.bolao.games = data.game ? [data.game] : [];
+    state.bolao.selectedGameId = data.game?.id || null;
+    state.bolao.selectedGame = data.game || null;
+    state.bolao.details = data;
+    state.bolao.loading = false;
+    return;
+  }
+
   const data = await api("/auth/panel/bolao");
   state.bolao.canManage = !!data.canManage;
   state.bolao.balance = data.balance || 0;
@@ -283,8 +324,8 @@ async function loadBolao(preferredGameId = null) {
 }
 
 function renderShell() {
-  document.getElementById("roleBadge").textContent = state.user.roleLabel || "Usuario";
-  document.getElementById("roleBadge").className = `role-badge ${state.user.role || "user"}`;
+  document.getElementById("roleBadge").textContent = state.user?.roleLabel || "Visitante";
+  document.getElementById("roleBadge").className = `role-badge ${state.user?.role || "guest"}`;
 
   tabsEl.innerHTML = visibleTabs().map((tab) => `
     <button class="tab-button ${state.activeTab === tab.id ? "active" : ""}" data-tab="${tab.id}" type="button">
@@ -299,6 +340,19 @@ function renderShell() {
 
 function renderProfile() {
   const user = state.user;
+  if (!user) {
+    views.profile.innerHTML = `
+      <section class="identity-panel liquid">
+        <div>
+          <p class="eyebrow">Sessao publica</p>
+          <h2>Entre pelo WhatsApp</h2>
+          <p class="muted">Use /painel com a Yuki para apostar com seu saldo e ver seus dados.</p>
+        </div>
+      </section>
+    `;
+    return;
+  }
+
   const vipActive = user.isVip && (!user.vencimentoVip || new Date(user.vencimentoVip).getTime() >= Date.now());
   const managedCount = state.groups.filter((group) => group.canManage).length;
 
@@ -371,9 +425,9 @@ function renderBolao() {
         <div>
           <p class="eyebrow">Moedas em campo</p>
           <h2>Bolao</h2>
-          <p class="muted">Apostas de placar exato. Link publico so abre esta aba; a sessao continua protegida pelo /painel.</p>
+          <p class="muted">${state.user ? "Apostas de placar exato com seu saldo da Yuki." : "Link publico: qualquer pessoa ve o jogo. Para apostar, entre pelo /painel no WhatsApp."}</p>
         </div>
-        <span class="count">${formatMoney(state.bolao.balance)} moedas</span>
+        <span class="count">${state.user ? `${formatMoney(state.bolao.balance)} moedas` : "publico"}</span>
       </div>
 
       <div class="bolao-grid">
@@ -429,9 +483,19 @@ function renderBolaoFocus(game, details) {
 }
 
 function renderBolaoBetForm(game, userBet) {
+  if (!state.user) {
+    return `
+      <div class="bolao-guest-note">
+        <strong>Entre para apostar</strong>
+        <span>Gere seu link com <code>/painel</code> no WhatsApp. O navegador salva sua sessao e este link do bolao continua funcionando.</span>
+      </div>
+    `;
+  }
+
   const disabled = !game.canBet;
   return `
     <form id="bolaoBetForm" class="bolao-form" data-game-id="${escapeHtml(game.id)}">
+      <label class="wide"><span>Nome na aposta</span><input id="bolaoBetName" maxlength="40" value="${escapeHtml(userBet?.name || state.user?.name || "")}" ${disabled ? "disabled" : ""}></label>
       <label><span>${escapeHtml(game.homeTeam)}</span><input id="bolaoHomeScore" type="number" min="0" max="30" value="${escapeHtml(userBet?.homeScore ?? "")}" ${disabled ? "disabled" : ""}></label>
       <label><span>${escapeHtml(game.awayTeam)}</span><input id="bolaoAwayScore" type="number" min="0" max="30" value="${escapeHtml(userBet?.awayScore ?? "")}" ${disabled ? "disabled" : ""}></label>
       <label><span>Moedas</span><input id="bolaoStake" type="number" min="${escapeHtml(game.minBet || 100)}" value="${escapeHtml(userBet?.stake || game.minBet || 100)}" ${disabled ? "disabled" : ""}></label>
@@ -943,7 +1007,8 @@ async function submitBolaoBet(event) {
     body: {
       homeScore: Number(document.getElementById("bolaoHomeScore").value),
       awayScore: Number(document.getElementById("bolaoAwayScore").value),
-      amount: Number(document.getElementById("bolaoStake").value)
+      amount: Number(document.getElementById("bolaoStake").value),
+      name: document.getElementById("bolaoBetName").value
     }
   });
 
@@ -1100,7 +1165,7 @@ async function boot() {
     }
 
     setStatus("Carregando...");
-    await loadMe();
+    await loadMe({optional: !!bolaoGameId});
     if (bolaoGameId) {
       state.activeTab = "bolao";
       await loadBolao(bolaoGameId);

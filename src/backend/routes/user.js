@@ -15,6 +15,8 @@ router.get("/user", user_info);
 
 router.get("/me", isLogin, me);
 
+router.get("/public/bolao/:gameId", panel.bolaoPublicDetails);
+
 router.get("/panel/bolao", isLogin, panel.bolaoHome);
 
 router.post("/panel/bolao/games", isLogin, panel.bolaoCreateGame);

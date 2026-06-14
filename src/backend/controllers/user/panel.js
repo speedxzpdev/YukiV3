@@ -13,6 +13,7 @@ const {
   createGame,
   createResultPreview,
   getPanelBolaoGame,
+  getPublicBolaoGame,
   listPanelBolao,
   placeOrUpdateBet,
   serializeGame
@@ -123,12 +124,22 @@ async function bolaoDetails(req, res) {
   }
 }
 
+async function bolaoPublicDetails(req, res) {
+  try {
+    const data = await getPublicBolaoGame(req.params.gameId);
+    res.status(200).json(data);
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
 async function bolaoBet(req, res) {
   try {
     assertCsrf(req);
     const result = await placeOrUpdateBet({
       gameId: req.params.gameId,
       sender: getSender(req),
+      name: req.body?.name,
       homeScore: req.body?.homeScore,
       awayScore: req.body?.awayScore,
       amount: req.body?.amount
@@ -185,6 +196,7 @@ module.exports = {
   bolaoDetails,
   bolaoHome,
   bolaoPayoutConfirm,
+  bolaoPublicDetails,
   bolaoResultPreview,
   groupAction,
   groupDetails,

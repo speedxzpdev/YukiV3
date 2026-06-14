@@ -1,4 +1,4 @@
-const { createGame, formatDateTime, isBolaoAdmin } = require("../../services/bolaoService");
+const { buildPanelLink, createGame, formatDateTime, isBolaoAdmin } = require("../../services/bolaoService");
 
 module.exports = {
   name: "testebolao",
@@ -30,6 +30,7 @@ module.exports = {
 
 Codigo: ${game.code}
 Fecha: ${formatDateTime(game.closesAt)}
+Link: ${buildPanelLink(game.code)}
 
 Postar chamada:
 /bolao anunciar ${game.code}

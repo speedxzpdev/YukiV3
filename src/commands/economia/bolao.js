@@ -1,6 +1,7 @@
 const { prefixo } = require("../../config");
 const {
   announceGame,
+  buildPanelLink,
   cancelGame,
   closeGame,
   confirmPayout,
@@ -98,6 +99,7 @@ async function handleCreate(sock, msg, from, args, sender) {
 Codigo: ${game.code}
 Jogo: ${game.title}
 Fecha: ${formatDateTime(game.closesAt)}
+Link: ${buildPanelLink(game.code)}
 
 Para postar no grupo:
 ${pfx()}bolao anunciar ${game.code}`
