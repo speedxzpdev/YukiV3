@@ -15,6 +15,18 @@ router.get("/user", user_info);
 
 router.get("/me", isLogin, me);
 
+router.get("/panel/bolao", isLogin, panel.bolaoHome);
+
+router.post("/panel/bolao/games", isLogin, panel.bolaoCreateGame);
+
+router.get("/panel/bolao/:gameId", isLogin, panel.bolaoDetails);
+
+router.post("/panel/bolao/:gameId/bets", isLogin, panel.bolaoBet);
+
+router.post("/panel/bolao/:gameId/result", isLogin, panel.bolaoResultPreview);
+
+router.post("/panel/bolao/:gameId/payout", isLogin, panel.bolaoPayoutConfirm);
+
 router.get("/panel/groups/:groupId", isLogin, panel.groupDetails);
 
 router.get("/panel/groups", isLogin, panel.listGroups);

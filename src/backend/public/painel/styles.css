@@ -595,6 +595,154 @@ h3 {
   border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.bolao-panel {
+  padding: 24px;
+}
+
+.bolao-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr);
+  gap: 12px;
+}
+
+.bolao-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.bolao-game {
+  display: flex;
+  width: 100%;
+  min-height: 78px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: left;
+  background: rgba(4, 14, 18, .58);
+}
+
+.bolao-game.active {
+  border-color: rgba(255, 209, 102, .52);
+  background:
+    linear-gradient(135deg, rgba(32, 95, 63, .55), rgba(11, 41, 54, .6)),
+    rgba(4, 14, 18, .58);
+}
+
+.bolao-game strong,
+.bolao-game small {
+  display: block;
+}
+
+.bolao-game small {
+  margin-top: 4px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.bolao-game em {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(101, 240, 174, .34);
+  border-radius: 999px;
+  color: var(--ok);
+  font-size: 12px;
+  font-style: normal;
+  background: rgba(2, 10, 13, .58);
+}
+
+.bolao-focus {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(101, 240, 174, .08), rgba(118, 220, 255, .04)),
+    rgba(2, 10, 13, .46);
+}
+
+.bolao-match h3 {
+  font-size: clamp(28px, 4vw, 48px);
+}
+
+.bolao-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.bolao-form.admin,
+.bolao-form.result {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bolao-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.bolao-form input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  color: var(--text);
+  outline: none;
+  background: rgba(1, 8, 10, .7);
+}
+
+.bolao-form .form-message {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.bolao-bets {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.bolao-bet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px 100px;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.bolao-bet-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bolao-bet-row em {
+  color: var(--warn);
+  font-style: normal;
+  text-align: right;
+}
+
+.bolao-admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .8fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
 .empty {
   color: var(--muted);
 }
@@ -653,8 +801,16 @@ h3 {
   .workspace-grid,
   .announcement-grid,
   .ops-grid,
-  .moderation-layout {
+  .moderation-layout,
+  .bolao-grid,
+  .bolao-admin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .bolao-form,
+  .bolao-form.admin,
+  .bolao-form.result {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -703,8 +859,29 @@ h3 {
   }
 
   .member-row,
-  .log-row {
+  .log-row,
+  .bolao-bet-row {
     grid-template-columns: 1fr;
+  }
+
+  .bolao-panel,
+  .bolao-focus {
+    padding: 18px;
+  }
+
+  .bolao-game {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bolao-form,
+  .bolao-form.admin,
+  .bolao-form.result {
+    grid-template-columns: 1fr;
+  }
+
+  .bolao-bet-row em {
+    text-align: left;
   }
 
   .member-actions {
