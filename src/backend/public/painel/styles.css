@@ -12,7 +12,7 @@
   --ok: #65f0ae;
   --warn: #ffd166;
   --bad: #ff7488;
-  --shadow: 0 24px 90px rgba(0, 0, 0, .42);
+  --shadow: 0 18px 54px rgba(0, 0, 0, .34);
   --radius: 8px;
 }
 
@@ -79,13 +79,14 @@ button {
 .liquid {
   position: relative;
   overflow: hidden;
+  contain: layout paint;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .026)),
     var(--surface);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(14px) saturate(132%);
 }
 
 .liquid::before {
@@ -609,6 +610,16 @@ h3 {
   backdrop-filter: blur(12px);
 }
 
+@supports not (backdrop-filter: blur(1px)) {
+  .liquid {
+    background: rgba(10, 25, 31, .92);
+  }
+
+  .modal-backdrop {
+    background: rgba(0, 0, 0, .72);
+  }
+}
+
 .confirm-modal {
   width: min(440px, 100%);
   padding: 24px;
@@ -651,6 +662,10 @@ h3 {
   .app {
     width: min(100% - 20px, 640px);
     padding-top: 10px;
+  }
+
+  .liquid {
+    backdrop-filter: blur(8px) saturate(118%);
   }
 
   .topbar,

@@ -17,6 +17,8 @@ router.get("/me", isLogin, me);
 
 router.get("/panel/groups/:groupId", isLogin, panel.groupDetails);
 
+router.get("/panel/groups", isLogin, panel.listGroups);
+
 router.patch("/panel/groups/:groupId/config", isLogin, panel.updateConfig);
 
 router.post("/panel/groups/:groupId/actions", isLogin, panel.groupAction);

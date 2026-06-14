@@ -1,28 +1,32 @@
 import * as THREE from "three";
 
 const canvas = document.getElementById("yukiScene");
-const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true, preserveDrawingBuffer: true});
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: window.devicePixelRatio <= 1.5,
+  alpha: true,
+  powerPreference: "low-power"
+});
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
 const pointer = new THREE.Vector2(0, 0);
 const startedAt = performance.now();
+let lastFrame = 0;
 
 camera.position.set(0, 0, 7.5);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 720 ? 1.05 : 1.25));
 
 const group = new THREE.Group();
 scene.add(group);
 
-const coreMaterial = new THREE.MeshPhysicalMaterial({
+const coreMaterial = new THREE.MeshStandardMaterial({
   color: 0x78d7ff,
-  roughness: 0.18,
-  metalness: 0.1,
-  transmission: 0.46,
-  thickness: 0.6,
+  roughness: 0.34,
+  metalness: 0.18,
   transparent: true,
-  opacity: 0.52,
+  opacity: 0.46,
   emissive: 0x102b3a,
-  emissiveIntensity: 0.8
+  emissiveIntensity: 0.7
 });
 
 const shellMaterial = new THREE.MeshBasicMaterial({
@@ -32,8 +36,8 @@ const shellMaterial = new THREE.MeshBasicMaterial({
   wireframe: true
 });
 
-const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 3), coreMaterial);
-const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(1.92, 2), shellMaterial);
+const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 2), coreMaterial);
+const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(1.92, 1), shellMaterial);
 group.add(core, shell);
 
 const ringMaterial = new THREE.MeshBasicMaterial({
@@ -44,13 +48,13 @@ const ringMaterial = new THREE.MeshBasicMaterial({
 });
 
 for (let index = 0; index < 3; index++) {
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35 + index * 0.35, 0.006, 8, 160), ringMaterial);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(2.35 + index * 0.35, 0.006, 6, 96), ringMaterial);
   ring.rotation.x = Math.PI / 2 + index * 0.46;
   ring.rotation.y = index * 0.72;
   group.add(ring);
 }
 
-const particleCount = 320;
+const particleCount = window.innerWidth < 720 ? 90 : 150;
 const positions = new Float32Array(particleCount * 3);
 for (let index = 0; index < particleCount; index++) {
   const radius = 2.8 + Math.random() * 4.8;
@@ -83,6 +87,7 @@ function resize() {
   const height = window.innerHeight;
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, width < 720 ? 1.05 : 1.25));
   renderer.setSize(width, height, false);
 
   const isMobile = width < 720;
@@ -90,7 +95,11 @@ function resize() {
   group.scale.setScalar(isMobile ? 0.66 : 1);
 }
 
-function animate() {
+function animate(now = 0) {
+  requestAnimationFrame(animate);
+  if (document.hidden || now - lastFrame < 33) return;
+  lastFrame = now;
+
   const elapsed = (performance.now() - startedAt) / 1000;
   group.rotation.x = elapsed * 0.08 + pointer.y * 0.18;
   group.rotation.y = elapsed * 0.13 + pointer.x * 0.22;
@@ -98,7 +107,6 @@ function animate() {
   particles.rotation.y = elapsed * 0.018;
   particles.rotation.x = Math.sin(elapsed * 0.2) * 0.04;
   renderer.render(scene, camera);
-  requestAnimationFrame(animate);
 }
 
 window.addEventListener("resize", resize);

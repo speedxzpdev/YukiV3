@@ -180,6 +180,27 @@ async function loadMe() {
   state.selectedGroup = state.groups.find((group) => group.groupId === state.selectedGroupId) || null;
 }
 
+function mergeGroups(nextGroups) {
+  const map = new Map(state.groups.map((group) => [group.groupId, group]));
+  for (const group of nextGroups || []) {
+    map.set(group.groupId, {...(map.get(group.groupId) || {}), ...group});
+  }
+
+  state.groups = Array.from(map.values());
+  if (!state.selectedGroupId || !state.groups.some((group) => group.groupId === state.selectedGroupId)) {
+    const manageable = state.groups.find((group) => group.canManage);
+    state.selectedGroupId = manageable?.groupId || state.groups[0]?.groupId || null;
+  }
+  state.selectedGroup = state.groups.find((group) => group.groupId === state.selectedGroupId) || null;
+}
+
+async function loadManageableGroups(query = "") {
+  if (!state.permissions.canManageAnyGroup && !state.groups.some((group) => group.canManage)) return;
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : "";
+  const data = await api(`/auth/panel/groups${suffix}`);
+  mergeGroups(data.groups || []);
+}
+
 async function loadGroupDetails(force = false) {
   if (!state.selectedGroupId || !canManageSelectedGroup()) {
     state.groupDetails = null;
@@ -780,6 +801,11 @@ async function boot() {
     setStatus("Carregando...");
     await loadMe();
     renderAll();
+    loadManageableGroups()
+      .then(() => renderAll())
+      .catch((err) => {
+        console.warn("Nao foi possivel carregar grupos globais:", err);
+      });
   } catch (err) {
     showError(err.message || "Nao foi possivel abrir o painel.");
   }

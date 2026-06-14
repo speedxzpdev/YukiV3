@@ -3,6 +3,7 @@ const {
   createAnnouncementPreview,
   decodeGroupId,
   getGroupPanel,
+  listManageableGroups,
   runGroupAction,
   updateGroupConfig
 } = require("../../services/panelService");
@@ -33,6 +34,16 @@ async function groupDetails(req, res) {
     const groupId = decodeGroupId(req.params.groupId);
     const data = await getGroupPanel(req.activeSock, groupId, sender);
     res.status(200).json(data);
+  } catch (err) {
+    sendError(res, err);
+  }
+}
+
+async function listGroups(req, res) {
+  try {
+    const sender = getSender(req);
+    const groups = await listManageableGroups(sender, req.query?.q || "");
+    res.status(200).json({groups});
   } catch (err) {
     sendError(res, err);
   }
@@ -89,5 +100,6 @@ module.exports = {
   announcementPreview,
   groupAction,
   groupDetails,
+  listGroups,
   updateConfig
 };

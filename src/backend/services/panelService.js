@@ -154,12 +154,11 @@ function compactGroup(group, extras = {}) {
 
 async function buildPanelHome(sender) {
   const role = await getRole(sender);
-  const [user, mutes, adverts, ranks, allGroups, subowners] = await Promise.all([
+  const [user, mutes, adverts, ranks, subowners] = await Promise.all([
     users.findOne({userLid: sender}).lean(),
     mutados.find({userLid: sender}).lean(),
     advertidos.find({userLid: sender}).lean(),
     rankativos.find({userLid: sender}).lean(),
-    role.level > 0 ? grupos.find({groupId: /@g\.us$/}).sort({grupoName: 1}).limit(250).lean() : Promise.resolve([]),
     role.level > 0 ? donos.find().lean() : Promise.resolve([])
   ]);
 
@@ -170,8 +169,6 @@ async function buildPanelHome(sender) {
   for (const mute of mutes) if (isGroupId(mute?.grupo)) groupIds.add(mute.grupo);
   for (const adv of adverts) if (isGroupId(adv?.grupo)) groupIds.add(adv.grupo);
   for (const rank of ranks) if (isGroupId(rank?.from)) groupIds.add(rank.from);
-  for (const group of allGroups) groupIds.add(group.groupId);
-
   const groupDocs = groupIds.size
     ? await grupos.find({groupId: {$in: Array.from(groupIds)}}).lean()
     : [];
@@ -194,6 +191,7 @@ async function buildPanelHome(sender) {
       isAdminRegistered: !!saved,
       canManage: role.level > 0 || !!saved,
       managedBy: role.level > 0 ? role.name : (saved ? "admin" : "user"),
+      visibleSource: saved ? "related" : "activity",
       muted: !!mute,
       muteAttempts: mute?.tentativasMsg || 0,
       advertencias: adv?.adv || 0,
@@ -255,6 +253,30 @@ async function buildPanelHome(sender) {
       }))
     }
   };
+}
+
+async function listManageableGroups(sender, query = "") {
+  const role = await getRole(sender);
+  if (role.level === 0) {
+    const user = await users.findOne({userLid: sender}).select("grupos").lean();
+    const groupIds = (user?.grupos || []).map((group) => group.id).filter(isGroupId);
+    if (!groupIds.length) return [];
+
+    const docs = await grupos.find({groupId: {$in: groupIds}}).sort({grupoName: 1}).limit(100).lean();
+    return docs.map((group) => compactGroup(group, {canManage: true, managedBy: "admin", visibleSource: "related"}));
+  }
+
+  const filter = {groupId: /@g\.us$/};
+  const normalized = String(query || "").trim();
+  if (normalized) {
+    filter.$or = [
+      {grupoName: {$regex: normalized, $options: "i"}},
+      {groupId: {$regex: normalized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i"}}
+    ];
+  }
+
+  const docs = await grupos.find(filter).sort({grupoName: 1}).limit(100).lean();
+  return docs.map((group) => compactGroup(group, {canManage: true, managedBy: role.name, visibleSource: "global"}));
 }
 
 async function getGroupPanel(sock, groupId, sender) {
@@ -604,6 +626,7 @@ module.exports = {
   createAnnouncementPreview,
   decodeGroupId,
   getGroupPanel,
+  listManageableGroups,
   runGroupAction,
   updateGroupConfig
 };
