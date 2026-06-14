@@ -5,7 +5,6 @@ const tabsEl = document.getElementById("tabs");
 
 const views = {
   profile: document.getElementById("viewProfile"),
-  bolao: document.getElementById("viewBolao"),
   groups: document.getElementById("viewGroups"),
   config: document.getElementById("viewConfig"),
   moderation: document.getElementById("viewModeration"),
@@ -23,21 +22,11 @@ const state = {
   selectedGroupId: null,
   selectedGroup: null,
   groupDetails: null,
-  announcementPreview: null,
-  bolao: {
-    loading: false,
-    canManage: false,
-    balance: 0,
-    games: [],
-    selectedGameId: null,
-    selectedGame: null,
-    details: null
-  }
+  announcementPreview: null
 };
 
 const tabDefs = [
   {id: "profile", label: "Perfil"},
-  {id: "bolao", label: "Bolao"},
   {id: "groups", label: "Grupos"},
   {id: "config", label: "Config", needsGroup: true},
   {id: "moderation", label: "Moderacao", needsGroup: true},
@@ -89,25 +78,6 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Sem data";
   return date.toLocaleDateString("pt-BR");
-}
-
-function formatDateTime(value) {
-  if (!value) return "Sem data";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Sem data";
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
-function toDateTimeLocal(value) {
-  const date = value ? new Date(value) : new Date(Date.now() + 3 * 60 * 60 * 1000);
-  if (Number.isNaN(date.getTime())) return "";
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
 function canManageSelectedGroup() {
@@ -245,43 +215,6 @@ async function loadGroupDetails(force = false) {
   return state.groupDetails;
 }
 
-function selectBolaoState(gameId) {
-  const games = state.bolao.games || [];
-  if (gameId) {
-    const match = games.find((game) => game.id === gameId || game.code === gameId);
-    if (match) state.bolao.selectedGameId = match.id;
-  }
-
-  if (!state.bolao.selectedGameId || !games.some((game) => game.id === state.bolao.selectedGameId)) {
-    const open = games.find((game) => game.status === "open");
-    state.bolao.selectedGameId = (open || games[0])?.id || null;
-  }
-
-  state.bolao.selectedGame = games.find((game) => game.id === state.bolao.selectedGameId) || null;
-}
-
-async function loadBolao(preferredGameId = null) {
-  state.bolao.loading = true;
-  const data = await api("/auth/panel/bolao");
-  state.bolao.canManage = !!data.canManage;
-  state.bolao.balance = data.balance || 0;
-  state.bolao.games = data.games || [];
-  selectBolaoState(preferredGameId);
-  state.bolao.loading = false;
-
-  if (state.bolao.selectedGameId) {
-    state.bolao.details = await api(`/auth/panel/bolao/${encodeURIComponent(state.bolao.selectedGameId)}`);
-    if (state.bolao.details?.game) {
-      const game = state.bolao.details.game;
-      const index = state.bolao.games.findIndex((item) => item.id === game.id);
-      if (index >= 0) state.bolao.games[index] = game;
-      state.bolao.selectedGame = game;
-    }
-  } else {
-    state.bolao.details = null;
-  }
-}
-
 function renderShell() {
   document.getElementById("roleBadge").textContent = state.user.roleLabel || "Usuario";
   document.getElementById("roleBadge").className = `role-badge ${state.user.role || "user"}`;
@@ -353,124 +286,6 @@ function accessCopy(role, managedCount) {
   if (role === "subowner") return "Staff operacional. Acoes ficam abaixo dos donos reais.";
   if (managedCount) return "Admin de grupo com acoes liberadas nos grupos onde voce ainda e admin.";
   return "Seu painel mostra dados pessoais e status nos grupos.";
-}
-
-function renderBolao() {
-  if (state.bolao.loading && !state.bolao.games.length) {
-    views.bolao.innerHTML = loadingPanel("Bolao");
-    return;
-  }
-
-  const games = state.bolao.games || [];
-  const selected = state.bolao.selectedGame;
-  const details = state.bolao.details;
-
-  views.bolao.innerHTML = `
-    <section class="bolao-panel liquid">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow">Moedas em campo</p>
-          <h2>Bolao</h2>
-          <p class="muted">Apostas de placar exato. Link publico so abre esta aba; a sessao continua protegida pelo /painel.</p>
-        </div>
-        <span class="count">${formatMoney(state.bolao.balance)} moedas</span>
-      </div>
-
-      <div class="bolao-grid">
-        <div class="bolao-list">
-          ${games.length ? games.map(renderBolaoGame).join("") : '<p class="empty">Nenhum jogo cadastrado.</p>'}
-        </div>
-        <div class="bolao-focus">
-          ${selected ? renderBolaoFocus(selected, details) : '<p class="empty">Selecione um jogo.</p>'}
-        </div>
-      </div>
-    </section>
-    ${state.bolao.canManage ? renderBolaoAdmin(selected) : ""}
-  `;
-}
-
-function renderBolaoGame(game) {
-  return `
-    <button class="bolao-game ${game.id === state.bolao.selectedGameId ? "active" : ""}" data-bolao-game="${escapeHtml(game.id)}" type="button">
-      <span>
-        <strong>${escapeHtml(game.title)}</strong>
-        <small>${escapeHtml(game.code)} · fecha ${formatDateTime(game.closesAt)}</small>
-      </span>
-      <em>${escapeHtml(game.statusLabel)}</em>
-    </button>
-  `;
-}
-
-function renderBolaoFocus(game, details) {
-  const userBet = details?.game?.userBet || game.userBet;
-  const bets = details?.bets || [];
-  return `
-    <div class="bolao-match">
-      <p class="eyebrow">${escapeHtml(game.competition || "Copa")}</p>
-      <h3>${escapeHtml(game.homeTeam)} x ${escapeHtml(game.awayTeam)}</h3>
-      <div class="status-matrix">
-        <span>${escapeHtml(game.statusLabel)}</span>
-        <span>${formatDateTime(game.startsAt)}</span>
-        <span>Pool ${formatMoney(game.pool || 0)}</span>
-        <span>${formatNumber(game.bets || 0)} apostas</span>
-      </div>
-      ${renderBolaoBetForm(game, userBet)}
-      <div class="bolao-bets">
-        ${bets.length ? bets.slice(0, 12).map((bet) => `
-          <article class="bolao-bet-row">
-            <span>${escapeHtml(bet.name || "Sem nome")}</span>
-            <strong>${escapeHtml(bet.score || "oculto")}</strong>
-            <em>${formatMoney(bet.paidAmount || bet.stake || 0)}</em>
-          </article>
-        `).join("") : '<p class="empty">As apostas aparecem aqui quando estiverem liberadas.</p>'}
-      </div>
-    </div>
-  `;
-}
-
-function renderBolaoBetForm(game, userBet) {
-  const disabled = !game.canBet;
-  return `
-    <form id="bolaoBetForm" class="bolao-form" data-game-id="${escapeHtml(game.id)}">
-      <label><span>${escapeHtml(game.homeTeam)}</span><input id="bolaoHomeScore" type="number" min="0" max="30" value="${escapeHtml(userBet?.homeScore ?? "")}" ${disabled ? "disabled" : ""}></label>
-      <label><span>${escapeHtml(game.awayTeam)}</span><input id="bolaoAwayScore" type="number" min="0" max="30" value="${escapeHtml(userBet?.awayScore ?? "")}" ${disabled ? "disabled" : ""}></label>
-      <label><span>Moedas</span><input id="bolaoStake" type="number" min="${escapeHtml(game.minBet || 100)}" value="${escapeHtml(userBet?.stake || game.minBet || 100)}" ${disabled ? "disabled" : ""}></label>
-      <button class="primary-button" type="submit" ${disabled ? "disabled" : ""}>${userBet ? "Atualizar" : "Apostar"}</button>
-      <p id="bolaoBetMessage" class="form-message">${disabled ? "Apostas fechadas." : ""}</p>
-    </form>
-  `;
-}
-
-function renderBolaoAdmin(selected) {
-  const resultEnabled = selected && ["closed", "result_preview"].includes(selected.status);
-  return `
-    <section class="bolao-admin-grid">
-      <form id="bolaoCreateForm" class="liquid quiet-panel">
-        <p class="eyebrow">Dono</p>
-        <h3>Criar jogo</h3>
-        <div class="bolao-form admin">
-          <label><span>Mandante</span><input id="bolaoCreateHome" required placeholder="Brasil"></label>
-          <label><span>Visitante</span><input id="bolaoCreateAway" required placeholder="Argentina"></label>
-          <label><span>Data</span><input id="bolaoCreateStart" type="datetime-local" required value="${escapeHtml(toDateTimeLocal())}"></label>
-          <label><span>Competicao</span><input id="bolaoCreateCompetition" value="Copa do Mundo"></label>
-        </div>
-        <button class="primary-button" type="submit">Criar</button>
-        <p id="bolaoCreateMessage" class="form-message"></p>
-      </form>
-
-      <form id="bolaoResultForm" class="liquid quiet-panel" data-game-id="${escapeHtml(selected?.id || "")}">
-        <p class="eyebrow">Resultado</p>
-        <h3>${selected ? escapeHtml(selected.title) : "Selecione um jogo"}</h3>
-        <div class="bolao-form result">
-          <label><span>Casa</span><input id="bolaoResultHome" type="number" min="0" max="30" ${resultEnabled ? "" : "disabled"}></label>
-          <label><span>Fora</span><input id="bolaoResultAway" type="number" min="0" max="30" ${resultEnabled ? "" : "disabled"}></label>
-          <button class="ghost-button" type="submit" ${resultEnabled ? "" : "disabled"}>Preview</button>
-          <button id="bolaoConfirmPayout" class="danger-button" data-game-id="${escapeHtml(selected?.id || "")}" type="button" ${selected?.status === "result_preview" ? "" : "disabled"}>Pagar</button>
-        </div>
-        <p id="bolaoResultMessage" class="form-message"></p>
-      </form>
-    </section>
-  `;
 }
 
 function renderGroups() {
@@ -780,7 +595,6 @@ function emptyPanel(title, text) {
 function renderAll() {
   renderShell();
   renderProfile();
-  renderBolao();
   renderGroups();
   renderConfig();
   renderModeration();
@@ -794,11 +608,6 @@ function renderAll() {
 async function switchTab(tabId) {
   if (!visibleTabs().some((tab) => tab.id === tabId)) return;
   state.activeTab = tabId;
-
-  if (tabId === "bolao") {
-    renderAll();
-    await loadBolao();
-  }
 
   if (["config", "moderation"].includes(tabId) && canManageSelectedGroup()) {
     renderAll();
@@ -818,19 +627,11 @@ async function selectGroup(groupId) {
   renderAll();
 }
 
-async function selectBolaoGame(gameId) {
-  selectBolaoState(gameId);
-  state.bolao.details = null;
-  renderAll();
-  await loadBolao(state.bolao.selectedGameId);
-  renderAll();
-}
-
 async function saveConfig(event) {
   event.preventDefault();
   if (!state.groupDetails) return;
 
-  const form = event.target;
+  const form = event.currentTarget;
   const body = {
     prefixo: form.querySelector("#prefixInput").value,
     welcome: form.querySelector('[name="welcome"]').checked,
@@ -930,84 +731,6 @@ async function confirmAnnouncement() {
   setStatus("Anuncio iniciado", "ok");
 }
 
-async function submitBolaoBet(event) {
-  event.preventDefault();
-  const form = event.target;
-  const gameId = form.dataset.gameId;
-  const message = document.getElementById("bolaoBetMessage");
-  if (message) message.textContent = "Salvando...";
-
-  await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}/bets`, {
-    method: "POST",
-    mutate: true,
-    body: {
-      homeScore: Number(document.getElementById("bolaoHomeScore").value),
-      awayScore: Number(document.getElementById("bolaoAwayScore").value),
-      amount: Number(document.getElementById("bolaoStake").value)
-    }
-  });
-
-  await loadBolao(gameId);
-  renderAll();
-  setStatus("Aposta salva", "ok");
-}
-
-async function submitBolaoCreate(event) {
-  event.preventDefault();
-  const message = document.getElementById("bolaoCreateMessage");
-  if (message) message.textContent = "Criando...";
-
-  const created = await api("/auth/panel/bolao/games", {
-    method: "POST",
-    mutate: true,
-    body: {
-      homeTeam: document.getElementById("bolaoCreateHome").value,
-      awayTeam: document.getElementById("bolaoCreateAway").value,
-      startsAt: document.getElementById("bolaoCreateStart").value.replace("T", " "),
-      competition: document.getElementById("bolaoCreateCompetition").value
-    }
-  });
-
-  await loadBolao(created.game?.id);
-  renderAll();
-  setStatus("Bolao criado", "ok");
-}
-
-async function submitBolaoResult(event) {
-  event.preventDefault();
-  const form = event.target;
-  const gameId = form.dataset.gameId;
-  if (!gameId) return;
-
-  await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}/result`, {
-    method: "POST",
-    mutate: true,
-    body: {
-      homeScore: Number(document.getElementById("bolaoResultHome").value),
-      awayScore: Number(document.getElementById("bolaoResultAway").value)
-    }
-  });
-
-  await loadBolao(gameId);
-  renderAll();
-  setStatus("Preview pronto", "ok");
-}
-
-async function confirmBolaoPayout(gameId) {
-  const ok = await confirmAction("Pagar bolao", "Confirmar pagamento ou reembolso deste jogo?");
-  if (!ok) return;
-
-  await api(`/auth/panel/bolao/${encodeURIComponent(gameId)}/payout`, {
-    method: "POST",
-    mutate: true,
-    body: {}
-  });
-
-  await loadBolao(gameId);
-  renderAll();
-  setStatus("Bolao pago", "ok");
-}
-
 document.addEventListener("click", async (event) => {
   try {
     const tabButton = event.target.closest("[data-tab]");
@@ -1019,12 +742,6 @@ document.addEventListener("click", async (event) => {
     const groupButton = event.target.closest("[data-group-id]");
     if (groupButton) {
       await selectGroup(groupButton.dataset.groupId);
-      return;
-    }
-
-    const bolaoButton = event.target.closest("[data-bolao-game]");
-    if (bolaoButton) {
-      await selectBolaoGame(bolaoButton.dataset.bolaoGame);
       return;
     }
 
@@ -1042,10 +759,6 @@ document.addEventListener("click", async (event) => {
 
     if (event.target.id === "confirmAnnouncement") {
       await confirmAnnouncement();
-    }
-
-    if (event.target.id === "bolaoConfirmPayout") {
-      await confirmBolaoPayout(event.target.dataset.gameId);
     }
   } catch (err) {
     setStatus("Erro", "error");
@@ -1068,18 +781,6 @@ document.addEventListener("submit", async (event) => {
     if (event.target.id === "announcementForm") {
       await createAnnouncement(event);
     }
-
-    if (event.target.id === "bolaoBetForm") {
-      await submitBolaoBet(event);
-    }
-
-    if (event.target.id === "bolaoCreateForm") {
-      await submitBolaoCreate(event);
-    }
-
-    if (event.target.id === "bolaoResultForm") {
-      await submitBolaoResult(event);
-    }
   } catch (err) {
     setStatus("Erro", "error");
     const message = event.target.querySelector(".form-message");
@@ -1091,8 +792,6 @@ async function boot() {
   try {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-    const bolaoHash = window.location.hash.match(/^#bolao\/([^?#]+)/);
-    const bolaoGameId = bolaoHash ? decodeURIComponent(bolaoHash[1]) : null;
 
     if (token) {
       setStatus("Entrando...");
@@ -1101,18 +800,7 @@ async function boot() {
 
     setStatus("Carregando...");
     await loadMe();
-    if (bolaoGameId) {
-      state.activeTab = "bolao";
-      await loadBolao(bolaoGameId);
-    }
     renderAll();
-    if (!bolaoGameId) {
-      loadBolao()
-        .then(() => renderAll())
-        .catch((err) => {
-          console.warn("Nao foi possivel carregar bolao:", err);
-        });
-    }
     loadManageableGroups()
       .then(() => renderAll())
       .catch((err) => {
