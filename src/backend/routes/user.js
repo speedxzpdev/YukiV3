@@ -5,11 +5,16 @@ const isLogin = require("../middleware/isLogin");
 const user_info = require("../controllers/user/userInfo.js");
 const me = require("../controllers/user/me.js");
 const panel = require("../controllers/user/panel.js");
+const browserLogin = require("../controllers/user/browserLogin.js");
 const setName = require("../controllers/user/setName.js");
 const discord_auth = require('../controllers/user/discordAuth.js');
 
 
 router.post("/login", login);
+
+router.post("/browser-login/start", browserLogin.start);
+
+router.get("/browser-login/status/:code", browserLogin.status);
 
 router.get("/user", user_info);
 

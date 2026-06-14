@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { ensureSessionCsrf } = require("../services/authSession");
 
 const islogger = (req, res, next) => {
   const token = req.cookies.user;
@@ -10,6 +11,7 @@ const islogger = (req, res, next) => {
     }
 
     req.user = jwt.verify(token, process.env.SECRET);
+    ensureSessionCsrf(req, res);
     next();
   } catch(err) {
     res.status(401).json({error: "token invalido."});

@@ -1,6 +1,5 @@
 const { clientRedis } = require("../../../lib/redis.js");
-const crypto = require("crypto");
-const jwt = require("jsonwebtoken");
+const { issueSession } = require("../../services/authSession");
 
 module.exports = async (req, res)  => {
 const body = req?.body;
@@ -32,17 +31,7 @@ try {
 
  await clientRedis.del([tokenKey, `userToken:${sender}`]);
 
- const csrfToken = crypto.randomBytes(32).toString("hex");
- const tokenJwt = jwt.sign({sender: sender, csrfToken}, process.env.SECRET);
-
-const isProd = process.env.DEV_AMBIENT === "false";
-
- res.cookie('user', tokenJwt, {
-   httpOnly: true,
-   secure: isProd,
-   sameSite: isProd ? "None" : "Lax",
-   maxAge: 1000 * 60 * 60 * 24 * 30
-});
+ const {tokenJwt} = issueSession(res, sender);
 
  res.status(200).json({token: tokenJwt, message: "sucesso!"});
 

@@ -1,4 +1,5 @@
 const { buildPanelHome } = require("../../services/panelService");
+const { ensureSessionCsrf } = require("../../services/authSession");
 
 module.exports = async (req, res) => {
   try {
@@ -9,6 +10,7 @@ module.exports = async (req, res) => {
       return;
     }
 
+    ensureSessionCsrf(req, res);
     const data = await buildPanelHome(sender);
     data.csrfToken = req.user?.csrfToken || null;
     res.status(200).json(data);

@@ -24,6 +24,13 @@ const state = {
   selectedGroup: null,
   groupDetails: null,
   announcementPreview: null,
+  authLogin: {
+    code: null,
+    message: null,
+    whatsappUrl: null,
+    polling: false,
+    status: null
+  },
   bolao: {
     loading: false,
     canManage: false,
@@ -206,6 +213,51 @@ async function loginWithToken(token) {
   }
 
   window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash || ""}`);
+}
+
+async function startBrowserLogin() {
+  const data = await api("/auth/browser-login/start", {
+    method: "POST",
+    body: {}
+  });
+
+  state.authLogin = {
+    code: data.code,
+    message: data.message,
+    whatsappUrl: data.whatsappUrl,
+    polling: true,
+    status: "waiting"
+  };
+  renderAll();
+  pollBrowserLogin(data.code);
+}
+
+async function pollBrowserLogin(code) {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if (state.user || state.authLogin.code !== code) return;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    try {
+      const data = await api(`/auth/browser-login/status/${encodeURIComponent(code)}`);
+      if (data.status === "authenticated") {
+        state.authLogin = {code: null, message: null, whatsappUrl: null, polling: false, status: "done"};
+        await loadMe();
+        await loadBolao(state.bolao.selectedGame?.code || state.bolao.selectedGameId);
+        renderAll();
+        setStatus("Reconhecido", "ok");
+        return;
+      }
+    } catch (err) {
+      state.authLogin.polling = false;
+      state.authLogin.status = err.message || "Codigo expirado.";
+      renderAll();
+      return;
+    }
+  }
+
+  state.authLogin.polling = false;
+  state.authLogin.status = "Codigo expirado. Gere outro.";
+  renderAll();
 }
 
 async function loadMe(options = {}) {
@@ -484,10 +536,26 @@ function renderBolaoFocus(game, details) {
 
 function renderBolaoBetForm(game, userBet) {
   if (!state.user) {
+    const login = state.authLogin;
     return `
       <div class="bolao-guest-note">
         <strong>Entre para apostar</strong>
-        <span>Gere seu link com <code>/painel</code> no WhatsApp. O navegador salva sua sessao e este link do bolao continua funcionando.</span>
+        <span>Gere um codigo aqui, mande para a Yuki no WhatsApp e este navegador fica reconhecido para apostar.</span>
+        ${login.code ? `
+          <div class="login-code-box">
+            <span>Codigo</span>
+            <strong>${escapeHtml(login.code)}</strong>
+          </div>
+          <code>${escapeHtml(login.message || `/entrarpainel ${login.code}`)}</code>
+          <div class="auth-actions">
+            ${login.whatsappUrl ? `<a class="primary-button" href="${escapeHtml(login.whatsappUrl)}" target="_blank" rel="noopener">Abrir WhatsApp</a>` : ""}
+            <button class="ghost-button" id="startBrowserLogin" type="button">${login.polling ? "Aguardando..." : "Gerar outro"}</button>
+          </div>
+          <small>${escapeHtml(login.status === "waiting" ? "Depois de enviar, eu reconheco automaticamente aqui." : (login.status || ""))}</small>
+        ` : `
+          <button class="primary-button" id="startBrowserLogin" type="button">Entrar pelo WhatsApp</button>
+          <small>Isso nao usa numero digitado: quem confirma e o WhatsApp real que mandar o codigo.</small>
+        `}
       </div>
     `;
   }
@@ -1111,6 +1179,10 @@ document.addEventListener("click", async (event) => {
 
     if (event.target.id === "bolaoConfirmPayout") {
       await confirmBolaoPayout(event.target.dataset.gameId);
+    }
+
+    if (event.target.id === "startBrowserLogin") {
+      await startBrowserLogin();
     }
   } catch (err) {
     setStatus("Erro", "error");

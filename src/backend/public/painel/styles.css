@@ -288,9 +288,13 @@ h3 {
 .primary-button,
 .ghost-button,
 .danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 42px;
   padding: 0 18px;
   font-weight: 800;
+  text-decoration: none;
 }
 
 .ghost-button:hover,
@@ -738,6 +742,37 @@ button:disabled {
 
 .bolao-guest-note code {
   color: var(--ice);
+}
+
+.bolao-guest-note small {
+  color: var(--muted);
+}
+
+.login-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 209, 102, .28);
+  border-radius: var(--radius);
+  background: rgba(1, 8, 10, .62);
+}
+
+.login-code-box span {
+  color: var(--muted);
+}
+
+.login-code-box strong {
+  color: var(--warn);
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .bolao-bets {
