@@ -12,7 +12,7 @@ module.exports = {
     
     try {
       
-      const assetsList = ['../../assets/images/yukiBanner.jpg', '../../assets/images/yukiBanner2.jpg'];
+      const assetsList = ['../../assets/images/yukiBannerCopa.jpeg'];
       
       const assetsPast = assetsList[Math.floor(Math.random() * assetsList.length)];
       
