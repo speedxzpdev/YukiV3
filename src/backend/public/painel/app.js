@@ -713,6 +713,7 @@ function renderConfig() {
             <input id="prefixInput" maxlength="1" value="${escapeHtml(config.prefixo || "/")}">
           </label>
           <button class="primary-button" type="submit">Salvar config</button>
+          
         </div>
       </form>
       <p id="configMessage" class="form-message"></p>
