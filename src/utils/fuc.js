@@ -54,6 +54,8 @@ class YukiBot {
   async editReply(from, key, text) {
     await this.sock.sendMessage(from, {text: text, edit: key});
   }
+
+
 }
 
 module.exports = YukiBot
