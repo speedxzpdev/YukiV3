@@ -20,7 +20,7 @@ module.exports = {
         {buttonId: `${process.env.PREFIXO}ping`, buttonText: {displayText: "⚡️𝐏𝐢𝐧𝐠"}, type: 1}
         ];
       
-      await sock.sendMessage(from, {image: {url: path.join(__dirname, assetsPast)}, caption: menu(msg).menuPrincipal, footer: "Menu feito por ⤷ Morgana\nCapa por ⤷ Vivy", buttons: buttons, mentions: [sender]}, {quoted: msg});
+      await sock.sendMessage(from, {image: {url: path.join(__dirname, assetsPast)}, caption: menu(msg).menuPrincipal, footer: "Menu feito por ⤷ Morgana\nCapa por ⤷ Morgana e Lzin", buttons: buttons, mentions: [sender]}, {quoted: msg});
       
       
     }
