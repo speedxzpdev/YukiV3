@@ -21,6 +21,7 @@ const { isOwnerLid } = require("../utils/owner");
 const { isBotBanned } = require("../utils/botBan");
 const { resolveOwnerDuel } = require("../utils/ownerLuck");
 const normalizeCommandKey = require("../utils/commandKey");
+const { buildCommandCatalog } = require("../utils/commandCatalog");
 const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
 const {
   createMessageMongoMetrics,
@@ -614,6 +615,8 @@ async function safeRedis(action, fallback = null) {
     }
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
+  yukiIA.setCommandCatalog(buildCommandCatalog(commandsMap));
+
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m?.messages?.[0];
     if (!msg?.key) return;

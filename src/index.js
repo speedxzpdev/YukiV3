@@ -42,6 +42,9 @@ function loadCommands(dir) {
         continue;
       }
 
+      command.__path = fullPath;
+      command.__folder = path.relative(path.join(__dirname, "commands"), path.dirname(fullPath)).split(path.sep)[0] || "geral";
+
       commandsMap.set(command.name, command);
 
       const normalizedName = normalizeCommandKey(command.name);
