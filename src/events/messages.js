@@ -21,7 +21,7 @@ const { isOwnerLid } = require("../utils/owner");
 const { isBotBanned } = require("../utils/botBan");
 const { resolveOwnerDuel } = require("../utils/ownerLuck");
 const normalizeCommandKey = require("../utils/commandKey");
-const { buildCommandCatalog } = require("../utils/commandCatalog");
+const { buildCommandCatalog, findRelevantCommandContext } = require("../utils/commandCatalog");
 const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
 const {
   createMessageMongoMetrics,
@@ -485,7 +485,8 @@ async function safeRedis(action, fallback = null) {
             chat: from,
             user: currentState.recent.at(-1)?.name || "grupo",
             context: currentState.recent,
-            mode: "ambient"
+            mode: "ambient",
+            commandContext: relevantCommandContext("", currentState.recent)
           });
 
           if (!response) return;
@@ -587,7 +588,8 @@ async function safeRedis(action, fallback = null) {
           chat: from,
           user: msg?.pushName || "sem nome",
           context: state.recent,
-          mode: trigger.kind === "reply" ? "reply" : trigger.kind === "owner" ? "owner" : "context"
+          mode: trigger.kind === "reply" ? "reply" : trigger.kind === "owner" ? "owner" : "context",
+          commandContext: relevantCommandContext(body, state.recent)
         });
 
         if (!response) {
@@ -616,6 +618,13 @@ async function safeRedis(action, fallback = null) {
 
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   yukiIA.setCommandCatalog(buildCommandCatalog(commandsMap));
+
+  function relevantCommandContext(body, recent = []) {
+    return findRelevantCommandContext(commandsMap, [
+      body,
+      ...(recent || []).map((item) => item.body || item)
+    ]);
+  }
 
   sock.ev.on("messages.upsert", async (m) => {
     const msg = m?.messages?.[0];

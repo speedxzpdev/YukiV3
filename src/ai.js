@@ -12,7 +12,7 @@ const DEFAULT_REPLY = "hm. deu ruim aqui. tenta de novo.";
 const MORGANA_LID = "107503534747718@lid";
 const RAUL_LID = "39282123223040@lid";
 
-function buildSystemPrompt({ isOwner, isMorgana, isRaul, mode = "context", commandCatalog = null }) {
+function buildSystemPrompt({ isOwner, isMorgana, isRaul, mode = "context", commandCatalog = null, commandContext = null }) {
   return `
 Você é a Yuki, uma bot de WhatsApp com personalidade forte e resposta curta.
 
@@ -61,6 +61,10 @@ REGRAS FIXAS
 
 CATALOGO DE COMANDOS
 ${commandCatalog?.text || "catalogo indisponivel no momento."}
+${commandContext?.text ? `
+COMANDOS RELEVANTES NESTA CONVERSA
+${commandContext.text}
+` : ""}
 
 FORMATO
 - Não use tópicos.
@@ -140,7 +144,7 @@ class YukiAI {
     };
   }
 
-  async falar({ text, chat, user, context = [], mode = "context" }) {
+  async falar({ text, chat, user, context = [], mode = "context", commandContext = null }) {
     const input = normalizeText(text);
     const speaker = normalizeText(user) || "sem nome";
     const contextLines = normalizeContext(context).slice(-6);
@@ -158,7 +162,7 @@ class YukiAI {
     const messages = [
       {
         role: "system",
-        content: buildSystemPrompt({ isOwner, isMorgana, isRaul, mode, commandCatalog: this.commandCatalog })
+        content: buildSystemPrompt({ isOwner, isMorgana, isRaul, mode, commandCatalog: this.commandCatalog, commandContext })
       },
       ...memory,
       {
