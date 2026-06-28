@@ -22,6 +22,13 @@ const { isBotBanned } = require("../utils/botBan");
 const { resolveOwnerDuel } = require("../utils/ownerLuck");
 const normalizeCommandKey = require("../utils/commandKey");
 const { buildCommandCatalog, findRelevantCommandContext } = require("../utils/commandCatalog");
+const {
+  getPersonalSender,
+  isExplicitCommand,
+  isPersonalActor,
+  isPersonalAiEnabled,
+  isPersonalMode
+} = require("../utils/personalMode");
 const { groupCache, muteCache, ownerCache, userCache } = require("../utils/hotPathCache");
 const {
   createMessageMongoMetrics,
@@ -455,6 +462,8 @@ async function safeRedis(action, fallback = null) {
     }
 
     async function scheduleSilentReply({ sock, from }) {
+      if (isPersonalMode()) return;
+
       if (activeInterval.has(from)) {
         clearTimeout(activeInterval.get(from));
       }
@@ -534,8 +543,11 @@ async function safeRedis(action, fallback = null) {
         }
     }
 
-    async function maybeHandleAiReply({ sock, msg, from, sender, body, groupReply }) {
-      if (!groupReply?.autoReply || !from.endsWith("@g.us")) return false;
+    async function maybeHandleAiReply({ sock, msg, from, sender, body, groupReply, forcePersonal = false }) {
+      const personalMode = isPersonalMode();
+      const regularGroupAi = groupReply?.autoReply && from.endsWith("@g.us");
+      if (personalMode && !forcePersonal) return false;
+      if (!personalMode && !regularGroupAi) return false;
 
       const groupPrefix = groupReply?.configs?.prefixo || prefixo;
       const trackContext = shouldTrackAiContext(body, groupPrefix);
@@ -619,6 +631,15 @@ async function safeRedis(action, fallback = null) {
 module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   yukiIA.setCommandCatalog(buildCommandCatalog(commandsMap));
 
+  function getMessageBody(msg) {
+    return (msg?.message?.conversation) ||
+      (msg?.message?.extendedTextMessage?.text) ||
+      (msg?.message?.imageMessage?.caption) ||
+      (msg?.message?.documentMessage?.caption) ||
+      msg?.message?.buttonsResponseMessage?.selectedButtonId ||
+      "";
+  }
+
   function relevantCommandContext(body, recent = []) {
     return findRelevantCommandContext(commandsMap, [
       body,
@@ -627,11 +648,19 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   }
 
   sock.ev.on("messages.upsert", async (m) => {
-    const msg = m?.messages?.[0];
+    const personalMode = isPersonalMode();
+    const messages = Array.isArray(m?.messages) ? m.messages : [];
+    const msg = personalMode
+      ? messages.find((candidate) => isExplicitCommand(getMessageBody(candidate), prefixo)) ||
+        messages.find((candidate) => candidate?.key?.fromMe) ||
+        messages[0]
+      : messages[0];
     if (!msg?.key) return;
-    if (msg.key.fromMe) return
+    if (msg.key.fromMe && !personalMode) return;
+    const personalSender = personalMode ? getPersonalSender(sock) : null;
     
     const senderRaw =
+      (personalMode && msg.key.fromMe ? personalSender : null) ||
       msg?.key?.participantLid ||
       msg?.key?.senderLid ||
       msg?.key?.participant ||
@@ -642,6 +671,60 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     const from = msg?.key?.remoteJid || msg?.key?.participantLid
     if (!from || !sender) return;
 
+    const bot = new YukiBot({sock: sock, msg});
+    const body = getMessageBody(msg) || "Msg estranha...";
+    const bodyCase = body.toLowerCase();
+
+    //argumentos
+    const args = body.slice(prefixo.length).trim().split(/ +/);
+    const isPrefixCommand = body.startsWith(prefixo);
+    const isExplicitPersonalCommand = isExplicitCommand(body, prefixo);
+    const noPrefixPreview = isPrefixCommand ? [] : body.trim().split(/ +/);
+    const noPrefixCommandName = normalizeCommandKey(noPrefixPreview[0]);
+    const noPrefixCommandCandidate = noPrefixCommandName ? commandsMap.get(noPrefixCommandName) : null;
+    const personalActor = personalMode ? isPersonalActor({ msg, sender, sock }) : false;
+
+    if (personalMode) {
+      if (!personalActor) return;
+
+      if (!isExplicitPersonalCommand) {
+        if (await isPersonalAiEnabled(from)) {
+          await maybeHandleAiReply({
+            sock,
+            msg,
+            from,
+            sender,
+            body,
+            groupReply: { autoReply: true, configs: { prefixo } },
+            forcePersonal: true
+          });
+        }
+        return;
+      }
+
+      if (isPrefixCommand) {
+        const personalArgs = body.slice(prefixo.length).trim().split(/ +/);
+        const personalCommandName = normalizeCommandKey(personalArgs.shift());
+        const personalCommand = commandsMap.get(personalCommandName);
+
+        console.log(`[personal-mode] comando direto: /${personalCommandName || ""} existe=${!!personalCommand}`);
+
+        if (!personalCommand) {
+          await sock.sendMessage(from, { text: `Comando nao encontrado: ${prefixo}${personalCommandName || ""}` });
+          return;
+        }
+
+        try {
+          await personalCommand.execute(sock, msg, from, personalArgs, erros_prontos, espera_pronta, bot, sender);
+          console.log(`[personal-mode] /${personalCommandName} finalizado`);
+        } catch (err) {
+          console.error(`[personal-mode] erro em /${personalCommandName}:`, err);
+          await sock.sendMessage(from, { text: erros_prontos });
+        }
+        return;
+      }
+    }
+
     const mongoMetrics = createMessageMongoMetrics({ from, sender });
 
     try {
@@ -649,7 +732,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
     
     
-    if(process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
+    if(!personalMode && process.env.DEV_AMBIENT === "true" && from !== '120363424415515445@g.us') return;
     //console.log(msg)
 //escopo pra Nao vazar variaveis
      {
@@ -672,7 +755,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     }
     //ignora mensagens de si mesmo
     if(process.env.DEV_AMBIENT === "false") {
-    if (msg.key.fromMe) return
+    if (msg.key.fromMe && !personalMode) return
       
     }
     
@@ -687,7 +770,6 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
 
     
 
-    const bot = new YukiBot({sock: sock, msg});
     const isGroup = from.endsWith("@g.us");
     const isPrivate = from.endsWith("@lid");
     let ownerPromise = null;
@@ -696,20 +778,6 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       if (!ownerPromise) ownerPromise = getCachedOwner(sender, mongoMetrics);
       return ownerPromise;
     };
-
-    const body = (msg.message?.conversation) ||
-    (msg.message?.extendedTextMessage?.text) ||
-    (msg.message?.imageMessage?.caption) ||
-    (msg.message?.documentMessage?.caption) || msg?.message?.buttonsResponseMessage?.selectedButtonId || "Msg estranha...";
-
-    const bodyCase = body.toLowerCase();
-
-    //argumentos
-    const args = body.slice(prefixo.length).trim().split(/ +/);
-    const isPrefixCommand = body.startsWith(prefixo);
-    const noPrefixPreview = isPrefixCommand ? [] : body.trim().split(/ +/);
-    const noPrefixCommandName = normalizeCommandKey(noPrefixPreview[0]);
-    const noPrefixCommandCandidate = noPrefixCommandName ? commandsMap.get(noPrefixCommandName) : null;
 
     let usersSender = null;
     let userLoaded = false;
@@ -737,7 +805,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
 
     //Se uma mensagem Nao vier de um grupo entao ele pausa os comandos
-    if(isPrivate) {
+    if(!personalMode && isPrivate) {
       const privateUser = await getUsersSender();
       const Notvip = !privateUser?.vencimentoVip || Date.now() > privateUser?.vencimentoVip?.getTime();
 
@@ -802,12 +870,14 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       
     }
     
-    queueMessageActivity(sender, from);
-    markQueuedWrite(mongoMetrics);
+    if (!personalMode) {
+      queueMessageActivity(sender, from);
+      markQueuedWrite(mongoMetrics);
+    }
 
      //se estiver alguem mutado
     let userMutado = null;
-    if(isGroup) {
+    if(!personalMode && isGroup) {
       const cachedMute = muteCache.get(muteCacheKey(sender, from));
       if(cachedMute !== undefined) {
         userMutado = cachedMute;
@@ -857,9 +927,12 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       return
     }
     
-    addXp(sender, 1, sock, from, msg);
-    markQueuedWrite(mongoMetrics);
+    if (!personalMode) {
+      addXp(sender, 1, sock, from, msg);
+      markQueuedWrite(mongoMetrics);
+    }
 
+    if (!personalMode) {
     //Caso tenha um aluguel a pagar
     const alugarExiste = await safeRedis(() => clientRedis.exists(`aluguel:${sender}&${from}`), 0);
     
@@ -1025,6 +1098,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       await safeRedis(() => clientRedis.del(`namoro:${sender}`));
     }
   }
+    }
 
     
   
@@ -1032,7 +1106,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   const groupReply = groupDBInfo;
   
   //Caso o grupo tenha a anttotag ativa
-  if(from.endsWith("@g.us") && groupReply?.antiTotag) {
+  if(!personalMode && from.endsWith("@g.us") && groupReply?.antiTotag) {
     if(msg.key.fromMe) return;
     try {
       //pega info do grupo
@@ -1057,7 +1131,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
   }
   
   //Caso tenha o antilink ativo
-  if(groupReply?.configs?.antlink && (bodyCase.includes("https://") || bodyCase.includes("http://"))) {
+  if(!personalMode && groupReply?.configs?.antlink && (bodyCase.includes("https://") || bodyCase.includes("http://"))) {
     try {
       
       const metadata = await sock.groupMetadata(from);
@@ -1100,7 +1174,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
     
   }
   //caso o grupo tenha autoreply ativo
-  if(groupReply?.autoReply && from.endsWith("@g.us")) {
+  if(!personalMode && groupReply?.autoReply && from.endsWith("@g.us")) {
 
     //geração de texto
     await maybeHandleAiReply({ sock, msg, from, sender, body, groupReply });
@@ -1110,7 +1184,7 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
       //Caso um grupo tenha auto download
   const groupDonwload = groupDBInfo;
   
-  if((groupDonwload && groupDonwload.autoDownload) || from.endsWith("@lid")) {
+  if(!personalMode && ((groupDonwload && groupDonwload.autoDownload) || from.endsWith("@lid"))) {
   if(body.includes("https://open.spotify.com/track/")) {
     spotifyDl(sock, msg, from, body, erros_prontos, espera_pronta, bot)
   }
@@ -1140,9 +1214,9 @@ module.exports = (sock, commandsMap, erros_prontos, espera_pronta) => {
         //marca como false
         flagMessage.set(grupoRemote, false);
       }
-    
+
     //Caso o users tenha o modo sem prefixo
-if(noPrefixCommandCandidate && !isPrefixCommand) {
+if(!personalMode && noPrefixCommandCandidate && !isPrefixCommand) {
   const noPrefixUser = await getUsersSender();
 
   if(!noPrefixUser?.prefixo) {
@@ -1240,6 +1314,9 @@ if(noPrefixCommandCandidate && !isPrefixCommand) {
   const commandName = normalizeCommandKey(args.shift());
   //procura no map
   const commandGet = commandsMap.get(commandName)
+  if (personalMode) {
+    console.log(`[personal-mode] comando detectado: /${commandName || ""} existe=${!!commandGet}`);
+  }
 
 //se nao existir
     if (!commandGet) {
@@ -1313,10 +1390,9 @@ if(noPrefixCommandCandidate && !isPrefixCommand) {
       return
     }
     
-              //lida com aluguel
-    const commandUser = await getUsersSender();
     const isPadrao = commandGet.categoria === "padrao";
-    if(!isPadrao && from.endsWith("@g.us") && process.env.DEV_AMBIENT === "false") {
+    if(!personalMode && !isPadrao && from.endsWith("@g.us") && process.env.DEV_AMBIENT === "false") {
+    const commandUser = await getUsersSender();
     const grupoAluguel = groupDBInfo;
     
     if(!grupoAluguel) return;
@@ -1337,21 +1413,36 @@ if(noPrefixCommandCandidate && !isPrefixCommand) {
     }
     
     
+    if (personalMode) {
+      console.log(`[personal-mode] executando /${commandName} em ${from} sender=${sender}`);
+    }
+
     //Simula escrita
-    await sock.sendPresenceUpdate('composing', from);
+    if (!personalMode) {
+      await sock.sendPresenceUpdate('composing', from);
+    }
     
     //executa o comando
     await commandGet.execute(sock, msg, from, args, erros_prontos, espera_pronta, bot, sender);
+    if (personalMode) {
+      console.log(`[personal-mode] /${commandName} finalizado`);
+    }
     
     //pausa a simulacao
-    await sock.sendPresenceUpdate('paused', from);
+    if (!personalMode) {
+      await sock.sendPresenceUpdate('paused', from);
+    }
 //adiciona no contador de comandos
-    queueCommandActivity(sender, from);
-    markQueuedWrite(mongoMetrics, 3);
+    if (!personalMode) {
+      queueCommandActivity(sender, from);
+      markQueuedWrite(mongoMetrics, 3);
+    }
    
      //Adiciona nas metricas
-  await safeRedis(() => clientRedis.incr("metrics:commands:min"));
-  await safeRedis(() => clientRedis.expire("metrics:commands:min", 60));
+  if (!personalMode) {
+    await safeRedis(() => clientRedis.incr("metrics:commands:min"));
+    await safeRedis(() => clientRedis.expire("metrics:commands:min", 60));
+  }
   }
     });
     

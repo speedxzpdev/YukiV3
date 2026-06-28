@@ -19,6 +19,7 @@ const os = require("os");
 require("dotenv").config({ quiet: true });
 const server = require("./backend/server.js");
 const normalizeCommandKey = require("./utils/commandKey");
+const { getPersonalNumber, isPersonalMode } = require("./utils/personalMode");
 
 let isBooting = false;
 let reconnectTimeout = null;
@@ -59,6 +60,9 @@ loadCommands(path.join(__dirname, "commands"));
 console.log(`NOME: ${botName}
 COMANDOS: ${commandsMap.size}
 SISTEM: ${os.type()}`);
+if (isPersonalMode()) {
+  console.log(`[personal-mode] ativo para ${getPersonalNumber()}. Eventos passivos desligados.`);
+}
 
 const jsonErros = require("./database/erros.json");
 const erros_prontos = jsonErros[Math.floor(Math.random() * jsonErros.length)];
@@ -113,7 +117,9 @@ async function yukibot() {
       return;
     }
 
-    await redisConnect();
+    if (!isPersonalMode()) {
+      await redisConnect();
+    }
 
     const sock = await SockBot.init();
 
@@ -139,10 +145,14 @@ async function yukibot() {
       }
     });
 
-    server(sock);
+    if (!isPersonalMode()) {
+      server(sock);
+    }
     require("./events/messages.js")(sock, commandsMap, erros_prontos, espera_pronta);
-    require("./events/participantUp")(sock);
-    require("./events/waifus.js")(sock);
+    if (!isPersonalMode()) {
+      require("./events/participantUp")(sock);
+      require("./events/waifus.js")(sock);
+    }
   } catch (err) {
     console.error("Falha ao iniciar a Yuki:", err);
     scheduleReconnect("erro na inicializacao");

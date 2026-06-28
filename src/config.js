@@ -2,7 +2,7 @@ require("dotenv").config({quiet: true});
 const { normalizeUserLid } = require("./utils/normalizeUserLid");
 
 //Prefixo da bot
-const prefixo = process.env.PREFIXO
+const prefixo = process.env.PREFIXO || "/"
 
 //Nome do bot
 const botName = "Yuki"
@@ -13,8 +13,9 @@ const version = "4.5.3"
 //Lids dos donos
 const ownerLids = [
   normalizeUserLid(process.env.SPEED_LID) || "188123996786820@lid",
-  normalizeUserLid(process.env.LENOZ_LID) || "221856653123760@lid"
-];
+  normalizeUserLid(process.env.LENOZ_LID) || "221856653123760@lid",
+  normalizeUserLid(process.env.YUKI_PERSONAL_NUMBER)
+].filter(Boolean);
 
 const numberOwner = ownerLids[0];
 

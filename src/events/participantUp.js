@@ -1,10 +1,12 @@
 const { ensureGroup } = require("../utils/dbHelpers");
+const { isPersonalMode } = require("../utils/personalMode");
 
 
 
 module.exports = (sock) => {
   
   sock.ev.on("group-participants.update", async(update) => {
+    if (isPersonalMode()) return;
     
     console.log(update);
     

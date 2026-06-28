@@ -1,9 +1,12 @@
 const { yukiEv } = require("../utils/events.js");
 const path = require("path");
+const { isPersonalMode } = require("../utils/personalMode");
 
 module.exports = (sock) => {
   
   yukiEv.on("waifu:acquired", async (ctx) => {
+    if (isPersonalMode()) return;
+
     console.log(ctx);
     
     if(process.env.DEV_AMBIENT === "true" && ctx.ctx.from !== '120363424415515445@g.us') return;

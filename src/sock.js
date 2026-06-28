@@ -1,6 +1,7 @@
 const { default: makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, requestPairingCode, baileys, fetchLatestBaileysVersion, Browsers} = require("whaileys");
 const P = require("pino");
 const path = require("path");
+const { isPersonalMode, resolveAuthDir } = require("./utils/personalMode");
 require("dotenv").config();
 
 class SockBot {
@@ -10,7 +11,11 @@ class SockBot {
         this.QRcode = QRcode
     }
     async init() {
-        const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, "/assets/auth"));
+        const authDir = resolveAuthDir(__dirname);
+        if (isPersonalMode()) {
+            console.log(`[personal-mode] usando auth isolada em: ${authDir}`);
+        }
+        const { state, saveCreds } = await useMultiFileAuthState(authDir);
   
   //Pega a ultima versao da baileys 
   const { version } = await fetchLatestBaileysVersion();

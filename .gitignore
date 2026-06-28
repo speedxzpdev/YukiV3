@@ -1,8 +1,11 @@
 node_modules/
 .env
 auth/
+src/assets/auth/
+src/assets/auth-lenoz/
 temp/
 *.log
+personal-mode*.log
 src/api/tiktok-api/venv/
 src/api/tiktok-api/**/__pycache__/
 src/api/tiktok-api/**/*.py[cod]
