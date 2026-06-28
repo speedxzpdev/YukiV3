@@ -1,3 +1,4 @@
+//deploy
 const OpenAI = require("openai");
 const { clientRedis } = require("./lib/redis.js");
 
