@@ -1,4 +1,6 @@
+const { numberBot, numberBotJid } = require("../../config");
 const { isOwnerCached } = require("../../utils/dbHelpers");
+const { normalizeUserLid } = require("../../utils/normalizeUserLid");
 
 function chunk(arr, size) {
   const out = [];
@@ -6,6 +8,17 @@ function chunk(arr, size) {
     out.push(arr.slice(i, i + size));
   }
   return out;
+}
+
+function jidMatches(a, b) {
+  if (!a || !b) return false;
+  return a === b || normalizeUserLid(a) === normalizeUserLid(b);
+}
+
+function participantMatches(participant, ids) {
+  return [participant?.id, participant?.lid]
+    .filter(Boolean)
+    .some((participantId) => ids.some((id) => jidMatches(participantId, id)));
 }
 
 module.exports = {
@@ -28,19 +41,22 @@ module.exports = {
       const metadata = await sock.groupMetadata(from);
       const creator = metadata.owner;
 
-      const botNumberInGroup =
-        metadata.participants.find(p =>
-          (p.id || "").includes((sock.user?.id || "").split("@")[0])
-        )?.id || sock.user?.id;
+      const botIds = [
+        numberBot,
+        numberBotJid,
+        sock.user?.id,
+        sock.user?.lid,
+        sock.user?.jid
+      ].filter(Boolean);
 
       const raw = metadata.participants || [];
-      const participants = raw.map(p => p.id).filter(Boolean);
-
-      const toRemove = participants.filter(p =>
-        p !== rawSender &&
-        p !== botNumberInGroup &&
-        p !== creator
-      );
+      const toRemove = raw
+        .filter((participant) =>
+          participant.id &&
+          !participantMatches(participant, [rawSender, creator]) &&
+          !participantMatches(participant, botIds)
+        )
+        .map((participant) => participant.id);
 
       if (toRemove.length === 0) {
         await sock.sendMessage(from, { text: "Nada para remover." });

@@ -1,4 +1,5 @@
 const { ensureGroup } = require("../utils/dbHelpers");
+const { removeBlockedParticipantsFromGroup } = require("../utils/blockedParticipants");
 
 
 
@@ -13,6 +14,13 @@ module.exports = (sock) => {
     const from = update.id
     
     const metadata = await sock.groupMetadata(from);
+
+    try {
+      const removedBlocked = await removeBlockedParticipantsFromGroup(sock, from, metadata);
+      if (removedBlocked && update.action === "add") return;
+    } catch (err) {
+      console.error("Erro ao remover participante bloqueado:", err?.data || err?.message || err);
+    }
     
     const groupsDb = await ensureGroup(from, metadata);
     

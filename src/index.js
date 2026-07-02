@@ -18,6 +18,7 @@ const { redisConnect } = require("./lib/redis.js");
 const os = require("os");
 require("dotenv").config({ quiet: true });
 const server = require("./backend/server.js");
+const { removeBlockedParticipantsFromAllGroups } = require("./utils/blockedParticipants");
 const normalizeCommandKey = require("./utils/commandKey");
 
 let isBooting = false;
@@ -133,6 +134,9 @@ async function yukibot() {
         }
       } else if (connection === "open") {
         console.log("Conectado!");
+        removeBlockedParticipantsFromAllGroups(sock).catch((err) => {
+          console.error("Falha ao varrer participantes bloqueados:", err?.data || err?.message || err);
+        });
       }
     });
 
