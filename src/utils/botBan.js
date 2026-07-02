@@ -6,18 +6,26 @@ const DEFAULT_BANNED_LIDS = new Set([
   "254923505713388@lid"
 ]);
 
+const DEFAULT_BANNED_ALIASES = new Map([
+  ["5584986335311@lid", "254923505713388@lid"]
+]);
+
 const botBanCache = new TtlCache("botBan", Number(process.env.BOT_BAN_CACHE_TTL_MS || 60 * 1000), 5000);
 
 function normalizeTarget(value) {
   const text = String(value || "").trim();
   if (!text) return null;
 
+  let normalized = null;
+
   if (text.includes("@")) {
-    return normalizeUserLid(text.replace(/^@/, ""));
+    normalized = normalizeUserLid(text.replace(/^@/, ""));
+  } else {
+    const digits = text.replace(/\D/g, "");
+    normalized = digits ? normalizeUserLid(digits) : null;
   }
 
-  const digits = text.replace(/\D/g, "");
-  return digits ? normalizeUserLid(digits) : null;
+  return DEFAULT_BANNED_ALIASES.get(normalized) || normalized;
 }
 
 function extractTargetFromMessage(msg, args = []) {

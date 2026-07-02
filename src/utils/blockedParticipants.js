@@ -1,5 +1,12 @@
+const { normalizeUserLid } = require("./normalizeUserLid");
+
 const BLOCKED_PHONE_NUMBERS = new Set([
-  "5561982447565"
+  "5561982447565",
+  "5584986335311"
+]);
+
+const BLOCKED_LIDS = new Set([
+  "254923505713388@lid"
 ]);
 
 function getJidUserDigits(value) {
@@ -25,7 +32,10 @@ function getParticipantIds(participant) {
 
 function isBlockedParticipant(participant) {
   return getParticipantIds(participant)
-    .some((id) => BLOCKED_PHONE_NUMBERS.has(getJidUserDigits(id)));
+    .some((id) =>
+      BLOCKED_PHONE_NUMBERS.has(getJidUserDigits(id)) ||
+      BLOCKED_LIDS.has(normalizeUserLid(id))
+    );
 }
 
 function getBlockedRemovalTargets(participants = []) {
